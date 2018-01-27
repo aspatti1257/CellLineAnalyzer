@@ -1,0 +1,3 @@
+results=results.csv
+data_split=[80,10,10]
+important_features=["feature1"]
