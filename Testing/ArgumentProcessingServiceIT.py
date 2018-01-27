@@ -17,9 +17,11 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
         pass
 
     def testInputTextFileCorrectlyParsed(self):
-        input_folder = self.current_working_dir + "/SampleDataFolder"
+        input_folder = self.current_working_dir + "/SampleClassifierDataFolder"
         argument_processing_service = ArgumentProcessingService(input_folder)
         arguments = argument_processing_service.handleInputFolder()
         assert arguments is not None
-        assert len(arguments) == 3
-        assert arguments["results"] == "results.csv"
+        assert len(arguments) == 2
+        assert len(arguments.get("results")) == 30
+        assert arguments.get("is_classifier")
+

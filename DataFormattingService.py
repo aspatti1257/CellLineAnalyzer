@@ -2,7 +2,10 @@
 
 class DataFormattingService(object):
 
-    def __init__(self):
+    def __init__(self, inputs):
+        self.inputs = inputs
+
+    def formatData(self):
+        #  TODO - Christine: Handle one-hot encoding and hyperparameter optimization.
         pass
 
-    #  TODO - Christine: Handle one-hot encoding and hyperparameter optimization.

@@ -2,6 +2,8 @@ import sys
 import logging
 
 from ArgumentProcessingService import ArgumentProcessingService
+from DataFormattingService import DataFormattingService
+from MachineLearningService import MachineLearningService
 from Utilities.SafeCastUtil import SafeCastUtil
 
 log = logging.getLogger(__name__)
@@ -15,7 +17,7 @@ def main():
         promptUserForInput()
     elif len(arguments) == 1:
         input_folder = arguments[1]
-        handleInputFolderProcessing(input_folder)
+        runMainCellLineAnalysis(input_folder)
     return
 
 
@@ -32,7 +34,14 @@ def promptUserForInput():
         return
     elif simulation_as_int == 0:
         input_folder = recursivelyPromptUser("Enter path of input folder:\n", str)
-        handleInputFolderProcessing(input_folder)
+        runMainCellLineAnalysis(input_folder)
+
+
+def runMainCellLineAnalysis(input_folder):
+    valid_inputs = handleInputFolderProcessing(input_folder)
+    if valid_inputs is not None:
+        formatted_data = handleDataFormatting(valid_inputs)
+        performMachineLearning(formatted_data)
 
 
 def recursivelyPromptUser(message, return_type):
@@ -46,9 +55,23 @@ def recursivelyPromptUser(message, return_type):
 
 
 def handleInputFolderProcessing(input_folder):
-    argumentProcessingService = ArgumentProcessingService(input_folder)
-    full_inputs = argumentProcessingService.handleInputFolder()
-    return
+    argument_processing_service = ArgumentProcessingService(input_folder)
+    full_inputs = argument_processing_service.handleInputFolder()
+    if not full_inputs:
+        log.error("Exiting program, invalid data sent in target folder.")
+        return None
+    return full_inputs
+
+
+def handleDataFormatting(inputs):
+    data_formatting_service = DataFormattingService(inputs)
+    return data_formatting_service.formatData()
+
+
+def performMachineLearning(formatted_data):
+    machine_learning_service = MachineLearningService(formatted_data)
+    machine_learning_service.analyze()
+
 
 if __name__ == "__main__":
     main()
