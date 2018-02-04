@@ -7,5 +7,5 @@ class DataFormattingService(object):
 
     def formatData(self):
         #  TODO - Christine: Handle one-hot encoding and hyperparameter optimization.
-        pass
+        return self.inputs
 

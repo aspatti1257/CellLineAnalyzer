@@ -6,7 +6,6 @@ from ArgumentProcessingService import ArgumentProcessingService
 
 
 class ArgumentProcessingServiceIT(unittest.TestCase):
-
     log = logging.getLogger(__name__)
     log.setLevel(logging.INFO)
 
@@ -22,6 +21,6 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
         arguments = argument_processing_service.handleInputFolder()
         assert arguments is not None
         assert len(arguments) == 3
-        assert (len(arguments.get("results")) + 1) == len(arguments.get("features").keys())
-        assert arguments.get("is_classifier")
-
+        assert (len(arguments.get(argument_processing_service.RESULTS)) + 1) == \
+               len(arguments.get(argument_processing_service.FEATURES).keys())
+        assert arguments.get(argument_processing_service.IS_CLASSIFIER)

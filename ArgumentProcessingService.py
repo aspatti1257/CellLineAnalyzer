@@ -13,9 +13,13 @@ class ArgumentProcessingService(object):
 
     ARGUMENTS_FILE = "arguments.txt"
 
+    RESULTS = "results"
+    IS_CLASSIFIER = "is_classifier"
+    FEATURES = "features"
+    FEATURE_NAMES = "featureNames"
+
     def __init__(self, input_folder):
         self.input_folder = input_folder
-        pass
 
     def handleInputFolder(self):
         directory_contents = os.listdir(self.input_folder)
@@ -25,15 +29,15 @@ class ArgumentProcessingService(object):
             return None
 
         arguments = self.fetchArguments(self.input_folder + "/" + self.ARGUMENTS_FILE)
-        results_file = arguments.get("results")
-        is_classifier = SafeCastUtil.safeCast(arguments.get("is_classifier"), int) == 1
+        results_file = arguments.get(self.RESULTS)
+        is_classifier = SafeCastUtil.safeCast(arguments.get(self.IS_CLASSIFIER), int) == 1
         if is_classifier is not None and results_file is not None:
             results_list = self.validateAndExtractResults(results_file, is_classifier)
             feature_map = self.createAndValidateFeatureMatrix(results_list, results_file)
             return {
-                "results": results_list,
-                "is_classifier": is_classifier,
-                "features": feature_map
+                self.RESULTS: results_list,
+                self.IS_CLASSIFIER: is_classifier,
+                self.FEATURES: feature_map
             }
         else:
             return None
@@ -87,14 +91,17 @@ class ArgumentProcessingService(object):
 
     def createAndValidateFeatureMatrix(self, results_list, results_file):
         files = os.listdir(self.input_folder)
-        feature_map = {"featureNames": []}
+        feature_map = {self.FEATURE_NAMES: []}
         for file in [file for file in files if file != results_file and file != self.ARGUMENTS_FILE]:
             features_path = self.input_folder + "/" + file
             with open(features_path) as feature_file:
                 try:
                     for line_index, line in enumerate(feature_file):
                         if line_index == 0:
-                            feature_map["featureNames"].append(line.split(","))
+                            feature_names = line.split(",")
+                            for feature_name in feature_names:
+                                feature_map[self.FEATURE_NAMES].append(SafeCastUtil.
+                                                                       safeCast(feature_name.replace("\n", ""), str))
                         else:
                             features = [SafeCastUtil.safeCast(features, float) for features in line.split(",")]
                             cell_line = results_list[line_index - 1]
@@ -112,8 +119,3 @@ class ArgumentProcessingService(object):
                 finally:
                     self.log.debug("Closing file %s", feature_file)
         return feature_map
-
-
-    def findLineCountSimple(self, file):  # TODO: Maybe auto-trim empty lines?
-        file_path = self.input_folder + "/" + file
-        return sum(1 for line in open(file_path))
