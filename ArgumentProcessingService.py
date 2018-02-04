@@ -29,10 +29,11 @@ class ArgumentProcessingService(object):
         is_classifier = SafeCastUtil.safeCast(arguments.get("is_classifier"), int) == 1
         if is_classifier is not None and results_file is not None:
             results_list = self.validateAndExtractResults(results_file, is_classifier)
-            self.validateFeatureFiles(results_list, results_file)  # TODO: Return feature matrix and important features.
+            feature_map = self.createAndValidateFeatureMatrix(results_list, results_file)
             return {
                 "results": results_list,
-                "is_classifier": is_classifier
+                "is_classifier": is_classifier,
+                "features": feature_map
             }
         else:
             return None
@@ -84,14 +85,34 @@ class ArgumentProcessingService(object):
                 data_file.close()
         return sample_list
 
-    def validateFeatureFiles(self, results_list, results_file):
+    def createAndValidateFeatureMatrix(self, results_list, results_file):
         files = os.listdir(self.input_folder)
-        num_results = len(results_list)
+        feature_map = {"featureNames": []}
         for file in [file for file in files if file != results_file and file != self.ARGUMENTS_FILE]:
-            if self.findLineCountSimple(file) != (num_results + 1):
-                self.log.error("Invalid line count for %s", num_results)
-                raise ValueError("Invalid line count for" + file + ". Must be " +
-                                 SafeCastUtil.safeCast(num_results, str) + "lines long.")
+            features_path = self.input_folder + "/" + file
+            with open(features_path) as feature_file:
+                try:
+                    for line_index, line in enumerate(feature_file):
+                        if line_index == 0:
+                            feature_map["featureNames"].append(line.split(","))
+                        else:
+                            features = [SafeCastUtil.safeCast(features, float) for features in line.split(",")]
+                            cell_line = results_list[line_index - 1]
+                            if not cell_line[0] in feature_map:
+                                feature_map[cell_line[0]] = features
+                            else:
+                                feature_map[cell_line[0]] = feature_map[cell_line[0]] + features
+                            if line_index > len(results_list):
+                                self.log.error("Invalid line count for %s", file)
+                                raise ValueError("Invalid line count for" + file + ". Must be " +
+                                                 SafeCastUtil.safeCast(file, str) + "lines long.")
+                except ValueError as valueError:
+                    self.log.error(valueError)
+                    return None
+                finally:
+                    self.log.debug("Closing file %s", feature_file)
+        return feature_map
+
 
     def findLineCountSimple(self, file):  # TODO: Maybe auto-trim empty lines?
         file_path = self.input_folder + "/" + file
