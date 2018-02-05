@@ -24,7 +24,15 @@ class DataFormattingService(object):
             # Encode all labels
             dataframe = dataframe.apply(encode_categorical)
             dataframe_np = dataframe.as_matrix()
+            assert isinstance(dataframe, object)
             return dataframe_np, dataframe
+
+        # Binary one hot encoding
+        def binary_one_hot(dataframe):
+
+            dataframe_binary_pd = pd.get_dummies(dataframe)
+            dataframe_binary = dataframe_binary_pd.as_matrix()
+            return dataframe_binary, dataframe_binary_pd
 
         # Hyperparameter tuning
         param_lst = {"rf": {"n_estimators": range(10, 30)}}
