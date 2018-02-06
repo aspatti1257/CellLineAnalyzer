@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
+<<<<<<< HEAD
     <list default="true" id="1b4c3c20-5bc4-44d0-b315-234df03f2c15" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/DataFormattingService.py" afterPath="$PROJECT_DIR$/DataFormattingService.py" />
+=======
+    <list default="true" id="3a9fd1c4-6308-4cc3-b2ec-644894aeacbc" name="Default" comment="">
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/Testing/SampleClassifierDataFolder/categorical.csv" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/DataFormattingService.py" afterPath="$PROJECT_DIR$/DataFormattingService.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Testing/DataFormattingServiceIT.py" afterPath="$PROJECT_DIR$/Testing/DataFormattingServiceIT.py" />
+>>>>>>> 9847e13f26d5b7bec16f303ffc0d38fdc6009520
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -16,8 +23,8 @@
       <file leaf-file-name="ArgumentProcessingService.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ArgumentProcessingService.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="135">
-              <caret line="9" column="36" lean-forward="false" selection-start-line="9" selection-start-column="36" selection-end-line="9" selection-end-column="36" />
+            <state relative-caret-position="2160">
+              <caret line="120" column="0" lean-forward="false" selection-start-line="120" selection-start-column="0" selection-end-line="120" selection-end-column="0" />
               <folding>
                 <element signature="e#0#9#0" expanded="true" />
               </folding>
@@ -25,29 +32,129 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="DataFormattingService.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/DataFormattingService.py">
+      <file leaf-file-name="moreFeatures.csv" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Testing/SampleClassifierDataFolder/moreFeatures.csv">
           <provider selected="true" editor-type-id="text-editor">
+<<<<<<< HEAD
             <state relative-caret-position="619">
               <caret line="74" column="56" lean-forward="true" selection-start-line="74" selection-start-column="56" selection-end-line="74" selection-end-column="56" />
-              <folding>
-                <element signature="e#0#18#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="DataFormattingServiceIT.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Testing/DataFormattingServiceIT.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="105">
-              <caret line="10" column="29" lean-forward="false" selection-start-line="10" selection-start-column="29" selection-end-line="10" selection-end-column="29" />
+=======
+            <state relative-caret-position="414">
+              <caret line="23" column="2" lean-forward="false" selection-start-line="23" selection-start-column="2" selection-end-line="23" selection-end-column="2" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
+      <file leaf-file-name="MachineLearningService.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/MachineLearningService.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="504">
+              <caret line="28" column="0" lean-forward="false" selection-start-line="28" selection-start-column="0" selection-end-line="28" selection-end-column="0" />
+>>>>>>> 9847e13f26d5b7bec16f303ffc0d38fdc6009520
+              <folding>
+                <element signature="e#0#14#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+<<<<<<< HEAD
+      <file leaf-file-name="DataFormattingServiceIT.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Testing/DataFormattingServiceIT.py">
+=======
+      <file leaf-file-name="forest.py" pinned="false" current-in-tab="false">
+        <entry file="file:///usr/local/lib/python3.6/dist-packages/sklearn/ensemble/forest.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="3510">
+              <caret line="219" column="8" lean-forward="false" selection-start-line="219" selection-start-column="8" selection-end-line="219" selection-end-column="8" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="SupportedAnalysisTypes.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/SupportedAnalysisTypes.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="54">
+              <caret line="3" column="0" lean-forward="false" selection-start-line="3" selection-start-column="0" selection-end-line="3" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="ArgumentProcessingServiceIT.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Testing/ArgumentProcessingServiceIT.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="342">
+              <caret line="19" column="45" lean-forward="false" selection-start-line="19" selection-start-column="45" selection-end-line="19" selection-end-column="45" />
+              <folding>
+                <element signature="e#0#15#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="typing.pyi" pinned="false" current-in-tab="false">
+        <entry file="file://$APPLICATION_HOME_DIR$/helpers/typeshed/stdlib/3/typing.pyi">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="5238">
+              <caret line="293" column="8" lean-forward="false" selection-start-line="293" selection-start-column="8" selection-end-line="293" selection-end-column="8" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="DataFormattingService.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/DataFormattingService.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="90">
+              <caret line="8" column="11" lean-forward="false" selection-start-line="8" selection-start-column="11" selection-end-line="8" selection-end-column="11" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="__main__.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/__main__.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="1206">
+              <caret line="67" column="37" lean-forward="false" selection-start-line="67" selection-start-column="37" selection-end-line="67" selection-end-column="37" />
+              <folding>
+                <element signature="e#0#10#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="MachineLearningServiceIT.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Testing/MachineLearningServiceIT.py">
+>>>>>>> 9847e13f26d5b7bec16f303ffc0d38fdc6009520
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="432">
+              <caret line="24" column="0" lean-forward="false" selection-start-line="24" selection-start-column="0" selection-end-line="24" selection-end-column="0" />
+              <folding>
+                <element signature="e#0#15#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
     </leaf>
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>cell_line</find>
+      <find>featureNames</find>
+      <find>findLineCountSimple</find>
+    </findStrings>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -55,17 +162,35 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/Testing/SampleClassifierDataFolder/categorical.csv" />
+        <option value="$PROJECT_DIR$/__init__.py" />
+        <option value="$PROJECT_DIR$/README.md" />
+        <option value="$PROJECT_DIR$/Utilities/SafeCastUtil.py" />
+        <option value="$PROJECT_DIR$/__main__.py" />
+        <option value="$PROJECT_DIR$/Testing/SampleDataFolder/results.csv" />
+        <option value="$PROJECT_DIR$/Testing/SampleDataFolder/arguments.txt" />
+        <option value="$PROJECT_DIR$/Testing/SampleClassifierDataFolder/features_one.csv" />
+        <option value="$PROJECT_DIR$/Testing/SampleClassifierDataFolder/arguments.txt" />
+        <option value="$PROJECT_DIR$/Testing/SampleClassifierDataFolder/results.csv" />
+        <option value="$PROJECT_DIR$/Testing/SampleClassifierDataFolder/features.csv" />
+        <option value="$PROJECT_DIR$/Testing/GodDamnIT.py" />
         <option value="$PROJECT_DIR$/Testing/DataFormattingServiceIT.py" />
+        <option value="$PROJECT_DIR$/Testing/SampleClassifierDataFolder/moreFeatures.csv" />
+        <option value="$PROJECT_DIR$/Testing/ArgumentProcessingServiceIT.py" />
+        <option value="$PROJECT_DIR$/SupportedAnalysisTypes.py" />
+        <option value="$PROJECT_DIR$/ArgumentProcessingService.py" />
+        <option value="$PROJECT_DIR$/MachineLearningService.py" />
+        <option value="$PROJECT_DIR$/Testing/MachineLearningServiceIT.py" />
         <option value="$PROJECT_DIR$/DataFormattingService.py" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds">
-    <option name="y" value="22" />
-    <option name="width" value="1440" />
-    <option name="height" value="820" />
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="75" />
+    <option name="y" value="6" />
+    <option name="width" value="1851" />
+    <option name="height" value="1012" />
   </component>
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
     <navigator currentView="ProjectPane" proportions="" version="1">
       <flattenPackages />
@@ -81,8 +206,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scratches" />
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -90,36 +213,17 @@
               <item name="CellLineAnalyzer" type="b2602c69:ProjectViewProjectNode" />
               <item name="CellLineAnalyzer" type="462c0819:PsiDirectoryNode" />
             </path>
-            <path>
-              <item name="CellLineAnalyzer" type="b2602c69:ProjectViewProjectNode" />
-              <item name="CellLineAnalyzer" type="462c0819:PsiDirectoryNode" />
-              <item name="API_datasets" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="CellLineAnalyzer" type="b2602c69:ProjectViewProjectNode" />
-              <item name="CellLineAnalyzer" type="462c0819:PsiDirectoryNode" />
-              <item name="Testing" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="CellLineAnalyzer" type="b2602c69:ProjectViewProjectNode" />
-              <item name="CellLineAnalyzer" type="462c0819:PsiDirectoryNode" />
-              <item name="Testing" type="462c0819:PsiDirectoryNode" />
-              <item name="SampleClassifierDataFolder" type="462c0819:PsiDirectoryNode" />
-            </path>
           </expand>
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
+      <pane id="Scratches" />
     </panes>
   </component>
   <component name="PropertiesComponent">
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
-    <property name="ToolWindowRun.ShowToolbar" value="false" />
-  </component>
-  <component name="RecentsManager">
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/Testing/SampleClassifierDataFolder" />
-    </key>
+    <property name="add_unversioned_files" value="true" />
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -133,44 +237,25 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.Python3">
-    <configuration name="ArgumentProcessingService" type="PythonConfigurationType" factoryName="Python">
+  <component name="RunManager" selected="Python tests.Unittests for MachineLearningServiceIT.MachineLearningServiceIT.testMachineLearningModelsCreated">
+    <configuration name="DataFormattingServiceIT" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="CellLineAnalyzer" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/ArgumentProcessingService.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-    </configuration>
-    <configuration name="Python3" type="PythonConfigurationType" factoryName="Python">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="$USER_HOME$/venv/bin/python" />
-      <option name="WORKING_DIRECTORY" value="" />
+      <option name="SDK_HOME" value="/usr/bin/python3.6" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Testing" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="CellLineAnalyzer" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Testing/DataFormattingServiceIT.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
     </configuration>
-    <configuration name="Unittests for ArgumentProcessingServiceIT.ArgumentProcessingServiceIT" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+    <configuration name="Nosetests for ArgumentProcessingServiceIT.ArgumentProcessingServiceIT" type="tests" factoryName="Nosetests" temporary="true" nameIsGenerated="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs />
@@ -180,11 +265,12 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="CellLineAnalyzer" />
+      <option name="_new_regexPattern" value="&quot;&quot;" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
       <option name="_new_target" value="&quot;ArgumentProcessingServiceIT.ArgumentProcessingServiceIT&quot;" />
       <option name="_new_targetType" value="&quot;PYTHON&quot;" />
     </configuration>
-    <configuration name="Unittests for DataFormattingServiceIT.DataFormattingServiceIT" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+    <configuration name="Nosetests for ArgumentProcessingServiceIT.ArgumentProcessingServiceIT.testInputTextFileCorrectlyParsed" type="tests" factoryName="Nosetests" temporary="true" nameIsGenerated="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs />
@@ -194,11 +280,27 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="CellLineAnalyzer" />
+      <option name="_new_regexPattern" value="&quot;&quot;" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;ArgumentProcessingServiceIT.ArgumentProcessingServiceIT.testInputTextFileCorrectlyParsed&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+    </configuration>
+    <configuration name="Nosetests for DataFormattingServiceIT.DataFormattingServiceIT" type="tests" factoryName="Nosetests">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Testing" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="CellLineAnalyzer" />
+      <option name="_new_regexPattern" value="&quot;&quot;" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
       <option name="_new_target" value="&quot;DataFormattingServiceIT.DataFormattingServiceIT&quot;" />
       <option name="_new_targetType" value="&quot;PYTHON&quot;" />
     </configuration>
-    <configuration name="Unittests for DataFormattingServiceIT.DataFormattingServiceIT.testInputTextFileCorrectlyParsed" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+    <configuration name="Unittests for MachineLearningServiceIT.MachineLearningServiceIT.testMachineLearningModelsCreated" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs />
@@ -209,25 +311,10 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="CellLineAnalyzer" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;DataFormattingServiceIT.DataFormattingServiceIT.testInputTextFileCorrectlyParsed&quot;" />
+      <option name="_new_target" value="&quot;MachineLearningServiceIT.MachineLearningServiceIT.testMachineLearningModelsCreated&quot;" />
       <option name="_new_targetType" value="&quot;PYTHON&quot;" />
     </configuration>
-    <configuration name="Unittests in ArgumentProcessingServiceIT.py" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs />
-      <option name="SDK_HOME" value="$USER_HOME$/venv/bin/python" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Testing" />
-      <option name="IS_MODULE_SDK" value="false" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="CellLineAnalyzer" />
-      <option name="_new_pattern" value="&quot;&quot;" />
-      <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;$PROJECT_DIR$/Testing/ArgumentProcessingServiceIT.py&quot;" />
-      <option name="_new_targetType" value="&quot;PATH&quot;" />
-    </configuration>
-    <configuration name="Unittests in DataFormattingServiceIT.py" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+    <configuration name="Unittests for Testing.DataFormattingServiceIT.DataFormattingServiceIT" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs />
@@ -238,405 +325,395 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="CellLineAnalyzer" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;$PROJECT_DIR$/Testing/DataFormattingServiceIT.py&quot;" />
-      <option name="_new_targetType" value="&quot;PATH&quot;" />
+      <option name="_new_target" value="&quot;Testing.DataFormattingServiceIT.DataFormattingServiceIT&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
     </configuration>
-    <list size="7">
-      <item index="0" class="java.lang.String" itemvalue="Python.ArgumentProcessingService" />
-      <item index="1" class="java.lang.String" itemvalue="Python.Python3" />
-      <item index="2" class="java.lang.String" itemvalue="Python tests.Unittests for ArgumentProcessingServiceIT.ArgumentProcessingServiceIT" />
-      <item index="3" class="java.lang.String" itemvalue="Python tests.Unittests in ArgumentProcessingServiceIT.py" />
-      <item index="4" class="java.lang.String" itemvalue="Python tests.Unittests for DataFormattingServiceIT.DataFormattingServiceIT.testInputTextFileCorrectlyParsed" />
-      <item index="5" class="java.lang.String" itemvalue="Python tests.Unittests in DataFormattingServiceIT.py" />
-      <item index="6" class="java.lang.String" itemvalue="Python tests.Unittests for DataFormattingServiceIT.DataFormattingServiceIT" />
+    <list size="6">
+      <item index="0" class="java.lang.String" itemvalue="Python tests.Nosetests for DataFormattingServiceIT.DataFormattingServiceIT" />
+      <item index="1" class="java.lang.String" itemvalue="Python.DataFormattingServiceIT" />
+      <item index="2" class="java.lang.String" itemvalue="Python tests.Nosetests for ArgumentProcessingServiceIT.ArgumentProcessingServiceIT" />
+      <item index="3" class="java.lang.String" itemvalue="Python tests.Nosetests for ArgumentProcessingServiceIT.ArgumentProcessingServiceIT.testInputTextFileCorrectlyParsed" />
+      <item index="4" class="java.lang.String" itemvalue="Python tests.Unittests for Testing.DataFormattingServiceIT.DataFormattingServiceIT" />
+      <item index="5" class="java.lang.String" itemvalue="Python tests.Unittests for MachineLearningServiceIT.MachineLearningServiceIT.testMachineLearningModelsCreated" />
     </list>
     <recent_temporary>
       <list size="5">
-        <item index="0" class="java.lang.String" itemvalue="Python tests.Unittests for DataFormattingServiceIT.DataFormattingServiceIT.testInputTextFileCorrectlyParsed" />
-        <item index="1" class="java.lang.String" itemvalue="Python tests.Unittests in ArgumentProcessingServiceIT.py" />
-        <item index="2" class="java.lang.String" itemvalue="Python tests.Unittests in DataFormattingServiceIT.py" />
-        <item index="3" class="java.lang.String" itemvalue="Python tests.Unittests for DataFormattingServiceIT.DataFormattingServiceIT" />
-        <item index="4" class="java.lang.String" itemvalue="Python tests.Unittests for ArgumentProcessingServiceIT.ArgumentProcessingServiceIT" />
+        <item index="0" class="java.lang.String" itemvalue="Python tests.Unittests for MachineLearningServiceIT.MachineLearningServiceIT.testMachineLearningModelsCreated" />
+        <item index="1" class="java.lang.String" itemvalue="Python tests.Nosetests for ArgumentProcessingServiceIT.ArgumentProcessingServiceIT.testInputTextFileCorrectlyParsed" />
+        <item index="2" class="java.lang.String" itemvalue="Python tests.Unittests for Testing.DataFormattingServiceIT.DataFormattingServiceIT" />
+        <item index="3" class="java.lang.String" itemvalue="Python.DataFormattingServiceIT" />
+        <item index="4" class="java.lang.String" itemvalue="Python tests.Nosetests for ArgumentProcessingServiceIT.ArgumentProcessingServiceIT" />
       </list>
     </recent_temporary>
   </component>
   <component name="ShelveChangesManager" show_recycled="false">
     <option name="remove_strategy" value="false" />
   </component>
-  <component name="SvnConfiguration">
-    <configuration />
-  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="1b4c3c20-5bc4-44d0-b315-234df03f2c15" name="Default" comment="" />
-      <created>1517108594178</created>
+      <changelist id="3a9fd1c4-6308-4cc3-b2ec-644894aeacbc" name="Default" comment="" />
+      <created>1516676475817</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1517108594178</updated>
+      <updated>1516676475817</updated>
     </task>
+    <task id="LOCAL-00001" summary="Initial Commit - Sets TODOs for myself and Christine.">
+      <created>1516677968757</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1516677968757</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Introduce basic input folder processing with ArgumentProcessingService. Includes IT. Also adds prompting menu via __main__.py.">
+      <created>1517033146459</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1517033146459</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Introduce basic input folder processing with ArgumentProcessingService. Includes IT. Also adds prompting menu via __main__.py.">
+      <created>1517093533314</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1517093533314</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Fix up DataFormattingServiceIT such that PyCharm treats it like any other IT.">
+      <created>1517193114758</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1517193114758</updated>
+    </task>
+    <task id="LOCAL-00005" summary="ArgumentProcessingService now validates and returns a features map. Ready for formatting in DataFormattingService and then ML model building in MachineLearningService.">
+      <created>1517713833685</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1517713833685</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Basic Random Forest model setup. Will need to be revised once we split feature data into testing/training/validation matrices. But this is a good rough sketch.">
+      <created>1517781608166</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1517781608166</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TestHistory">
-    <history-entry file="Unittests_for_DataFormattingServiceIT_DataFormattingServiceIT - 2018.01.28 at 20h 18m 57s.xml">
-      <configuration name="Unittests for DataFormattingServiceIT.DataFormattingServiceIT" configurationId="tests" />
+    <history-entry file="Unittests_for_MachineLearningServiceIT_MachineLearningServiceIT_testMachineLearningModelsCreated - 2018.02.04 at 16h 23m 17s.xml">
+      <configuration name="Unittests for MachineLearningServiceIT.MachineLearningServiceIT.testMachineLearningModelsCreated" configurationId="tests" />
     </history-entry>
-    <history-entry file="Unittests_for_DataFormattingServiceIT_DataFormattingServiceIT - 2018.01.28 at 20h 19m 27s.xml">
-      <configuration name="Unittests for DataFormattingServiceIT.DataFormattingServiceIT" configurationId="tests" />
+    <history-entry file="Unittests_for_MachineLearningServiceIT_MachineLearningServiceIT_testMachineLearningModelsCreated - 2018.02.04 at 16h 23m 56s.xml">
+      <configuration name="Unittests for MachineLearningServiceIT.MachineLearningServiceIT.testMachineLearningModelsCreated" configurationId="tests" />
     </history-entry>
-    <history-entry file="Unittests_for_DataFormattingServiceIT_DataFormattingServiceIT_testInputTextFileCorrectlyParsed - 2018.02.05 at 13h 47m 52s.xml">
-      <configuration name="Unittests for DataFormattingServiceIT.DataFormattingServiceIT.testInputTextFileCorrectlyParsed" configurationId="tests" />
+    <history-entry file="Unittests_for_MachineLearningServiceIT_MachineLearningServiceIT_testMachineLearningModelsCreated - 2018.02.04 at 16h 24m 42s.xml">
+      <configuration name="Unittests for MachineLearningServiceIT.MachineLearningServiceIT.testMachineLearningModelsCreated" configurationId="tests" />
     </history-entry>
-    <history-entry file="Unittests_for_DataFormattingServiceIT_DataFormattingServiceIT_testInputTextFileCorrectlyParsed - 2018.02.05 at 19h 25m 51s.xml">
-      <configuration name="Unittests for DataFormattingServiceIT.DataFormattingServiceIT.testInputTextFileCorrectlyParsed" configurationId="tests" />
+    <history-entry file="Unittests_for_MachineLearningServiceIT_MachineLearningServiceIT_testMachineLearningModelsCreated - 2018.02.04 at 16h 41m 33s.xml">
+      <configuration name="Unittests for MachineLearningServiceIT.MachineLearningServiceIT.testMachineLearningModelsCreated" configurationId="tests" />
     </history-entry>
-    <history-entry file="Unittests_in_ArgumentProcessingServiceIT_py - 2018.02.05 at 14h 20m 11s.xml">
-      <configuration name="Unittests in ArgumentProcessingServiceIT.py" configurationId="tests" />
+    <history-entry file="Unittests_for_MachineLearningServiceIT_MachineLearningServiceIT_testMachineLearningModelsCreated - 2018.02.04 at 16h 53m 14s.xml">
+      <configuration name="Unittests for MachineLearningServiceIT.MachineLearningServiceIT.testMachineLearningModelsCreated" configurationId="tests" />
     </history-entry>
-    <history-entry file="Unittests_in_ArgumentProcessingServiceIT_py - 2018.02.05 at 19h 25m 26s.xml">
-      <configuration name="Unittests in ArgumentProcessingServiceIT.py" configurationId="tests" />
+    <history-entry file="Unittests_for_MachineLearningServiceIT_MachineLearningServiceIT_testMachineLearningModelsCreated - 2018.02.04 at 16h 53m 29s.xml">
+      <configuration name="Unittests for MachineLearningServiceIT.MachineLearningServiceIT.testMachineLearningModelsCreated" configurationId="tests" />
     </history-entry>
-    <history-entry file="Unittests_in_ArgumentProcessingServiceIT_py - 2018.02.05 at 19h 25m 46s.xml">
-      <configuration name="Unittests in ArgumentProcessingServiceIT.py" configurationId="tests" />
+    <history-entry file="Unittests_for_MachineLearningServiceIT_MachineLearningServiceIT_testMachineLearningModelsCreated - 2018.02.04 at 16h 54m 15s.xml">
+      <configuration name="Unittests for MachineLearningServiceIT.MachineLearningServiceIT.testMachineLearningModelsCreated" configurationId="tests" />
     </history-entry>
-    <history-entry file="Unittests_in_DataFormattingServiceIT_py - 2018.02.05 at 13h 33m 18s.xml">
-      <configuration name="Unittests in DataFormattingServiceIT.py" configurationId="tests" />
+    <history-entry file="Unittests_for_MachineLearningServiceIT_MachineLearningServiceIT_testMachineLearningModelsCreated - 2018.02.04 at 16h 57m 27s.xml">
+      <configuration name="Unittests for MachineLearningServiceIT.MachineLearningServiceIT.testMachineLearningModelsCreated" configurationId="tests" />
     </history-entry>
-    <history-entry file="Unittests_in_DataFormattingServiceIT_py - 2018.02.05 at 13h 33m 27s.xml">
-      <configuration name="Unittests in DataFormattingServiceIT.py" configurationId="tests" />
+    <history-entry file="Unittests_for_MachineLearningServiceIT_MachineLearningServiceIT_testMachineLearningModelsCreated - 2018.02.04 at 16h 58m 58s.xml">
+      <configuration name="Unittests for MachineLearningServiceIT.MachineLearningServiceIT.testMachineLearningModelsCreated" configurationId="tests" />
     </history-entry>
-    <history-entry file="Unittests_in_DataFormattingServiceIT_py - 2018.02.05 at 13h 33m 52s.xml">
-      <configuration name="Unittests in DataFormattingServiceIT.py" configurationId="tests" />
+    <history-entry file="Unittests_for_MachineLearningServiceIT_MachineLearningServiceIT_testMachineLearningModelsCreated - 2018.02.04 at 16h 59m 02s.xml">
+      <configuration name="Unittests for MachineLearningServiceIT.MachineLearningServiceIT.testMachineLearningModelsCreated" configurationId="tests" />
     </history-entry>
   </component>
+  <component name="TodoView" selected-index="2">
+    <todo-panel id="selected-file">
+      <is-autoscroll-to-source value="true" />
+    </todo-panel>
+    <todo-panel id="all">
+      <are-packages-shown value="true" />
+      <is-autoscroll-to-source value="true" />
+    </todo-panel>
+  </component>
   <component name="ToolWindowManager">
+<<<<<<< HEAD
     <frame x="0" y="22" width="1440" height="820" extended-state="0" />
+=======
+    <frame x="65" y="-4" width="1855" height="1084" extended-state="6" />
+>>>>>>> 9847e13f26d5b7bec16f303ffc0d38fdc6009520
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.26527777" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.328877" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.328877" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32931727" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25815368" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32984293" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32879582" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32984293" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+<<<<<<< HEAD
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.36898395" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+=======
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+>>>>>>> 9847e13f26d5b7bec16f303ffc0d38fdc6009520
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
+      <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32984293" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
     </layout>
+  </component>
+  <component name="UnknownFeatures">
+    <option featureType="com.intellij.fileTypeFactory" implementationName="*.csv" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="RECENTLY_FILTERED_USER_GROUPS">
+                <collection />
+              </option>
+              <option name="RECENTLY_FILTERED_BRANCH_GROUPS">
+                <collection />
+              </option>
+              <option name="COLUMN_ORDER">
+                <list>
+                  <option value="0" />
+                  <option value="1" />
+                  <option value="2" />
+                  <option value="3" />
+                </list>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsContentAnnotationSettings">
     <option name="myLimit" value="2678400000" />
   </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Initial Commit - Sets TODOs for myself and Christine." />
+    <MESSAGE value="Introduce basic input folder processing with ArgumentProcessingService. Includes IT. Also adds prompting menu via __main__.py." />
+    <MESSAGE value="Fix up DataFormattingServiceIT such that PyCharm treats it like any other IT." />
+    <MESSAGE value="ArgumentProcessingService now validates and returns a features map. Ready for formatting in DataFormattingService and then ML model building in MachineLearningService." />
+    <MESSAGE value="Basic Random Forest model setup. Will need to be revised once we split feature data into testing/training/validation matrices. But this is a good rough sketch." />
+    <option name="LAST_COMMIT_MESSAGE" value="Basic Random Forest model setup. Will need to be revised once we split feature data into testing/training/validation matrices. But this is a good rough sketch." />
+  </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <breakpoints-dialog>
-        <breakpoints-dialog />
-      </breakpoints-dialog>
-      <default-breakpoints>
-        <breakpoint type="python-exception">
-          <properties notifyOnTerminate="true" exception="BaseException">
-            <option name="notifyOnTerminate" value="true" />
-          </properties>
-        </breakpoint>
-      </default-breakpoints>
-      <option name="time" value="1" />
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Testing/DataFormattingServiceIT.py</url>
+          <line>14</line>
+          <option name="timeStamp" value="56" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/ArgumentProcessingService.py</url>
+          <line>120</line>
+          <option name="timeStamp" value="96" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/MachineLearningService.py</url>
+          <line>22</line>
+          <option name="timeStamp" value="98" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Testing/MachineLearningServiceIT.py</url>
+          <line>22</line>
+          <option name="timeStamp" value="103" />
+        </line-breakpoint>
+      </breakpoints>
+      <option name="time" value="104" />
     </breakpoint-manager>
-    <watches-manager />
-  </component>
-  <component name="debuggerHistoryManager">
-    <expressions id="watch">
-      <expression>
-        <expression-string>np.zeroes(4)</expression-string>
-        <language-id>Python</language-id>
-        <evaluation-mode>EXPRESSION</evaluation-mode>
-      </expression>
-    </expressions>
+    <watches-manager>
+      <configuration name="tests">
+        <watch expression="basic_rf_model.feature_importances_" language="Python" />
+        <watch expression="len(basic_rf_model.feature_importances_)" language="Python" />
+      </configuration>
+    </watches-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/DataFormattingService.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="975">
-          <caret line="65" column="35" lean-forward="true" selection-start-line="65" selection-start-column="35" selection-end-line="65" selection-end-column="35" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ArgumentProcessingService.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="330">
-          <caret line="26" column="48" lean-forward="true" selection-start-line="26" selection-start-column="48" selection-end-line="26" selection-end-column="48" />
-          <folding>
-            <element signature="e#0#9#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/MachineLearningService.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="300">
-          <caret line="27" column="17" lean-forward="true" selection-start-line="27" selection-start-column="17" selection-end-line="27" selection-end-column="17" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/DataFormattingService.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="615">
-          <caret line="41" column="30" lean-forward="false" selection-start-line="41" selection-start-column="30" selection-end-line="41" selection-end-column="30" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ArgumentProcessingService.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="525">
-          <caret line="35" column="12" lean-forward="false" selection-start-line="35" selection-start-column="12" selection-end-line="35" selection-end-column="12" />
-          <folding>
-            <element signature="e#0#9#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Testing/ArgumentProcessingServiceIT.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="120">
-          <caret line="12" column="4" lean-forward="false" selection-start-line="12" selection-start-column="4" selection-end-line="12" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/__main__.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="495">
-          <caret line="39" column="35" lean-forward="false" selection-start-line="39" selection-start-column="35" selection-end-line="39" selection-end-column="35" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Testing/DataFormattingServiceIT.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="75">
-          <caret line="7" column="0" lean-forward="true" selection-start-line="7" selection-start-column="0" selection-end-line="7" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ArgumentProcessingService.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="525">
-          <caret line="35" column="12" lean-forward="false" selection-start-line="35" selection-start-column="12" selection-end-line="35" selection-end-column="12" />
+        <state relative-caret-position="1206">
+          <caret line="67" column="37" lean-forward="false" selection-start-line="67" selection-start-column="37" selection-end-line="67" selection-end-column="37" />
           <folding>
-            <element signature="e#0#9#0" expanded="true" />
+            <element signature="e#0#10#0" expanded="true" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Testing/ArgumentProcessingServiceIT.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
-          <caret line="12" column="4" lean-forward="false" selection-start-line="12" selection-start-column="4" selection-end-line="12" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/__main__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="495">
-          <caret line="39" column="35" lean-forward="false" selection-start-line="39" selection-start-column="35" selection-end-line="39" selection-end-column="35" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Testing/DataFormattingServiceIT.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="300">
-          <caret line="20" column="34" lean-forward="false" selection-start-line="20" selection-start-column="34" selection-end-line="20" selection-end-column="34" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Testing/ArgumentProcessingServiceIT.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="90">
-          <caret line="10" column="29" lean-forward="false" selection-start-line="10" selection-start-column="29" selection-end-line="10" selection-end-column="29" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ArgumentProcessingService.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="30">
-          <caret line="2" column="8" lean-forward="false" selection-start-line="2" selection-start-column="8" selection-end-line="2" selection-end-column="8" />
-          <folding>
-            <element signature="e#0#9#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Testing/DataFormattingServiceIT.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="120">
-          <caret line="8" column="0" lean-forward="true" selection-start-line="8" selection-start-column="0" selection-end-line="8" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ArgumentProcessingService.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#9#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Testing/ArgumentProcessingServiceIT.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="90">
-          <caret line="10" column="29" lean-forward="false" selection-start-line="10" selection-start-column="29" selection-end-line="10" selection-end-column="29" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Testing/DataFormattingServiceIT.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="120">
-          <caret line="8" column="0" lean-forward="true" selection-start-line="8" selection-start-column="0" selection-end-line="8" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ArgumentProcessingService.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#9#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Testing/ArgumentProcessingServiceIT.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="90">
-          <caret line="10" column="29" lean-forward="false" selection-start-line="10" selection-start-column="29" selection-end-line="10" selection-end-column="29" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Testing/DataFormattingServiceIT.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="120">
-          <caret line="8" column="0" lean-forward="true" selection-start-line="8" selection-start-column="0" selection-end-line="8" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ArgumentProcessingService.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#9#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Testing/ArgumentProcessingServiceIT.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="150">
-          <caret line="10" column="29" lean-forward="false" selection-start-line="10" selection-start-column="29" selection-end-line="10" selection-end-column="29" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ArgumentProcessingService.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#9#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Testing/ArgumentProcessingServiceIT.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="315">
-          <caret line="25" column="45" lean-forward="false" selection-start-line="25" selection-start-column="45" selection-end-line="25" selection-end-column="45" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Testing/SampleClassifierDataFolder/features.csv">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ArgumentProcessingService.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="555">
-          <caret line="37" column="22" lean-forward="false" selection-start-line="37" selection-start-column="22" selection-end-line="37" selection-end-column="22" />
-          <folding>
-            <element signature="e#0#9#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Testing/ArgumentProcessingServiceIT.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="375">
-          <caret line="25" column="45" lean-forward="false" selection-start-line="25" selection-start-column="45" selection-end-line="25" selection-end-column="45" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Testing/MachineLearningServiceIT.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state relative-caret-position="432">
+          <caret line="24" column="0" lean-forward="true" selection-start-line="24" selection-start-column="0" selection-end-line="24" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#15#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DataFormattingService.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="90">
+          <caret line="8" column="11" lean-forward="false" selection-start-line="8" selection-start-column="11" selection-end-line="8" selection-end-column="11" />
+          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Testing/DataFormattingServiceIT.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="105">
-          <caret line="7" column="0" lean-forward="true" selection-start-line="7" selection-start-column="0" selection-end-line="7" selection-end-column="0" />
+        <state relative-caret-position="306">
+          <caret line="17" column="45" lean-forward="false" selection-start-line="17" selection-start-column="15" selection-end-line="17" selection-end-column="45" />
+          <folding>
+            <element signature="e#0#15#0" expanded="false" />
+          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/__init__.py">
+    <entry file="file://$PROJECT_DIR$/Testing/SampleClassifierDataFolder/arguments.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="54">
+          <caret line="3" column="15" lean-forward="true" selection-start-line="3" selection-start-column="15" selection-end-line="3" selection-end-column="15" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Testing/SampleClassifierDataFolder/features.csv">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="198">
+          <caret line="11" column="5" lean-forward="true" selection-start-line="0" selection-start-column="0" selection-end-line="30" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Testing/SampleClassifierDataFolder/moreFeatures.csv">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="414">
+          <caret line="23" column="2" lean-forward="false" selection-start-line="23" selection-start-column="2" selection-end-line="23" selection-end-column="2" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/MachineLearningService.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="54">
+          <caret line="3" column="6" lean-forward="false" selection-start-line="3" selection-start-column="6" selection-end-line="3" selection-end-column="6" />
+          <folding>
+            <element signature="e#0#14#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Testing/ArgumentProcessingServiceIT.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="360">
+          <caret line="24" column="16" lean-forward="false" selection-start-line="24" selection-start-column="16" selection-end-line="24" selection-end-column="16" />
+          <folding>
+            <element signature="e#0#15#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/lib/python3.6/unittest/case.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="10566">
+          <caret line="600" column="0" lean-forward="false" selection-start-line="600" selection-start-column="0" selection-end-line="600" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Testing/MachineLearningServiceIT.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="72">
+          <caret line="4" column="11" lean-forward="false" selection-start-line="4" selection-start-column="11" selection-end-line="4" selection-end-column="11" />
+          <folding>
+            <element signature="e#0#15#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DataFormattingService.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="108">
+          <caret line="6" column="0" lean-forward="false" selection-start-line="6" selection-start-column="0" selection-end-line="6" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ArgumentProcessingService.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2034">
+          <caret line="113" column="0" lean-forward="false" selection-start-line="113" selection-start-column="0" selection-end-line="113" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Testing/DataFormattingServiceIT.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="252">
+          <caret line="14" column="8" lean-forward="false" selection-start-line="14" selection-start-column="8" selection-end-line="14" selection-end-column="8" />
+          <folding>
+            <element signature="e#0#15#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.idea/misc.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="36">
+          <caret line="2" column="91" lean-forward="false" selection-start-line="2" selection-start-column="91" selection-end-line="2" selection-end-column="91" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.idea/CellLineAnalyzer.iml">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/API_datasets/mut_numerical.csv">
+    <entry file="file://$PROJECT_DIR$/ArgumentProcessingService.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state relative-caret-position="1548">
+          <caret line="90" column="0" lean-forward="false" selection-start-line="90" selection-start-column="0" selection-end-line="90" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Dataset Spec">
+    <entry file="file://$PROJECT_DIR$/Utilities/SafeCastUtil.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state relative-caret-position="54">
+          <caret line="3" column="8" lean-forward="false" selection-start-line="3" selection-start-column="8" selection-end-line="3" selection-end-column="8" />
         </state>
       </provider>
     </entry>
-    <entry file="file:///System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/unittest/case.py">
+    <entry file="file://$PROJECT_DIR$/Testing/ArgumentProcessingServiceIT.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="59">
-          <caret line="378" column="41" lean-forward="true" selection-start-line="378" selection-start-column="41" selection-end-line="378" selection-end-column="41" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/README.md">
-      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
-        <state split_layout="SPLIT">
-          <first_editor relative-caret-position="0">
-            <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          </first_editor>
-          <second_editor />
+        <state relative-caret-position="252">
+          <caret line="18" column="8" lean-forward="false" selection-start-line="18" selection-start-column="8" selection-end-line="18" selection-end-column="8" />
+          <folding>
+            <element signature="e#0#15#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -647,98 +724,251 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Testing/SampleClassifierDataFolder/results.csv">
+    <entry file="file://$PROJECT_DIR$/Testing/MachineLearningServiceIT.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="72">
+          <caret line="4" column="11" lean-forward="false" selection-start-line="4" selection-start-column="11" selection-end-line="4" selection-end-column="11" />
+          <folding>
+            <element signature="e#0#15#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DataFormattingService.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="108">
+          <caret line="6" column="0" lean-forward="false" selection-start-line="6" selection-start-column="0" selection-end-line="6" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/lib/python3.6/unittest/case.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="7722">
+          <caret line="442" column="8" lean-forward="false" selection-start-line="442" selection-start-column="8" selection-end-line="442" selection-end-column="8" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/__init__.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/README.md">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="18" lean-forward="false" selection-start-line="0" selection-start-column="18" selection-end-line="0" selection-end-column="18" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.idea/vcs.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Dataset Spec">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="180">
+          <caret line="10" column="7" lean-forward="false" selection-start-line="10" selection-start-column="4" selection-end-line="10" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Testing/SampleClassifierDataFolder/results.csv">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="558">
+          <caret line="31" column="0" lean-forward="false" selection-start-line="31" selection-start-column="0" selection-end-line="31" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/lib/python2.7/dist-packages/nose/importer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="226">
+          <caret line="96" column="0" lean-forward="false" selection-start-line="96" selection-start-column="0" selection-end-line="96" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/lib/python2.7/unittest/case.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="181">
+          <caret line="328" column="0" lean-forward="false" selection-start-line="328" selection-start-column="0" selection-end-line="328" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Utilities/SafeCastUtil.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="54">
+          <caret line="3" column="8" lean-forward="false" selection-start-line="3" selection-start-column="8" selection-end-line="3" selection-end-column="8" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/local/lib/python3.6/dist-packages/numpy/lib/npyio.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="181">
+          <caret line="1354" column="4" lean-forward="false" selection-start-line="1354" selection-start-column="4" selection-end-line="1354" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.idea/CellLineAnalyzer.iml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.gitignore">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1419">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Testing/DataFormattingServiceIT.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#15#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.idea/misc.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="36">
+          <caret line="2" column="91" lean-forward="false" selection-start-line="2" selection-start-column="91" selection-end-line="2" selection-end-column="91" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Testing/DataFormattingServiceIT.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="306">
+          <caret line="17" column="45" lean-forward="false" selection-start-line="17" selection-start-column="15" selection-end-line="17" selection-end-column="45" />
+          <folding>
+            <element signature="e#0#15#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/API_datasets/cn_numerical.csv">
+      <provider selected="true" editor-type-id="LargeFileEditor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/lib/python3.6/unittest/case.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="10566">
+          <caret line="600" column="0" lean-forward="false" selection-start-line="600" selection-start-column="0" selection-end-line="600" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Testing/SampleClassifierDataFolder/arguments.txt">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Testing/SampleClassifierDataFolder/moreFeatures.csv">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/SupportedAnalysisTypes.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="45">
-          <caret line="3" column="0" lean-forward="true" selection-start-line="3" selection-start-column="0" selection-end-line="3" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/__main__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="495">
-          <caret line="39" column="35" lean-forward="false" selection-start-line="39" selection-start-column="35" selection-end-line="39" selection-end-column="35" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/pydevd.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="13815">
-          <caret line="921" column="18" lean-forward="false" selection-start-line="921" selection-start-column="18" selection-end-line="921" selection-end-column="18" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/_pydevd_bundle/pydevd_command_line_handling.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2025">
-          <caret line="135" column="0" lean-forward="false" selection-start-line="135" selection-start-column="0" selection-end-line="135" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/MachineLearningService.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="195">
-          <caret line="20" column="21" lean-forward="false" selection-start-line="20" selection-start-column="21" selection-end-line="20" selection-end-column="21" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Testing/SampleClassifierDataFolder/categorical.csv">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="450">
-          <caret line="30" column="4" lean-forward="false" selection-start-line="30" selection-start-column="4" selection-end-line="30" selection-end-column="4" />
+        <state relative-caret-position="54">
+          <caret line="3" column="15" lean-forward="true" selection-start-line="3" selection-start-column="15" selection-end-line="3" selection-end-column="15" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Testing/SampleClassifierDataFolder/features.csv">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
-          <caret line="12" column="3" lean-forward="false" selection-start-line="12" selection-start-column="3" selection-end-line="12" selection-end-column="3" />
+        <state relative-caret-position="198">
+          <caret line="11" column="5" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="30" selection-end-column="4" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ArgumentProcessingService.py">
+    <entry file="file://$PROJECT_DIR$/Testing/SampleClassifierDataFolder/moreFeatures.csv">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="135">
-          <caret line="9" column="36" lean-forward="false" selection-start-line="9" selection-start-column="36" selection-end-line="9" selection-end-column="36" />
+        <state relative-caret-position="414">
+          <caret line="23" column="2" lean-forward="false" selection-start-line="23" selection-start-column="2" selection-end-line="23" selection-end-column="2" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$APPLICATION_HOME_DIR$/helpers/typeshed/stdlib/3/typing.pyi">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="5238">
+          <caret line="293" column="8" lean-forward="false" selection-start-line="293" selection-start-column="8" selection-end-line="293" selection-end-column="8" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/__main__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1206">
+          <caret line="67" column="37" lean-forward="false" selection-start-line="67" selection-start-column="37" selection-end-line="67" selection-end-column="37" />
           <folding>
-            <element signature="e#0#9#0" expanded="true" />
+            <element signature="e#0#10#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Testing/ArgumentProcessingServiceIT.py">
       <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="342">
+          <caret line="19" column="45" lean-forward="false" selection-start-line="19" selection-start-column="45" selection-end-line="19" selection-end-column="45" />
+          <folding>
+            <element signature="e#0#15#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/SupportedAnalysisTypes.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="54">
+          <caret line="3" column="0" lean-forward="false" selection-start-line="3" selection-start-column="0" selection-end-line="3" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/local/lib/python3.6/dist-packages/sklearn/ensemble/forest.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3510">
+          <caret line="219" column="8" lean-forward="false" selection-start-line="219" selection-start-column="8" selection-end-line="219" selection-end-column="8" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ArgumentProcessingService.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2160">
+          <caret line="120" column="0" lean-forward="false" selection-start-line="120" selection-start-column="0" selection-end-line="120" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+<<<<<<< HEAD
+    <entry file="file://$PROJECT_DIR$/Testing/ArgumentProcessingServiceIT.py">
+      <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="14" lean-forward="false" selection-start-line="0" selection-start-column="14" selection-end-line="0" selection-end-column="14" />
           <folding />
+=======
+    <entry file="file://$PROJECT_DIR$/MachineLearningService.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="504">
+          <caret line="28" column="0" lean-forward="false" selection-start-line="28" selection-start-column="0" selection-end-line="28" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#14#0" expanded="true" />
+          </folding>
+>>>>>>> 9847e13f26d5b7bec16f303ffc0d38fdc6009520
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Testing/MachineLearningServiceIT.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="225">
-          <caret line="15" column="22" lean-forward="false" selection-start-line="15" selection-start-column="22" selection-end-line="15" selection-end-column="22" />
+        <state relative-caret-position="432">
+          <caret line="24" column="0" lean-forward="false" selection-start-line="24" selection-start-column="0" selection-end-line="24" selection-end-column="0" />
           <folding>
             <element signature="e#0#15#0" expanded="false" />
           </folding>
@@ -755,11 +985,17 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/DataFormattingService.py">
       <provider selected="true" editor-type-id="text-editor">
+<<<<<<< HEAD
         <state relative-caret-position="619">
           <caret line="74" column="56" lean-forward="true" selection-start-line="74" selection-start-column="56" selection-end-line="74" selection-end-column="56" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>
+=======
+        <state relative-caret-position="90">
+          <caret line="8" column="11" lean-forward="false" selection-start-line="8" selection-start-column="11" selection-end-line="8" selection-end-column="11" />
+          <folding />
+>>>>>>> 9847e13f26d5b7bec16f303ffc0d38fdc6009520
         </state>
       </provider>
     </entry>
