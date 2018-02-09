@@ -100,4 +100,9 @@ ENV/
 # mypy
 .mypy_cache/
 
+# PyCharm
+.idea/
+
+# workspace.xml
+worksplace.xml
 API_datasets
