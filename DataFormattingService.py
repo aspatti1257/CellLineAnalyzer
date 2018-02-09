@@ -16,27 +16,27 @@ class DataFormattingService(object):
         pass
         #  TODO - Christine: Handle one-hot encoding and hyperparameter optimization.
 
-    def encode_categorical(self, array):
+    def encodeCategorical(self, array):
         if not array.dtype == np.dtype('float64'):
             return preprocessing.LabelEncoder().fit_transform(array)
         else:
             return array
 
     # Encode sites as categorical variables
-    def one_hot (self, dataframe):
+    def oneHot(self, dataframe):
 
         # Categorical columns for use in one-hot encoder
         categorical = (dataframe.dtypes.values != np.dtype('float64'))
 
         # Encode all labels
-        dataframe = dataframe.apply(self.encode_categorical)
+        dataframe = dataframe.apply(self.encodeCategorical)
         dataframe_np = dataframe.as_matrix()
         # assert isinstance(dataframe, object)
         return dataframe_np, dataframe
 
 
     # Binary one hot encoding
-    def binary_one_hot(self, dataframe):
+    def binaryOneHot(self, dataframe):
 
         dataframe_binary_pd = pd.get_dummies(dataframe)
         dataframe_binary = dataframe_binary_pd.as_matrix()
@@ -45,7 +45,7 @@ class DataFormattingService(object):
     # Hyperparameter tuning
     param_lst = {"n_estimators": range(10, 30)}
 
-    def tuning (self, dataframe):
+    def tuning(self, dataframe):
         num_trials_outer = 2
         num_trials_inner = 2
         r2_rf = []
@@ -77,8 +77,3 @@ class DataFormattingService(object):
             r2 = clf.score(out_x_test, out_y_test)
             r2_rf.append(r2)
         print("rf :", np.average(r2_rf))
-
-s = DataFormattingService(object)
-categorical_pd = pd.read_csv('Testing/SampleClassifierDataFolder/categorical.csv', delimiter=',')
-categorical = np.genfromtxt('Testing/SampleClassifierDataFolder/categorical.csv', delimiter=',')
-print(s.binary_one_hot(categorical_pd))
