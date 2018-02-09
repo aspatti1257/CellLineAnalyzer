@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="3a9fd1c4-6308-4cc3-b2ec-644894aeacbc" name="Default" comment="Fix up .gitignore to not attempt to commite ./idea files.">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.gitignore" afterPath="$PROJECT_DIR$/.gitignore" />
+    <list default="true" id="3a9fd1c4-6308-4cc3-b2ec-644894aeacbc" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -398,7 +397,14 @@
       <option name="project" value="LOCAL" />
       <updated>1517781608166</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Fix up .gitignore to not attempt to commite ./idea files.">
+      <created>1518148425560</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1518148425560</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TestHistory">
@@ -516,7 +522,8 @@
     <MESSAGE value="Fix up DataFormattingServiceIT such that PyCharm treats it like any other IT." />
     <MESSAGE value="ArgumentProcessingService now validates and returns a features map. Ready for formatting in DataFormattingService and then ML model building in MachineLearningService." />
     <MESSAGE value="Basic Random Forest model setup. Will need to be revised once we split feature data into testing/training/validation matrices. But this is a good rough sketch." />
-    <option name="LAST_COMMIT_MESSAGE" value="Basic Random Forest model setup. Will need to be revised once we split feature data into testing/training/validation matrices. But this is a good rough sketch." />
+    <MESSAGE value="Fix up .gitignore to not attempt to commite ./idea files." />
+    <option name="LAST_COMMIT_MESSAGE" value="Fix up .gitignore to not attempt to commite ./idea files." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
