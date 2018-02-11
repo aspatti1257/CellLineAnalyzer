@@ -15,8 +15,6 @@ class MachineLearningService(object):
 
     def __init__(self, data):
         self.data = data
-        self.genomes_array = None
-        self.third_party_response = None
 
     def analyze(self):
         m_val = 1
