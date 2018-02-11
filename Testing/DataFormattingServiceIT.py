@@ -2,8 +2,9 @@ import unittest
 import numpy as np
 import os
 import logging
+import pandas as pd
 
-# from DataFormattingService import DataFormattingService
+from DataFormattingService import DataFormattingService
 
 class DataFormattingServiceIT(unittest.TestCase):
 
@@ -25,8 +26,24 @@ class DataFormattingServiceIT(unittest.TestCase):
         assert not np.isnan(results[1:, 1]).any()
         assert len(features) == len(results)
 
-    # def testCheckOneHotEncoding(self):
-    #     categorical_pd = pd.read_csv('Testing/SampleClassifierDataFolder/categorical.csv', delimiter=',')
-    #     assert (DataFormattingService.one_hot(categorical_pd)).dtype == "float64"
+    def testCheckOneHotEncoding(self):
+        s = DataFormattingService(object)
+        categorical_pd = pd.read_csv('SampleClassifierDataFolder/categorical.csv', delimiter=',')
+        assert ((s.binary_one_hot(categorical_pd).dtypes.values != np.dtype('float64')).all() == True)
+        assert ((s.one_hot(categorical_pd).dtypes.values != np.dtype('float64')).all() == True)
+
+    def testsplit(self):
+        s = DataFormattingService(object)
+        features = pd.read_csv('SampleClassifierDataFolder/features.csv', delimiter=',')
+        results = pd.read_csv('SampleClassifierDataFolder/results.csv', delimiter=',')
+        X_train, X_validate, X_test, y_train, y_validate, y_test = s.test_train_split(features, results)
+        assert (len(X_train) and len(X_validate) and len(X_test) and len(y_train) and len(y_validate) and len(y_test) != 0)
+
+    def stratify_split(self):
+        s = DataFormattingService(object)
+        features = pd.read_csv('SampleClassifierDataFolder/features.csv', delimiter=',')
+        results = pd.read_csv('SampleClassifierDataFolder/results.csv', delimiter=',')
+        X_train, X_validate, X_test, y_train, y_validate, y_test = s.test_train_split(features, results)
+        assert (len(X_train) and len(X_validate) and len(X_test) and len(y_train) and len(y_validate) and len(y_test) != 0)
 
 
