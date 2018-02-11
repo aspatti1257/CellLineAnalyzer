@@ -5,6 +5,7 @@ import logging
 import pandas as pd
 
 from DataFormattingService import DataFormattingService
+from ArgumentProcessingService import ArgumentProcessingService
 
 class DataFormattingServiceIT(unittest.TestCase):
 
@@ -13,6 +14,11 @@ class DataFormattingServiceIT(unittest.TestCase):
 
     def setUp(self):
         self.current_working_dir = os.getcwd()  # Should be this package.
+        input_folder = self.current_working_dir + "/SampleClassifierDataFolder"
+        argument_processing_service = ArgumentProcessingService(input_folder)
+        arguments = argument_processing_service.handleInputFolder()
+        self.data_formatting_service = DataFormattingService(arguments)
+
 
     def tearDown(self):
         pass
@@ -29,21 +35,20 @@ class DataFormattingServiceIT(unittest.TestCase):
         assert len(features) == len(results)
 
     def testCheckOneHotEncoding(self):
-
-        s = DataFormattingService(object)
+        s = self.data_formatting_service
         categorical_pd = pd.read_csv('SampleClassifierDataFolder/categorical.csv', delimiter=',')
         assert ((s.binaryOneHot(categorical_pd).dtypes.values != np.dtype('float64')).all() == True)
         assert ((s.oneHot(categorical_pd).dtypes.values != np.dtype('float64')).all() == True)
 
     def testsplit(self):
-        s = DataFormattingService(object)
+        s = self.data_formatting_service
         features = pd.read_csv('SampleClassifierDataFolder/features.csv', delimiter=',')
         results = pd.read_csv('SampleClassifierDataFolder/results.csv', delimiter=',')
         X_train, X_validate, X_test, y_train, y_validate, y_test = s.testTrainSplit(features, results)
         assert (len(X_train) and len(X_validate) and len(X_test) and len(y_train) and len(y_validate) and len(y_test) != 0)
 
     def stratify_split(self):
-        s = DataFormattingService(object)
+        s = self.data_formatting_service
         features = pd.read_csv('SampleClassifierDataFolder/features.csv', delimiter=',')
         results = pd.read_csv('SampleClassifierDataFolder/results.csv', delimiter=',')
         X_train, X_validate, X_test, y_train, y_validate, y_test = s.testTrainSplit(features, results)
