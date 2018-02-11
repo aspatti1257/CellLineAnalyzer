@@ -4,6 +4,7 @@ import os
 
 from MachineLearningService import MachineLearningService
 from ArgumentProcessingService import ArgumentProcessingService
+from DataFormattingService import DataFormattingService
 
 
 class MachineLearningServiceIT(unittest.TestCase):
@@ -15,7 +16,9 @@ class MachineLearningServiceIT(unittest.TestCase):
         current_working_dir = os.getcwd()  # Should be this package.
         input_folder = current_working_dir + "/SampleClassifierDataFolder"
         argument_processing_service = ArgumentProcessingService(input_folder)
-        self.arguments = argument_processing_service.handleInputFolder()
+        arguments = argument_processing_service.handleInputFolder()
+        data_formatting_service = DataFormattingService(arguments)
+        self.arguments = data_formatting_service.formatData()
 
     def testMachineLearningModelsCreated(self):
         ml_service = MachineLearningService(self.arguments)

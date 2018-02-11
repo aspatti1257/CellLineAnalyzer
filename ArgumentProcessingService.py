@@ -50,7 +50,7 @@ class ArgumentProcessingService(object):
         with open(arguments_file) as data_file:
             try:
                 for line in data_file:
-                    line_trimmed_split = line.replace("\n", "").split("=")
+                    line_trimmed_split = line.strip().split("=")
                     arguments[line_trimmed_split[0]] = line_trimmed_split[1]
             except ValueError as valueError:
                 self.log.error(valueError)
@@ -70,7 +70,7 @@ class ArgumentProcessingService(object):
                 for line_index, line in enumerate(data_file):
                     if len(re.findall(r'^\s*$', line)) > 0 or line_index == 0:  # header or whitespace
                         continue
-                    line_trimmed_split = line.replace("\n", "").split(",")
+                    line_trimmed_split = line.strip().split(",")
                     if len(line_trimmed_split) != 2:
                         self.log.error("Each line in %s must be 2 columns. Aborting argument processing.",
                                        results_file)
@@ -101,9 +101,9 @@ class ArgumentProcessingService(object):
                             feature_names = line.split(",")
                             for feature_name in feature_names:
                                 feature_map[self.FEATURE_NAMES].append(SafeCastUtil.
-                                                                       safeCast(feature_name.replace("\n", ""), str))
+                                                                       safeCast(feature_name.strip(), str))
                         else:
-                            features = [SafeCastUtil.safeCast(features, float) for features in line.split(",")]
+                            features = self.extractCastedFeatures(line)
                             cell_line = results_list[line_index - 1]
                             if not cell_line[0] in feature_map:
                                 feature_map[cell_line[0]] = features
@@ -119,3 +119,12 @@ class ArgumentProcessingService(object):
                 finally:
                     self.log.debug("Closing file %s", feature_file)
         return feature_map
+
+    def extractCastedFeatures(self, line):
+        features = []
+        for feature in line.split(","):
+            if SafeCastUtil.safeCast(feature, float) is not None:
+                features.append(SafeCastUtil.safeCast(feature.strip(), float))
+            else:
+                features.append(SafeCastUtil.safeCast(feature.strip(), str))
+        return features
