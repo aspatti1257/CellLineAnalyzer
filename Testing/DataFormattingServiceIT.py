@@ -19,7 +19,6 @@ class DataFormattingServiceIT(unittest.TestCase):
         arguments = argument_processing_service.handleInputFolder()
         self.data_formatting_service = DataFormattingService(arguments)
 
-
     def tearDown(self):
         pass
 
@@ -47,17 +46,17 @@ class DataFormattingServiceIT(unittest.TestCase):
         X_train, X_validate, X_test, y_train, y_validate, y_test = s.testTrainSplit(features, results)
         assert (len(X_train) and len(X_validate) and len(X_test) and len(y_train) and len(y_validate) and len(y_test) != 0)
 
-    def stratify_split(self):
+    def testStratifySplit(self):
         s = self.data_formatting_service
         features = pd.read_csv('SampleClassifierDataFolder/features.csv', delimiter=',')
         results = pd.read_csv('SampleClassifierDataFolder/results.csv', delimiter=',')
         X_train, X_validate, X_test, y_train, y_validate, y_test = s.testTrainSplit(features, results)
         assert (len(X_train) and len(X_validate) and len(X_test) and len(y_train) and len(y_validate) and len(y_test) != 0)
-
         categorical_pd = pd.read_csv(self.current_working_dir +
                                      '/SampleClassifierDataFolder/categorical.csv', delimiter=',')
         data_formatting_service = DataFormattingService(None)
-        assert type(data_formatting_service.oneHot(categorical_pd)) == tuple
+        categorical_onehot = data_formatting_service.oneHot(categorical_pd)
+        assert (np.shape(categorical_onehot))[1] == 2
 
 
 

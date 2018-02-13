@@ -25,3 +25,6 @@ class MachineLearningServiceIT(unittest.TestCase):
         basic_rf_model = ml_service.analyze()
         assert basic_rf_model is not None
         assert len(basic_rf_model.feature_importances_) == 4
+
+
+

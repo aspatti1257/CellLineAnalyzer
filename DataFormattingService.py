@@ -15,11 +15,22 @@ class DataFormattingService(object):
 
     def __init__(self, inputs):
         self.inputs = inputs
+        self.outputs = {"features": {}}
 
     def formatData(self):
         features = self.inputs.get(ArgumentProcessingService.FEATURES)
         feature_names = features.get(ArgumentProcessingService.FEATURE_NAMES)
-        pass  # TODO: hook up one-hot encoding and matrix splitting.
+        self.outputs["features"]["featureNames"] = self.inputs["features"]["featureNames"]
+        self.outputs["results"] = self.inputs["results"]
+        self.outputs["is_classifier"] = self.inputs["is_classifier"]
+        features_df = pd.DataFrame.from_dict(self.inputs["features"], orient='index')
+        features_df = features_df.drop("featureNames")
+        features_oh_df = self.oneHot(features_df)
+        X_train, X_validate, X_test, y_train, y_validate, y_test = self.testTrainSplit(features_oh_df, self.inputs["results"])
+        self.outputs["trainingMatrix"] = X_train.transpose().to_dict('list')
+        self.outputs["testingMatrix"] = X_test.transpose().to_dict('list')
+        self.outputs["validationMatrix"] = X_validate.transpose().to_dict('list')
+        return self.outputs
 
     def encodeCategorical(self, array):
         if array.dtype == np.dtype('float64') or array.dtype == np.dtype('int64'):
@@ -44,7 +55,7 @@ class DataFormattingService(object):
         X_test, X_validate, y_test, y_validate = train_test_split(X_split, y_split, test_size=0.5, random_state=42)
         return X_train, X_validate, X_test, y_train, y_validate, y_test
 
-    def stratifySplit(self, X_values, y_values):
+    def testStratifySplit(self, X_values, y_values):
         X_train, X_split, y_train, y_split = train_test_split(X_values, y_values, test_size=0.2, random_state=42,
                                                               stratify=X_values.iloc[:, -1])
         X_test, X_validate, y_test, y_validate = train_test_split(X_split, y_split, test_size=0.5, random_state=42,
