@@ -7,6 +7,7 @@ import pandas as pd
 from DataFormattingService import DataFormattingService
 from ArgumentProcessingService import ArgumentProcessingService
 
+
 class DataFormattingServiceIT(unittest.TestCase):
 
     log = logging.getLogger(__name__)
@@ -39,7 +40,7 @@ class DataFormattingServiceIT(unittest.TestCase):
         assert ((s.binaryOneHot(categorical_pd).dtypes.values != np.dtype('float64')).all() == True)
         assert ((s.oneHot(categorical_pd).dtypes.values != np.dtype('float64')).all() == True)
 
-    def testsplit(self):
+    def testSplit(self):
         s = self.data_formatting_service
         features = pd.read_csv('SampleClassifierDataFolder/features.csv', delimiter=',')
         results = pd.read_csv('SampleClassifierDataFolder/results.csv', delimiter=',')
