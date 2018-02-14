@@ -12,24 +12,32 @@ class DataFormattingService(object):
     log = logging.getLogger(__name__)
     logging.basicConfig()
     log.setLevel(logging.INFO)
+    
+    TRAINING_MATRIX = "trainingMatrix"
+    TESTING_MATRIX = "testingMatrix"
+    VALIDATION_MATRIX = "validationMatrix"
 
     def __init__(self, inputs):
         self.inputs = inputs
-        self.outputs = {"features": {}}
+        self.outputs = {}
 
     def formatData(self):
         features = self.inputs.get(ArgumentProcessingService.FEATURES)
         feature_names = features.get(ArgumentProcessingService.FEATURE_NAMES)
-        self.outputs["features"]["featureNames"] = self.inputs["features"]["featureNames"]
-        self.outputs["results"] = self.inputs["results"]
-        self.outputs["is_classifier"] = self.inputs["is_classifier"]
-        features_df = pd.DataFrame.from_dict(self.inputs["features"], orient='index')
-        features_df = features_df.drop("featureNames")
+        self.outputs[ArgumentProcessingService.FEATURE_NAMES] = feature_names
+        self.outputs[ArgumentProcessingService.RESULTS] = self.inputs[ArgumentProcessingService.RESULTS]
+        self.outputs[ArgumentProcessingService.IS_CLASSIFIER] = self.inputs[ArgumentProcessingService.IS_CLASSIFIER]
+
+        features_df = pd.DataFrame.from_dict(self.inputs[ArgumentProcessingService.FEATURES], orient='index')
+        features_df = features_df.drop(ArgumentProcessingService.FEATURE_NAMES)
         features_oh_df = self.oneHot(features_df)
-        X_train, X_validate, X_test, y_train, y_validate, y_test = self.testTrainSplit(features_oh_df, self.inputs["results"])
-        self.outputs["trainingMatrix"] = X_train.transpose().to_dict('list')
-        self.outputs["testingMatrix"] = X_test.transpose().to_dict('list')
-        self.outputs["validationMatrix"] = X_validate.transpose().to_dict('list')
+        
+        x_train, x_validate, x_test, y_train, y_validate, y_test = \
+            self.testTrainSplit(features_oh_df, self.inputs[ArgumentProcessingService.RESULTS])
+        
+        self.outputs[self.TRAINING_MATRIX] = x_train.transpose().to_dict('list')
+        self.outputs[self.TESTING_MATRIX] = x_test.transpose().to_dict('list')
+        self.outputs[self.VALIDATION_MATRIX] = x_validate.transpose().to_dict('list')
         return self.outputs
 
     def encodeCategorical(self, array):
@@ -50,14 +58,14 @@ class DataFormattingService(object):
         dataframe_binary_pd = pd.get_dummies(dataframe)
         return dataframe_binary_pd
 
-    def testTrainSplit(self, X_values, y_values):
-        X_train, X_split, y_train, y_split = train_test_split(X_values, y_values, test_size=0.2, random_state=42)
-        X_test, X_validate, y_test, y_validate = train_test_split(X_split, y_split, test_size=0.5, random_state=42)
-        return X_train, X_validate, X_test, y_train, y_validate, y_test
+    def testTrainSplit(self, x_values, y_values):
+        x_train, x_split, y_train, y_split = train_test_split(x_values, y_values, test_size=0.2)
+        x_test, x_validate, y_test, y_validate = train_test_split(x_split, y_split, test_size=0.5)
+        return x_train, x_validate, x_test, y_train, y_validate, y_test
 
-    def testStratifySplit(self, X_values, y_values):
-        X_train, X_split, y_train, y_split = train_test_split(X_values, y_values, test_size=0.2, random_state=42,
-                                                              stratify=X_values.iloc[:, -1])
-        X_test, X_validate, y_test, y_validate = train_test_split(X_split, y_split, test_size=0.5, random_state=42,
-                                                                  stratify=X_split.iloc[:, -1])
-        return X_train,  X_validate, X_test, y_train, y_validate, y_test
+    def testStratifySplit(self, x_values, y_values):
+        x_train, x_split, y_train, y_split = train_test_split(x_values, y_values, test_size=0.2, random_state=42,
+                                                              stratify=x_values.iloc[:, -1])
+        x_test, x_validate, y_test, y_validate = train_test_split(x_split, y_split, test_size=0.5, random_state=42,
+                                                                  stratify=x_split.iloc[:, -1])
+        return x_train,  x_validate, x_test, y_train, y_validate, y_test
