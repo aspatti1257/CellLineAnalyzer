@@ -6,7 +6,6 @@ import numpy
 from ArgumentProcessingService import ArgumentProcessingService
 from DataFormattingService import DataFormattingService
 from Utilities.SafeCastUtil import SafeCastUtil
-from SupportedAnalysisTypes import SupportedAnalysisTypes
 
 
 class MachineLearningService(object):
@@ -14,23 +13,24 @@ class MachineLearningService(object):
     log = logging.getLogger(__name__)
     log.setLevel(logging.INFO)
 
-    TRAINING_PERCENTS = [20, 40, 60, 80, 100]  # Percentage of training data to actually train on.
+    TRAINING_PERCENTS = [20, 40, 60, 80, 100]  # TODO Percentage of training data to actually train on.
     NUM_PERMUTATIONS = 100  # Create and train 100 optimized ML models to get a range of accuracies.
 
     def __init__(self, data):
         self.inputs = data
 
     def analyze(self):
-        #TODO: Andrew
         total_accuracies = []
         training_matrix = self.inputs.get(DataFormattingService.TRAINING_MATRIX)
         validation_matrix = self.inputs.get(DataFormattingService.VALIDATION_MATRIX)
+        testing_matrix = self.inputs.get(DataFormattingService.TESTING_MATRIX)
         for percent in range(0, len(self.TRAINING_PERCENTS)):
             split_train_training_matrix = self.furtherSplitTrainingMatrix(self.TRAINING_PERCENTS[percent],
                                                                           training_matrix)
             most_accurate_model = self.optimizeHyperparametersForRF(split_train_training_matrix, validation_matrix)
-            # model = self.trainRandomForest(results, features, m_val, max_depth, analysis_type)
-            # self.log.info("Random Forest Model trained: %s", model.feature_importances_)
+            accuracy = self.predictModelAccuracy(most_accurate_model, testing_matrix)
+            total_accuracies.append(accuracy)
+            self.log.debug("Random Forest Model trained with accuracy: %s", accuracy)
         return total_accuracies
 
     def furtherSplitTrainingMatrix(self, percent, matrix):
@@ -51,15 +51,17 @@ class MachineLearningService(object):
             for max_depth in [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.75, 1]:
                 features, results = self.populateFeaturesAndResultsByCell(training_matrix)
                 model = self.trainRandomForest(results, features, m_val, max_depth)
-                #TODO: Compare model to validation matrix now to get most accurate model.
-                most_accurate_model = model
+                current_model_score = self.predictModelAccuracy(model, validation_matrix)
+                if current_model_score > most_accurate_model_score:
+                    most_accurate_model_score = current_model_score
+                    most_accurate_model = model
         return most_accurate_model
 
-    def populateFeaturesAndResultsByCell(self, training_matrix):
+    def populateFeaturesAndResultsByCell(self, matrix):
         features = []
         results = []
-        for cell in training_matrix.keys():
-            features.append(training_matrix[cell])
+        for cell in matrix.keys():
+            features.append(matrix[cell])
             for result in self.inputs.get(ArgumentProcessingService.RESULTS):
                 if result[0] == cell:
                     results.append(result[1])
@@ -67,13 +69,27 @@ class MachineLearningService(object):
 
     def trainRandomForest(self, results, features, m_val, max_depth):
         max_leaf_nodes = numpy.maximum(2, SafeCastUtil.safeCast(numpy.ceil(max_depth), int))
-        max_features = SafeCastUtil.safeCast(numpy.floor(m_val), int)
+        max_features = numpy.min([SafeCastUtil.safeCast(numpy.floor(m_val), int), len(features[0])])
         if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
             model = RandomForestClassifier(n_estimators=100, max_leaf_nodes=max_leaf_nodes, max_features=max_features)
         else:
             model = RandomForestRegressor(n_estimators=100, max_leaf_nodes=max_leaf_nodes, max_features=max_features)
         model.fit(features, results)
         self.log.debug("Successful creation of Random Forest model: %s\n", model)
+        return model
+
+    def predictModelAccuracy(self, model, validation_matrix):
+        features, results = self.populateFeaturesAndResultsByCell(validation_matrix)
+        predictions = model.predict(features)
+        if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
+            accurate_hits = 0
+            for i in range(0, len(predictions)):
+                if predictions[i] == results[i]:
+                    accurate_hits += 1
+            return accurate_hits/len(predictions)
+        else:
+            # TODO, R2 analaysis for Regressor
+            pass
         return model
 
     def hyperparameterTuning (self, dataframe):
