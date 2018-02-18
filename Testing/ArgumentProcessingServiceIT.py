@@ -3,6 +3,7 @@ import logging
 import os
 
 from ArgumentProcessingService import ArgumentProcessingService
+from Utilities.RandomizedDataGenerator import RandomizedDataGenerator
 
 
 class ArgumentProcessingServiceIT(unittest.TestCase):
@@ -24,3 +25,7 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
         assert (len(arguments.get(argument_processing_service.RESULTS)) + 1) == \
                len(arguments.get(argument_processing_service.FEATURES).keys())
         assert arguments.get(argument_processing_service.IS_CLASSIFIER)
+
+    def testWithRandomlyGeneratedInput(self):
+        #TODO: finish this test and add more like it for the other ITs.
+        RandomizedDataGenerator.generateCSVs(5, 50, 150, True)
