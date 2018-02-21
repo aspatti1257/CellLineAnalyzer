@@ -17,6 +17,7 @@ class ArgumentProcessingService(object):
     IS_CLASSIFIER = "is_classifier"
     FEATURES = "features"
     FEATURE_NAMES = "featureNames"
+    IMPORTANT_FEATURES = "important_features"
 
     def __init__(self, input_folder):
         self.input_folder = input_folder
@@ -31,9 +32,10 @@ class ArgumentProcessingService(object):
         arguments = self.fetchArguments(self.input_folder + "/" + self.ARGUMENTS_FILE)
         results_file = arguments.get(self.RESULTS)
         is_classifier = SafeCastUtil.safeCast(arguments.get(self.IS_CLASSIFIER), int) == 1
+        important_features = self.extractImportantFeatures(arguments)
         if is_classifier is not None and results_file is not None:
             results_list = self.validateAndExtractResults(results_file, is_classifier)
-            feature_map = self.createAndValidateFeatureMatrix(results_list, results_file)
+            feature_map = self.createAndValidateFeatureMatrix(results_list, results_file, important_features)
             return {
                 self.RESULTS: results_list,
                 self.IS_CLASSIFIER: is_classifier,
@@ -41,6 +43,13 @@ class ArgumentProcessingService(object):
             }
         else:
             return None
+
+    def extractImportantFeatures(self, arguments):
+        important_features = arguments.get(self.IMPORTANT_FEATURES)
+        if important_features is not None:
+            return [feature.strip() for feature in important_features.split(",")]
+        else:
+            return []
 
     def validateDirectoryContents(self, directory_contents):
         return self.ARGUMENTS_FILE in directory_contents
@@ -89,21 +98,24 @@ class ArgumentProcessingService(object):
                 data_file.close()
         return sample_list
 
-    def createAndValidateFeatureMatrix(self, results_list, results_file):
+    def createAndValidateFeatureMatrix(self, results_list, results_file, important_features):
         files = os.listdir(self.input_folder)
         feature_map = {self.FEATURE_NAMES: []}
         for file in [file for file in files if file != results_file and file != self.ARGUMENTS_FILE]:
             features_path = self.input_folder + "/" + file
             with open(features_path) as feature_file:
                 try:
+                    important_feature_indices = []
                     for line_index, line in enumerate(feature_file):
                         if line_index == 0:
                             feature_names = line.split(",")
-                            for feature_name in feature_names:
-                                feature_map[self.FEATURE_NAMES].append(SafeCastUtil.
-                                                                       safeCast(feature_name.strip(), str))
+                            for i in range(0, len(feature_names)):
+                                feature_name = self.determineFeatureName(feature_names[i], file)
+                                if self.featureIsImportant(important_features, feature_name):
+                                    feature_map[self.FEATURE_NAMES].append(feature_name)
+                                    important_feature_indices.append(i)
                         else:
-                            features = self.extractCastedFeatures(line)
+                            features = self.extractCastedFeatures(line, important_feature_indices)
                             cell_line = results_list[line_index - 1]
                             if not cell_line[0] in feature_map:
                                 feature_map[cell_line[0]] = features
@@ -120,11 +132,24 @@ class ArgumentProcessingService(object):
                     self.log.debug("Closing file %s", feature_file)
         return feature_map
 
-    def extractCastedFeatures(self, line):
-        features = []
-        for feature in line.split(","):
-            if SafeCastUtil.safeCast(feature, float) is not None:
-                features.append(SafeCastUtil.safeCast(feature.strip(), float))
-            else:
-                features.append(SafeCastUtil.safeCast(feature.strip(), str))
-        return features
+    def determineFeatureName(self, feature_name, file):
+        return SafeCastUtil.safeCast(file.split(".")[0] + "." + feature_name.strip(), str)
+
+    def featureIsImportant(self, important_features, feature_name):
+        if len(important_features) == 0:
+            return True
+        for feature in important_features:
+            if feature == feature_name:
+                return True
+        return False
+
+    def extractCastedFeatures(self, line, important_feature_indices):
+        important_features = []
+        feature_names = line.split(",")
+        for i in range(0, len(feature_names)):
+            if i in important_feature_indices:
+                if SafeCastUtil.safeCast(feature_names[i], float) is not None:
+                    important_features.append(SafeCastUtil.safeCast(feature_names[i].strip(), float))
+                else:
+                    important_features.append(SafeCastUtil.safeCast(feature_names[i].strip(), str))
+        return important_features

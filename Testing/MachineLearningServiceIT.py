@@ -27,7 +27,3 @@ class MachineLearningServiceIT(unittest.TestCase):
         for percentage in rf_results.keys():
             assert rf_results[percentage] is not None
             assert type(rf_results[percentage][0]) is float
-
-
-
-

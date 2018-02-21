@@ -1,4 +1,4 @@
 results=results.csv
 data_split=[80,10,10]
-important_features=["feature_two"]
+important_features=features.feature_two, categorical.feature_cat
 is_classifier=1

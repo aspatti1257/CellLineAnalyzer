@@ -87,6 +87,5 @@ class RandomizedDataGenerator(object):
             classifier = '1'
         args_file.write('results=results.csv\n' +
                         'data_split=[80,10,10]\n' +
-                        'important_features=["feature_two"]\n' +
                         'is_classifier=' + classifier)
         args_file.close()

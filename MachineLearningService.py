@@ -34,10 +34,13 @@ class MachineLearningService(object):
                 accuracies.append(accuracy)
                 self.log.debug("Random Forest Model trained with accuracy: %s", accuracy)
             total_accuracies[percent] = accuracies
+
+        self.log.info("Total accuracies by percentage of training data for %s: %s", self.analysisType(),
+                      total_accuracies)
         return total_accuracies
 
     def furtherSplitTrainingMatrix(self, percent, matrix):
-        self.log.info(percent, matrix)
+        self.log.debug("Splitting training matrix to only use %s percent of data.", percent)
         new_matrix_len = SafeCastUtil.safeCast(len(matrix.keys()) * (percent / 100), int)
         split_matrix = {}
         for cell_line in SafeCastUtil.safeCast(matrix.keys(), list):
@@ -94,3 +97,9 @@ class MachineLearningService(object):
             return accurate_hits/len(predictions)
         else:
             return r2_score(results, predictions)
+
+    def analysisType(self):
+        if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
+            return "regressor"
+        else:
+            return "classifier"
