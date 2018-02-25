@@ -17,7 +17,7 @@ class RandomizedDataGenerator(object):
 
 
     @staticmethod
-    def generateRandomizdFiles(num_feature_files, num_cells, num_features, is_classifier):
+    def generateRandomizedFiles(num_feature_files, num_cells, num_features, is_classifier):
         features = []
 
         for feature_name in range(1, num_features + 1):

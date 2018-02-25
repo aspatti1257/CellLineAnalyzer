@@ -7,6 +7,7 @@ import math
 
 from DataFormattingService import DataFormattingService
 from ArgumentProcessingService import ArgumentProcessingService
+from Utilities.RandomizedDataGenerator import RandomizedDataGenerator
 from Utilities.SafeCastUtil import SafeCastUtil
 
 
@@ -21,7 +22,10 @@ class DataFormattingServiceIT(unittest.TestCase):
         self.instantiateDataFormattingService(input_folder)
 
     def tearDown(self):
-        pass
+        if self.current_working_dir != "/":
+            for file in os.listdir(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER):
+                os.remove(
+                    self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER + "/" + file)
 
     def instantiateDataFormattingService(self, input_folder):
         argument_processing_service = ArgumentProcessingService(input_folder)
@@ -43,6 +47,18 @@ class DataFormattingServiceIT(unittest.TestCase):
             if original_trained_cells[i] != new_trained_cells[i]:
                 non_identical_matrices = True
         assert non_identical_matrices
+
+    def testFormattingRandomizedData(self):
+        self.validateOutput(self.formatRandomizedData(True))
+        self.validateOutput(self.formatRandomizedData(False))
+
+    def formatRandomizedData(self, is_classifier):
+        RandomizedDataGenerator.generateRandomizedFiles(5, 50, 150, is_classifier)
+        input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
+        argument_processing_service = ArgumentProcessingService(input_folder)
+        arguments = argument_processing_service.handleInputFolder()
+        data_formatting_service = DataFormattingService(arguments)
+        return data_formatting_service.formatData()
 
     @staticmethod
     def validateOutput(output):

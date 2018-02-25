@@ -14,7 +14,7 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
         self.current_working_dir = os.getcwd()  # Should be this package.
 
     def tearDown(self):
-        if self.current_working_dir != "/" :
+        if self.current_working_dir != "/":
             for file in os.listdir(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER):
                 os.remove(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER + "/" + file)
 
@@ -23,14 +23,14 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
         self.processAndValidateArguments(input_folder, True)
 
     def testClassifierWithRandomlyGeneratedInput(self):
-        RandomizedDataGenerator.generateRandomizdFiles(5, 50, 150, True)
+        RandomizedDataGenerator.generateRandomizedFiles(5, 50, 150, True)
         assert len(os.listdir(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER)) == 7
 
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         self.processAndValidateArguments(input_folder, True)
 
     def testRegressorWithRandomlyGeneratedInput(self):
-        RandomizedDataGenerator.generateRandomizdFiles(5, 50, 150, False)
+        RandomizedDataGenerator.generateRandomizedFiles(5, 50, 150, False)
         assert len(os.listdir(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER)) == 7
 
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER

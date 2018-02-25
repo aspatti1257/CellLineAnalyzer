@@ -96,10 +96,10 @@ class MachineLearningService(object):
                     accurate_hits += 1
             return accurate_hits/len(predictions)
         else:
-            return r2_score(results, predictions)
+            return SafeCastUtil.safeCast(r2_score(results, predictions), float)
 
     def analysisType(self):
         if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
-            return "regressor"
-        else:
             return "classifier"
+        else:
+            return "regressor"
