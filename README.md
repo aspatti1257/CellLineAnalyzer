@@ -1,15 +1,19 @@
 # CellLineAnalyzer
 
-## Dataset Format
+Running the Cell Line Analyzer API involves three steps:
+1. Dataset Formatting
+2. Specifying Parameters in `Arguments.txt`
+3. Running the Code
+
+## Dataset Formatting
 
 Your datasets need to be formatted to the below specifications. 
 
-n = number of samples (CCLIDs) 
+_n_ = number of samples (CCLIDs) 
 
-m_p = number of features of type p (ex. p = mutation)
+_m_p_ = number of features of type p (ex. _p_ = mutation)
 
-### Y values:
-n x 2
+### Y values (_n_ x 2):
 
 Column 1: CCLIDs
 
@@ -17,30 +21,25 @@ Column 2: Y value (ex. radiation output)
 
 Y values assumed to be numerical
 
-### X values: 
-n x m_p
+### X values (_n_ x _m_p_): 
 
-All X matrices must be of the same type
+All X matrices must be of the same input type: Categorical or Numerical
 
 Column header contains HUGO gene 
 
-X Matrices named:
-
-[feature]_[input type].csv
-
-Input types: Numerical, Categorical 
+X Matrices named: [feature]_[input type].csv
 
 ## Arguments.txt File
 
-To run Cell Line Analyzer, update the arguments.txt file. 
+To run Cell Line Analyzer, update the `arguments.txt` file. 
 
-results="File Name of CSV"
+`results`: "File Name of CSV"
 
-data_split=[x%, y%, z%], where x + y + z = 100
+`data_split`: [x%, y%, z%], where x + y + z = 100
 
-important_features=Comma separated list of file.feature names
+`important_features`: Comma separated list of file.feature names
 
-is_classifier=[1 for classification, 0 for regression]
+`is_classifier`: 0 for regression, 1 for classification
 
 ### Example of completed argument.txt with proper syntax: 
 
@@ -57,8 +56,12 @@ is_classifier=1
 python __main__.py
 ```
 
-Enter '0' for Analysis of Cell LInes
+Enter `0` for Analysis of Cell Lines
 
-Type in the path of your desired folder, which contains Arguments.txt, Feature Data, and Output Data
+Type in the path of your desired folder, which contains `Arguments.txt`, Feature Data, and Output Data
 
 Your results will be printed in the terminal 
+
+## Authorship
+
+Cell Line Analyzer was created by Andrew Patti and Christine Zhang under supervision of David Craft, MGH/HMS. 2018.
