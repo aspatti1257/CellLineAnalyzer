@@ -16,7 +16,7 @@ def main():
     if len(arguments) == 0:
         promptUserForInput()
     elif len(arguments) == 1:
-        input_folder = arguments[1]
+        input_folder = arguments[0]
         runMainCellLineAnalysis(input_folder)
     return
 
