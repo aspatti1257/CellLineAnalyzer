@@ -21,6 +21,8 @@ class MachineLearningService(object):
         self.inputs = data
 
     def analyze(self):
+        self.log.info(" Initializing Random Forest training with the following features:\n %s",
+                      self.inputs.get(ArgumentProcessingService.FEATURE_NAMES))
         total_accuracies = {}
         training_matrix = self.inputs.get(DataFormattingService.TRAINING_MATRIX)
         validation_matrix = self.inputs.get(DataFormattingService.VALIDATION_MATRIX)
@@ -35,7 +37,7 @@ class MachineLearningService(object):
                 self.log.debug("Random Forest Model trained with accuracy: %s", accuracy)
             total_accuracies[percent] = accuracies
 
-        self.log.info("Total accuracies by percentage of training data for %s: %s", self.analysisType(),
+        self.log.info(" Total accuracies by percentage of training data for %s: %s", self.analysisType(),
                       total_accuracies)
         return total_accuracies
 
