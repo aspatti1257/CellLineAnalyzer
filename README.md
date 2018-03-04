@@ -60,7 +60,14 @@ Enter `0` for Analysis of Cell Lines
 
 Type in the path of your desired folder, which contains `Arguments.txt`, Feature Data, and Output Data
 
-Your results will be printed in the terminal 
+Your results will be printed in the terminal.
+
+Alternatively, you can input the path of your target folder as an argument to the program:
+
+```
+python __main__.py /PATH/TO/DATA_FOLDER
+```
+
 
 ## Authorship
 
