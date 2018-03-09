@@ -23,10 +23,30 @@ class MachineLearningService(object):
     def analyze(self):
         self.log.info(" Initializing Random Forest training with the following features:\n %s",
                       self.inputs.get(ArgumentProcessingService.FEATURE_NAMES))
-        total_accuracies = {}
+        accuracies_by_gene_set = {}
         training_matrix = self.inputs.get(DataFormattingService.TRAINING_MATRIX)
         validation_matrix = self.inputs.get(DataFormattingService.VALIDATION_MATRIX)
         testing_matrix = self.inputs.get(DataFormattingService.TESTING_MATRIX)
+
+        gene_sets_across_files = {}
+
+        feature_names = self.inputs.get(ArgumentProcessingService.FEATURE_NAMES)
+        for feature in feature_names:
+            split = feature.split(".")
+            if gene_sets_across_files.get(split[0]) is not None:
+                gene_sets_across_files[split[0]].append(feature)
+            else:
+                gene_sets_across_files[split[0]] = [feature]
+
+        # current_combo = ""
+        # feature_set_combos = []
+        # parsed_feature_files = []
+        # total_combos = len(gene_sets_across_files.get(feature_names[0].split(".")[0])) ** len(gene_sets_across_files.keys())
+        # feature_set_combos = self.generateFeatureSetCombos(gene_sets_across_files, current_combo, total_combos,
+        #                                                    feature_set_combos, parsed_feature_files)
+        #
+        # self.log.info(feature_set_combos)
+
         for percent in self.TRAINING_PERCENTS:
             accuracies = []
             split_train_training_matrix = self.furtherSplitTrainingMatrix(percent, training_matrix)
@@ -35,11 +55,29 @@ class MachineLearningService(object):
                 accuracy = self.predictModelAccuracy(most_accurate_model, testing_matrix)
                 accuracies.append(accuracy)
                 self.log.debug("Random Forest Model trained with accuracy: %s", accuracy)
-            total_accuracies[percent] = accuracies
+            accuracies_by_gene_set[percent] = accuracies
 
         self.log.info(" Total accuracies by percentage of training data for %s: %s", self.analysisType(),
-                      total_accuracies)
-        return total_accuracies
+                      accuracies_by_gene_set)
+        return accuracies_by_gene_set
+
+    # def generateFeatureSetCombos(self, gene_sets_across_files, current_combo, total_combos,
+    #                              feature_set_combos, parsed_feature_files):
+    #
+    #     for feature_file in gene_sets_across_files.keys():
+    #         if feature_file not in parsed_feature_files:
+    #             parsed_feature_files.append(feature_file)
+    #             for feature in gene_sets_across_files[feature_file]:
+    #                 if feature not in current_combo:
+    #                     current_combo += feature + ","
+    #                     break
+    #         else:
+    #             feature_set_combos.append(current_combo)
+    #             parsed_feature_files.remove(feature_file)
+    #     while len(feature_set_combos) < 5**5:
+    #         self.generateFeatureSetCombos(gene_sets_across_files, current_combo, total_combos, feature_set_combos,
+    #                                       parsed_feature_files)
+    #     return feature_set_combos
 
     def furtherSplitTrainingMatrix(self, percent, matrix):
         self.log.debug("Splitting training matrix to only use %s percent of data.", percent)
@@ -52,7 +90,9 @@ class MachineLearningService(object):
 
     def optimizeHyperparametersForRF(self, training_matrix, validation_matrix):
         most_accurate_model = None
-        most_accurate_model_score = 0
+        most_accurate_model_score = -1
+        if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
+            most_accurate_model_score = 0
         p = len(SafeCastUtil.safeCast(training_matrix.values(), list))  # number of features
         n = len(SafeCastUtil.safeCast(training_matrix.keys(), list))  # number of samples
         for m_val in [1, (1 + numpy.sqrt(p)) / 2, numpy.sqrt(p), (numpy.sqrt(p) + p) / 2, p]:
