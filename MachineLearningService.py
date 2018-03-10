@@ -15,21 +15,41 @@ class MachineLearningService(object):
     log.setLevel(logging.INFO)
 
     TRAINING_PERCENTS = [20, 40, 60, 80, 100]  # Percentage of training data to actually train on.
-    NUM_PERMUTATIONS = 1  # Create and train optimized ML models to get a range of accuracies.
+    NUM_PERMUTATIONS = 1  # Create and train optimized ML models to get a range of accuracies. Currently unused.
 
     def __init__(self, data):
         self.inputs = data
 
     def analyze(self):
-        self.log.info(" Initializing Random Forest training with the following features:\n %s",
-                      self.inputs.get(ArgumentProcessingService.FEATURE_NAMES))
         accuracies_by_gene_set = {}
-        training_matrix = self.inputs.get(DataFormattingService.TRAINING_MATRIX)
-        validation_matrix = self.inputs.get(DataFormattingService.VALIDATION_MATRIX)
-        testing_matrix = self.inputs.get(DataFormattingService.TESTING_MATRIX)
+        feature_set_combos = self.recursivelyDetermineFeatureSetCombos()
 
+        self.log.info("Running permutations on %s different combinations of features", len(feature_set_combos))
+
+        for feature_set in feature_set_combos:
+            training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set)
+            validation_matrix = self.trimMatrixByFeatureSet(DataFormattingService.VALIDATION_MATRIX, feature_set)
+            testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set)
+            feature_set_as_string = SafeCastUtil.safeCast(feature_set, str)
+            self.log.info("Training Random Forest with feature set: %s", feature_set_as_string)
+            accuracies = {}
+            for percent in self.TRAINING_PERCENTS:
+                split_train_training_matrix = self.furtherSplitTrainingMatrix(percent, training_matrix)
+                most_accurate_model = self.optimizeHyperparametersForRF(split_train_training_matrix, validation_matrix)
+                accuracy = self.predictModelAccuracy(most_accurate_model, testing_matrix)
+                accuracies[percent] = accuracy
+                self.log.debug("Random Forest Model trained with accuracy: %s", accuracy)
+            self.log.info("Accuracies by percent for %s: %s", feature_set_as_string, accuracies)
+            accuracies_by_gene_set[feature_set_as_string] = accuracies
+            # TODO: Maybe write to a CSV.
+
+        self.log.info(" Total accuracies by percentage of training data for %s: %s", self.analysisType(),
+                      accuracies_by_gene_set)
+        return accuracies_by_gene_set
+
+    def recursivelyDetermineFeatureSetCombos(self):
+        #TODO: Fails if parsing up to 5^5 (3125) separate combos.
         gene_sets_across_files = {}
-
         feature_names = self.inputs.get(ArgumentProcessingService.FEATURE_NAMES)
         for feature in feature_names:
             split = feature.split(".")
@@ -37,47 +57,63 @@ class MachineLearningService(object):
                 gene_sets_across_files[split[0]].append(feature)
             else:
                 gene_sets_across_files[split[0]] = [feature]
+        current_combo = []
+        feature_set_combos = []
+        parsed_feature_files = []
+        feature_set_combos = self.generateFeatureSetCombos(gene_sets_across_files, current_combo,
+                                                           feature_set_combos, parsed_feature_files)
+        return feature_set_combos
 
-        # current_combo = ""
-        # feature_set_combos = []
-        # parsed_feature_files = []
-        # total_combos = len(gene_sets_across_files.get(feature_names[0].split(".")[0])) ** len(gene_sets_across_files.keys())
-        # feature_set_combos = self.generateFeatureSetCombos(gene_sets_across_files, current_combo, total_combos,
-        #                                                    feature_set_combos, parsed_feature_files)
-        #
-        # self.log.info(feature_set_combos)
+    def generateFeatureSetCombos(self, gene_sets_across_files, current_combo,
+                                 feature_set_combos, parsed_feature_files):
+        num_permutations = len(list(gene_sets_across_files.values())[0])**len(list(gene_sets_across_files.keys()))
+        if len(feature_set_combos) >= num_permutations:
+            return feature_set_combos
 
-        for percent in self.TRAINING_PERCENTS:
-            accuracies = []
-            split_train_training_matrix = self.furtherSplitTrainingMatrix(percent, training_matrix)
-            for permutation in range(0, self.NUM_PERMUTATIONS):
-                most_accurate_model = self.optimizeHyperparametersForRF(split_train_training_matrix, validation_matrix)
-                accuracy = self.predictModelAccuracy(most_accurate_model, testing_matrix)
-                accuracies.append(accuracy)
-                self.log.debug("Random Forest Model trained with accuracy: %s", accuracy)
-            accuracies_by_gene_set[percent] = accuracies
+        for feature_file in gene_sets_across_files.keys():
+            if feature_file not in parsed_feature_files:
+                all_features_in_this_file_in_current_combo = True
+                for feature in gene_sets_across_files[feature_file]:
+                    if feature not in current_combo:
+                        all_features_in_this_file_in_current_combo = False
+                        parsed_feature_files.append(feature_file)
+                        current_combo.append(feature)
+                        break
 
-        self.log.info(" Total accuracies by percentage of training data for %s: %s", self.analysisType(),
-                      accuracies_by_gene_set)
-        return accuracies_by_gene_set
+                if all_features_in_this_file_in_current_combo:
+                    for feature in gene_sets_across_files[feature_file]:
+                        current_combo.remove(feature)
+                    if len(parsed_feature_files) > 0:
+                        parsed_feature_files.pop(len(parsed_feature_files) - 1)
+                    self.generateFeatureSetCombos(gene_sets_across_files, current_combo, feature_set_combos,
+                                                  parsed_feature_files)
+                    return feature_set_combos
 
-    # def generateFeatureSetCombos(self, gene_sets_across_files, current_combo, total_combos,
-    #                              feature_set_combos, parsed_feature_files):
-    #
-    #     for feature_file in gene_sets_across_files.keys():
-    #         if feature_file not in parsed_feature_files:
-    #             parsed_feature_files.append(feature_file)
-    #             for feature in gene_sets_across_files[feature_file]:
-    #                 if feature not in current_combo:
-    #                     current_combo += feature + ","
-    #                     break
-    #         else:
-    #             feature_set_combos.append(current_combo)
-    #             parsed_feature_files.remove(feature_file)
-    #     while len(feature_set_combos) < 5**5:
-    #         self.generateFeatureSetCombos(gene_sets_across_files, current_combo, total_combos, feature_set_combos,
-    #                                       parsed_feature_files)
-    #     return feature_set_combos
+        cloned_combo = current_combo[:]
+        feature_set_combos.append(cloned_combo)
+        if len(parsed_feature_files) > 0:
+            parsed_feature_files.pop(len(parsed_feature_files) - 1)
+            self.generateFeatureSetCombos(gene_sets_across_files, current_combo, feature_set_combos,
+                                          parsed_feature_files)
+        return feature_set_combos
+
+    def trimMatrixByFeatureSet(self, matrix_type, feature_set):
+        full_matrix = self.inputs.get(matrix_type)
+        feature_names = self.inputs.get(ArgumentProcessingService.FEATURE_NAMES)
+        important_indices = []
+        for i in range(0, len(feature_names)):
+            for feature in feature_set:
+                if feature == feature_names[i]:
+                    important_indices.append(i)
+
+        trimmed_matrix = {}
+        for cell_line in full_matrix.keys():
+            new_cell_line_features = []
+            for j in range(0, len(full_matrix[cell_line])):
+                if j in important_indices:
+                    new_cell_line_features.append(full_matrix[cell_line][j])
+            trimmed_matrix[cell_line] = new_cell_line_features
+        return trimmed_matrix
 
     def furtherSplitTrainingMatrix(self, percent, matrix):
         self.log.debug("Splitting training matrix to only use %s percent of data.", percent)

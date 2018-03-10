@@ -22,7 +22,7 @@ class RandomizedDataGenerator(object):
         features = []
         features_per_file = SafeCastUtil.safeCast(num_features / num_feature_files, int)
         important_indices = random.sample(range(1, features_per_file + 1),
-                                          SafeCastUtil.safeCast((features_per_file / 6), int))
+                                          SafeCastUtil.safeCast((features_per_file / 10), int))
         important_features = ""
 
         for feature_file in range(1, num_feature_files + 1):
