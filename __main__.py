@@ -41,7 +41,7 @@ def runMainCellLineAnalysis(input_folder):
     valid_inputs = handleInputFolderProcessing(input_folder)
     if valid_inputs is not None:
         formatted_data = handleDataFormatting(valid_inputs)
-        performMachineLearning(formatted_data)
+        performMachineLearning(formatted_data, input_folder)
 
 
 def recursivelyPromptUser(message, return_type):
@@ -68,9 +68,9 @@ def handleDataFormatting(inputs):
     return data_formatting_service.formatData()
 
 
-def performMachineLearning(formatted_data):
+def performMachineLearning(formatted_data, input_folder):
     machine_learning_service = MachineLearningService(formatted_data)
-    machine_learning_service.analyze()
+    machine_learning_service.analyze(input_folder)
 
 
 if __name__ == "__main__":

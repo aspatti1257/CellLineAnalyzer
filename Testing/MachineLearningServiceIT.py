@@ -29,15 +29,15 @@ class MachineLearningServiceIT(unittest.TestCase):
 
     def testMachineLearningModelsCreated(self):
         ml_service = MachineLearningService(self.arguments)
-        self.assertResults(ml_service.analyze())
+        self.assertResults(ml_service.analyze(self.current_working_dir))
 
     def testRandomForestRegressorWithRandomData(self):
         ml_service = MachineLearningService(self.formatRandomizedData(False))
-        self.assertResults(ml_service.analyze())
+        self.assertResults(ml_service.analyze(self.current_working_dir))
 
     def testRandomForestClassifierWithRandomData(self):
         ml_service = MachineLearningService(self.formatRandomizedData(True))
-        self.assertResults(ml_service.analyze())
+        self.assertResults(ml_service.analyze(self.current_working_dir))
 
     def assertResults(self, rf_results):
         assert rf_results is not None

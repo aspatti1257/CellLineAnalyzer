@@ -2,6 +2,8 @@ import logging
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestRegressor
 import numpy
+import os
+import csv
 
 from ArgumentProcessingService import ArgumentProcessingService
 from DataFormattingService import DataFormattingService
@@ -20,28 +22,40 @@ class MachineLearningService(object):
     def __init__(self, data):
         self.inputs = data
 
-    def analyze(self):
+    def analyze(self, input_folder):
         accuracies_by_gene_set = {}
         feature_set_combos = self.recursivelyDetermineFeatureSetCombos()
 
         self.log.info("Running permutations on %s different combinations of features", len(feature_set_combos))
 
-        for feature_set in feature_set_combos:
-            training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set)
-            validation_matrix = self.trimMatrixByFeatureSet(DataFormattingService.VALIDATION_MATRIX, feature_set)
-            testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set)
-            feature_set_as_string = SafeCastUtil.safeCast(feature_set, str)
-            self.log.info("Training Random Forest with feature set: %s", feature_set_as_string)
-            accuracies = {}
-            for percent in self.TRAINING_PERCENTS:
-                split_train_training_matrix = self.furtherSplitTrainingMatrix(percent, training_matrix)
-                most_accurate_model = self.optimizeHyperparametersForRF(split_train_training_matrix, validation_matrix)
-                accuracy = self.predictModelAccuracy(most_accurate_model, testing_matrix)
-                accuracies[percent] = accuracy
-                self.log.debug("Random Forest Model trained with accuracy: %s", accuracy)
-            self.log.info("Accuracies by percent for %s: %s", feature_set_as_string, accuracies)
-            accuracies_by_gene_set[feature_set_as_string] = accuracies
-            # TODO: Maybe write to a CSV.
+        file_name = "RandomForestAnalysis.csv"
+        with open(file_name, 'w') as csv_file:
+            try:
+                writer = csv.writer(csv_file)
+                for feature_set in feature_set_combos:
+                    training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set)
+                    validation_matrix = self.trimMatrixByFeatureSet(DataFormattingService.VALIDATION_MATRIX,
+                                                                    feature_set)
+                    testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set)
+                    feature_set_as_string = SafeCastUtil.safeCast(feature_set, str)
+                    self.log.info("Training Random Forest with feature set: %s", feature_set_as_string)
+                    accuracies = {}
+                    for percent in self.TRAINING_PERCENTS:
+                        split_train_training_matrix = self.furtherSplitTrainingMatrix(percent, training_matrix)
+                        most_accurate_model = self.optimizeHyperparametersForRF(split_train_training_matrix,
+                                                                                validation_matrix)
+                        accuracy = self.predictModelAccuracy(most_accurate_model, testing_matrix)
+                        accuracies[percent] = accuracy
+                        self.log.debug("Random Forest Model trained with accuracy: %s", accuracy)
+                    self.log.info("Accuracies by percent for %s: %s", feature_set_as_string, accuracies)
+                    accuracies_by_gene_set[feature_set_as_string] = accuracies
+                    writer.writerow([feature_set_as_string, accuracies])
+
+            except ValueError as error:
+                self.log.error("Error writing to file %s. %s", file_name, error)
+            finally:
+                csv_file.close()
+                os.chdir(input_folder)
 
         self.log.info(" Total accuracies by percentage of training data for %s: %s", self.analysisType(),
                       accuracies_by_gene_set)
