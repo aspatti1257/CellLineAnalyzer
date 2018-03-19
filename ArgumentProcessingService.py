@@ -12,12 +12,13 @@ class ArgumentProcessingService(object):
     log.setLevel(logging.INFO)
 
     ARGUMENTS_FILE = "arguments.txt"
+    GENE_LISTS = "gene_list"
 
     RESULTS = "results"
     IS_CLASSIFIER = "is_classifier"
     FEATURES = "features"
     FEATURE_NAMES = "featureNames"
-    IMPORTANT_FEATURES = "important_features"
+    IMPORTANT_FEATURES = "important_features"  # TODO: Maybe regress
 
     def __init__(self, input_folder):
         self.input_folder = input_folder
@@ -36,10 +37,12 @@ class ArgumentProcessingService(object):
         if is_classifier is not None and results_file is not None:
             results_list = self.validateAndExtractResults(results_file, is_classifier)
             feature_map = self.createAndValidateFeatureMatrix(results_list, results_file, important_features)
+            gene_lists = self.extractGeneList()
             return {
                 self.RESULTS: results_list,
                 self.IS_CLASSIFIER: is_classifier,
-                self.FEATURES: feature_map
+                self.FEATURES: feature_map,
+                self.GENE_LISTS: gene_lists
             }
         else:
             return None
@@ -101,7 +104,7 @@ class ArgumentProcessingService(object):
     def createAndValidateFeatureMatrix(self, results_list, results_file, important_features):
         files = os.listdir(self.input_folder)
         feature_map = {self.FEATURE_NAMES: []}
-        for file in [file for file in files if file != results_file and file != self.ARGUMENTS_FILE]:
+        for file in [f for f in files if f != results_file and f != self.ARGUMENTS_FILE and self.GENE_LISTS not in f]:
             features_path = self.input_folder + "/" + file
             with open(features_path) as feature_file:
                 try:
@@ -153,3 +156,13 @@ class ArgumentProcessingService(object):
                 else:
                     important_features.append(SafeCastUtil.safeCast(feature_names[i].strip(), str))
         return important_features
+
+    def extractGeneList(self):
+        gene_lists = {"null_gene_list": []}
+        files = os.listdir(self.input_folder)
+        for file in [f for f in files if self.GENE_LISTS in f]:
+            file_path = self.input_folder + "/" + file
+            with open(file_path) as gene_list_file:
+                gene_lists[file.split(".csv")[0]] = gene_list_file.read().strip().split(",")
+
+        return gene_lists

@@ -4,6 +4,7 @@ from sklearn.ensemble import RandomForestRegressor
 import numpy
 import os
 import csv
+import itertools
 
 from ArgumentProcessingService import ArgumentProcessingService
 from DataFormattingService import DataFormattingService
@@ -12,7 +13,6 @@ from sklearn.metrics import r2_score
 
 
 class MachineLearningService(object):
-
     log = logging.getLogger(__name__)
     log.setLevel(logging.INFO)
 
@@ -24,15 +24,14 @@ class MachineLearningService(object):
 
     def analyze(self, input_folder):
         accuracies_by_gene_set = {}
-        feature_set_combos = self.recursivelyDetermineFeatureSetCombos()
-
-        self.log.info("Running permutations on %s different combinations of features", len(feature_set_combos))
+        gene_list_combos = self.recursivelyDetermineGeneListCombos()
+        self.log.info("Running permutations on %s different combinations of features", len(gene_list_combos))
 
         file_name = "RandomForestAnalysis.csv"
         with open(file_name, 'w') as csv_file:
             try:
                 writer = csv.writer(csv_file)
-                for feature_set in feature_set_combos:
+                for feature_set in gene_list_combos:
                     training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set)
                     validation_matrix = self.trimMatrixByFeatureSet(DataFormattingService.VALIDATION_MATRIX,
                                                                     feature_set)
@@ -40,7 +39,7 @@ class MachineLearningService(object):
                     feature_set_as_string = SafeCastUtil.safeCast(feature_set, str)
                     self.log.info("Training Random Forest with feature set: %s", feature_set_as_string)
                     accuracies = {}
-                    for percent in self.TRAINING_PERCENTS:
+                    for percent in self.TRAINING_PERCENTS:  # TODO: Use updated Timo algorithm.
                         split_train_training_matrix = self.furtherSplitTrainingMatrix(percent, training_matrix)
                         most_accurate_model = self.optimizeHyperparametersForRF(split_train_training_matrix,
                                                                                 validation_matrix)
@@ -61,8 +60,8 @@ class MachineLearningService(object):
                       accuracies_by_gene_set)
         return accuracies_by_gene_set
 
-    def recursivelyDetermineFeatureSetCombos(self):
-        #TODO: Fails if parsing up to 5^5 (3125) separate combos.
+    def recursivelyDetermineGeneListCombos(self):
+        gene_lists = self.inputs.get(ArgumentProcessingService.GENE_LISTS)
         gene_sets_across_files = {}
         feature_names = self.inputs.get(ArgumentProcessingService.FEATURE_NAMES)
         for feature in feature_names:
@@ -71,54 +70,64 @@ class MachineLearningService(object):
                 gene_sets_across_files[split[0]].append(feature)
             else:
                 gene_sets_across_files[split[0]] = [feature]
-        current_combo = []
-        feature_set_combos = []
-        parsed_feature_files = []
-        feature_set_combos = self.generateFeatureSetCombos(gene_sets_across_files, current_combo,
-                                                           feature_set_combos, parsed_feature_files)
-        return feature_set_combos
 
-    def generateFeatureSetCombos(self, gene_sets_across_files, current_combo,
-                                 feature_set_combos, parsed_feature_files):
-        num_permutations = len(list(gene_sets_across_files.values())[0])**len(list(gene_sets_across_files.keys()))
-        if len(feature_set_combos) >= num_permutations:
-            return feature_set_combos
+        numerical_permutations = self.generateNumericalPermutations(gene_lists, gene_sets_across_files)
+        gene_list_keys = SafeCastUtil.safeCast(gene_lists.keys(), list)
+        file_keys = SafeCastUtil.safeCast(gene_sets_across_files.keys(), list)
+        gene_list_combos = []
+        for perm in numerical_permutations:
+            feature_strings = []
+            for i in range(0, len(perm)):
+                file_name = file_keys[i]
+                gene_list = gene_lists[gene_list_keys[SafeCastUtil.safeCast(perm[i], int)]]
+                if len(gene_list) > 0:
+                    feature_strings.append([file_name + "." + gene for gene in gene_list])
+            if len(feature_strings) > 0:
+                gene_list_combos.append(feature_strings)
 
-        for feature_file in gene_sets_across_files.keys():
-            if feature_file not in parsed_feature_files:
-                all_features_in_this_file_in_current_combo = True
-                for feature in gene_sets_across_files[feature_file]:
-                    if feature not in current_combo:
-                        all_features_in_this_file_in_current_combo = False
-                        parsed_feature_files.append(feature_file)
-                        current_combo.append(feature)
-                        break
+        return gene_list_combos
 
-                if all_features_in_this_file_in_current_combo:
-                    for feature in gene_sets_across_files[feature_file]:
-                        current_combo.remove(feature)
-                    if len(parsed_feature_files) > 0:
-                        parsed_feature_files.pop(len(parsed_feature_files) - 1)
-                    self.generateFeatureSetCombos(gene_sets_across_files, current_combo, feature_set_combos,
-                                                  parsed_feature_files)
-                    return feature_set_combos
+    def generateNumericalPermutations(self, gene_lists, gene_sets_across_files):
+        num_gene_lists = len(gene_lists)
+        num_files = len(gene_sets_across_files)
+        all_arrays = []
+        for gene_list in range(0, num_gene_lists):
+            new_array = self.blankArray(num_files)
+            for i in range(0, len(new_array)):
+                new_array[i] = gene_list
+                permutations = list(itertools.permutations(new_array))
+                for perm in permutations:
+                    if perm not in all_arrays:
+                        all_arrays.append(perm)
 
-        cloned_combo = current_combo[:]
-        feature_set_combos.append(cloned_combo)
-        if len(parsed_feature_files) > 0:
-            parsed_feature_files.pop(len(parsed_feature_files) - 1)
-            self.generateFeatureSetCombos(gene_sets_across_files, current_combo, feature_set_combos,
-                                          parsed_feature_files)
-        return feature_set_combos
+                selected_index = 0
+                while i > selected_index:
+                    selected_index += 1
+                    if gene_list > selected_index:
+                        new_array[i - selected_index] = gene_list - selected_index
+                        permutations = list(itertools.permutations(new_array))
+                        for perm in permutations:
+                            if perm not in all_arrays:
+                                all_arrays.append(perm)
 
-    def trimMatrixByFeatureSet(self, matrix_type, feature_set):
+        required_permutations = num_gene_lists**num_files
+        created_permutations = len(all_arrays)
+        self.log.info("Should have created %s permutations, created %s permutations", required_permutations,
+                      created_permutations)  # TODO: Make it accurate 100% of the time.
+        return all_arrays
+
+    def blankArray(self, length):
+        return list(numpy.zeros(length))
+
+    def trimMatrixByFeatureSet(self, matrix_type, gene_lists):
         full_matrix = self.inputs.get(matrix_type)
         feature_names = self.inputs.get(ArgumentProcessingService.FEATURE_NAMES)
         important_indices = []
         for i in range(0, len(feature_names)):
-            for feature in feature_set:
-                if feature == feature_names[i]:
-                    important_indices.append(i)
+            for gene_list in gene_lists:
+                for gene in gene_list:
+                    if gene == feature_names[i]:
+                        important_indices.append(i)
 
         trimmed_matrix = {}
         for cell_line in full_matrix.keys():
@@ -148,7 +157,7 @@ class MachineLearningService(object):
         for m_val in [1, (1 + numpy.sqrt(p)) / 2, numpy.sqrt(p), (numpy.sqrt(p) + p) / 2, p]:
             for max_depth in [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.75, 1]:
                 features, results = self.populateFeaturesAndResultsByCellLine(training_matrix)
-                model = self.trainRandomForest(results, features, m_val, max_depth*n)
+                model = self.trainRandomForest(results, features, m_val, max_depth * n)
                 current_model_score = self.predictModelAccuracy(model, validation_matrix)
                 if current_model_score > most_accurate_model_score:
                     most_accurate_model_score = current_model_score
@@ -186,7 +195,7 @@ class MachineLearningService(object):
             for i in range(0, len(predictions)):
                 if predictions[i] == results[i]:
                     accurate_hits += 1
-            return accurate_hits/len(predictions)
+            return accurate_hits / len(predictions)
         else:
             return SafeCastUtil.safeCast(r2_score(results, predictions), float)
 

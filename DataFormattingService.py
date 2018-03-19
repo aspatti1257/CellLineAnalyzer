@@ -24,9 +24,12 @@ class DataFormattingService(object):
     def formatData(self):
         features = self.inputs.get(ArgumentProcessingService.FEATURES)
         feature_names = features.get(ArgumentProcessingService.FEATURE_NAMES)
+
+        # TODO: This is getting redundant. Make it smarter or keep using the same object.
         self.outputs[ArgumentProcessingService.FEATURE_NAMES] = feature_names
         self.outputs[ArgumentProcessingService.RESULTS] = self.inputs[ArgumentProcessingService.RESULTS]
         self.outputs[ArgumentProcessingService.IS_CLASSIFIER] = self.inputs[ArgumentProcessingService.IS_CLASSIFIER]
+        self.outputs[ArgumentProcessingService.GENE_LISTS] = self.inputs[ArgumentProcessingService.GENE_LISTS]
 
         features_df = pd.DataFrame.from_dict(self.inputs[ArgumentProcessingService.FEATURES], orient='index')
         features_df = features_df.drop(ArgumentProcessingService.FEATURE_NAMES)

@@ -1,4 +1,4 @@
 results=results.csv
 data_split=[80,10,10]
-important_features=features.feature_two, categorical.feature_cat
 is_classifier=1
+gene_sets=l1.csv, l2.csv, l3.csv

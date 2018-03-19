@@ -24,14 +24,14 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
 
     def testClassifierWithRandomlyGeneratedInput(self):
         RandomizedDataGenerator.generateRandomizedFiles(5, 50, 150, True)
-        assert len(os.listdir(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER)) == 7
+        assert len(os.listdir(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER)) > 7
 
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         self.processAndValidateArguments(input_folder, True)
 
     def testRegressorWithRandomlyGeneratedInput(self):
         RandomizedDataGenerator.generateRandomizedFiles(5, 50, 150, False)
-        assert len(os.listdir(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER)) == 7
+        assert len(os.listdir(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER)) > 7
 
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         self.processAndValidateArguments(input_folder, False)
@@ -40,7 +40,7 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
         argument_processing_service = ArgumentProcessingService(input_folder)
         arguments = argument_processing_service.handleInputFolder()
         assert arguments is not None
-        assert len(arguments) == 3
+        assert len(arguments) == 4
         assert (len(arguments.get(argument_processing_service.RESULTS)) + 1) == \
                len(arguments.get(argument_processing_service.FEATURES).keys())
         assert arguments.get(argument_processing_service.IS_CLASSIFIER) == is_classifier

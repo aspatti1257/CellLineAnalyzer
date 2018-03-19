@@ -37,17 +37,17 @@ To run Cell Line Analyzer, update the `arguments.txt` file.
 
 `data_split`: [x%, y%, z%], where x + y + z = 100
 
-`important_features`: Comma separated list of file.feature names
-
 `is_classifier`: 0 for regression, 1 for classification
+
+`gene_sets`: comma separated list of csv files indicating the gene sets which should also be in the parent folder
 
 ### Example of completed argument.txt with proper syntax: 
 
 ```
 results=results.csv
 data_split=[80,10,10]
-important_features=features.feature_two, categorical.feature_cat
 is_classifier=1
+gene_sets=l1.csv, l2.csv, l3.csv
 ```
 
 ## Running the Code
