@@ -90,9 +90,7 @@ class MachineLearningService(object):
     def generateNumericalPermutations(self, gene_lists, gene_sets_across_files):
         num_gene_lists = len(gene_lists)
         num_files = len(gene_sets_across_files)
-        all_arrays = []
-        self.fetchAllArrayPermutations(self.blankArray(num_files), all_arrays, (num_gene_lists - 1), (num_files - 1))
-
+        all_arrays = self.fetchAllArrayPermutations((num_gene_lists - 1), num_files)
         required_permutations = num_gene_lists**num_files
         created_permutations = len(all_arrays)
         self.log.info("Should have created %s permutations, created %s permutations", required_permutations,
@@ -102,21 +100,23 @@ class MachineLearningService(object):
     def blankArray(self, length):
         return list(numpy.zeros(length, dtype=numpy.int))
 
-    def fetchAllArrayPermutations(self, current_array, all_arrays, max_depth, target_index):
-        if current_array not in all_arrays:
-            while target_index >= 0:
-                if current_array not in all_arrays:
-                    clone_array = current_array[:]
-                    all_arrays.append(clone_array)
-                if current_array[target_index] < max_depth:
-                    current_array[target_index] += 1
-                    while len(current_array) > target_index + 1 and current_array[target_index + 1] < max_depth:
-                        target_index += 1
-                else:
-                    target_index -= 1
-                    for subsequent_index in range(target_index, len(current_array) - 1):
-                        current_array[subsequent_index + 1] = 0
-        return
+    def fetchAllArrayPermutations(self, max_depth, num_files):
+        all_arrays = []
+        current_array = self.blankArray(num_files)
+        target_index = num_files - 1
+        while target_index >= 0:
+            if current_array not in all_arrays:
+                clone_array = current_array[:]
+                all_arrays.append(clone_array)
+            if current_array[target_index] < max_depth:
+                current_array[target_index] += 1
+                while len(current_array) > target_index + 1 and current_array[target_index + 1] < max_depth:
+                    target_index += 1
+            else:
+                target_index -= 1
+                for subsequent_index in range(target_index, len(current_array) - 1):
+                    current_array[subsequent_index + 1] = 0
+        return all_arrays
 
     def trimMatrixByFeatureSet(self, matrix_type, gene_lists):
         full_matrix = self.inputs.get(matrix_type)
