@@ -24,7 +24,7 @@ class MachineLearningService(object):
 
     def analyze(self, input_folder):
         accuracies_by_gene_set = {}
-        gene_list_combos = self.recursivelyDetermineGeneListCombos()
+        gene_list_combos = self.determineGeneListCombos()
         self.log.info("Running permutations on %s different combinations of features", len(gene_list_combos))
 
         file_name = "RandomForestAnalysis.csv"
@@ -60,7 +60,7 @@ class MachineLearningService(object):
                       accuracies_by_gene_set)
         return accuracies_by_gene_set
 
-    def recursivelyDetermineGeneListCombos(self):
+    def determineGeneListCombos(self):
         gene_lists = self.inputs.get(ArgumentProcessingService.GENE_LISTS)
         gene_sets_across_files = {}
         feature_names = self.inputs.get(ArgumentProcessingService.FEATURE_NAMES)
@@ -91,33 +91,32 @@ class MachineLearningService(object):
         num_gene_lists = len(gene_lists)
         num_files = len(gene_sets_across_files)
         all_arrays = []
-        for gene_list in range(0, num_gene_lists):
-            new_array = self.blankArray(num_files)
-            for i in range(0, len(new_array)):
-                new_array[i] = gene_list
-                permutations = list(itertools.permutations(new_array))
-                for perm in permutations:
-                    if perm not in all_arrays:
-                        all_arrays.append(perm)
-
-                selected_index = 0
-                while i > selected_index:
-                    selected_index += 1
-                    if gene_list > selected_index:
-                        new_array[i - selected_index] = gene_list - selected_index
-                        permutations = list(itertools.permutations(new_array))
-                        for perm in permutations:
-                            if perm not in all_arrays:
-                                all_arrays.append(perm)
+        self.fetchAllArrayPermutations(self.blankArray(num_files), all_arrays, (num_gene_lists - 1), (num_files - 1))
 
         required_permutations = num_gene_lists**num_files
         created_permutations = len(all_arrays)
         self.log.info("Should have created %s permutations, created %s permutations", required_permutations,
-                      created_permutations)  # TODO: Make it accurate 100% of the time.
+                      created_permutations)
         return all_arrays
 
     def blankArray(self, length):
-        return list(numpy.zeros(length))
+        return list(numpy.zeros(length, dtype=numpy.int))
+
+    def fetchAllArrayPermutations(self, current_array, all_arrays, max_depth, target_index):
+        if current_array not in all_arrays:
+            while target_index >= 0:
+                if current_array not in all_arrays:
+                    clone_array = current_array[:]
+                    all_arrays.append(clone_array)
+                if current_array[target_index] < max_depth:
+                    current_array[target_index] += 1
+                    while len(current_array) > target_index + 1 and current_array[target_index + 1] < max_depth:
+                        target_index += 1
+                else:
+                    target_index -= 1
+                    for subsequent_index in range(target_index, len(current_array) - 1):
+                        current_array[subsequent_index + 1] = 0
+        return
 
     def trimMatrixByFeatureSet(self, matrix_type, gene_lists):
         full_matrix = self.inputs.get(matrix_type)
