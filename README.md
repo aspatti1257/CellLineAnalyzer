@@ -39,7 +39,16 @@ To run Cell Line Analyzer, update the `arguments.txt` file.
 
 `is_classifier`: 0 for regression, 1 for classification
 
-`gene_sets`: comma separated list of csv files indicating the gene sets which should also be in the parent folder
+Also in the path should be files marked with the string "gene_list" in them, e.g. gene_list1.csv,
+gene_list2.csv, etc.
+
+The format of each of these "gene list" files should be a simple list of genes found as features in the other feature
+files, such as:
+WNT, ERK, p53, beta-catenin
+across the first row of a csv.
+
+Any .csv file in this path that is not the a gene list file, or the results.csv file, will be interpreted as a features
+file.
 
 ### Example of completed argument.txt with proper syntax: 
 
@@ -47,8 +56,21 @@ To run Cell Line Analyzer, update the `arguments.txt` file.
 results=results.csv
 data_split=[80,10,10]
 is_classifier=1
-gene_sets=l1.csv, l2.csv, l3.csv
 ```
+
+### Example of all files in the directory:
+
+/SampleClassifierDataFolder...
+   arguments.txt
+   features_1.csv
+   features_2.csv
+   features_3.csv
+   features_4.csv
+   features_5.csv
+   gene_list1.csv
+   gene_list2.csv
+   gene_list3.csv
+   results.csv
 
 ## Running the Code
 
