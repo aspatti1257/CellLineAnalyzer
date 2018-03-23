@@ -2,7 +2,6 @@ import sys
 import logging
 
 from ArgumentProcessingService import ArgumentProcessingService
-from DataFormattingService import DataFormattingService
 from MachineLearningService import MachineLearningService
 from Utilities.SafeCastUtil import SafeCastUtil
 
@@ -40,8 +39,7 @@ def promptUserForInput():
 def runMainCellLineAnalysis(input_folder):
     valid_inputs = handleInputFolderProcessing(input_folder)
     if valid_inputs is not None:
-        formatted_data = handleDataFormatting(valid_inputs)
-        performMachineLearning(formatted_data, input_folder)
+        performMachineLearning(valid_inputs, input_folder)
 
 
 def recursivelyPromptUser(message, return_type):
@@ -63,13 +61,8 @@ def handleInputFolderProcessing(input_folder):
     return full_inputs
 
 
-def handleDataFormatting(inputs):
-    data_formatting_service = DataFormattingService(inputs)
-    return data_formatting_service.formatData()
-
-
-def performMachineLearning(formatted_data, input_folder):
-    machine_learning_service = MachineLearningService(formatted_data)
+def performMachineLearning(valid_inputs, input_folder):
+    machine_learning_service = MachineLearningService(valid_inputs)
     machine_learning_service.analyze(input_folder)
 
 

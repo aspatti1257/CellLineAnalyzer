@@ -22,22 +22,16 @@ class DataFormattingService(object):
         self.outputs = {}
 
     def formatData(self):
-        features = self.inputs.get(ArgumentProcessingService.FEATURES)
-        feature_names = features.get(ArgumentProcessingService.FEATURE_NAMES)
-
-        # TODO: This is getting redundant. Make it smarter or keep using the same object.
-        self.outputs[ArgumentProcessingService.FEATURE_NAMES] = feature_names
-        self.outputs[ArgumentProcessingService.RESULTS] = self.inputs[ArgumentProcessingService.RESULTS]
-        self.outputs[ArgumentProcessingService.IS_CLASSIFIER] = self.inputs[ArgumentProcessingService.IS_CLASSIFIER]
-        self.outputs[ArgumentProcessingService.GENE_LISTS] = self.inputs[ArgumentProcessingService.GENE_LISTS]
-
         features_df = pd.DataFrame.from_dict(self.inputs[ArgumentProcessingService.FEATURES], orient='index')
         features_df = features_df.drop(ArgumentProcessingService.FEATURE_NAMES)
         features_oh_df = self.oneHot(features_df)
         
         x_train, x_validate, x_test, y_train, y_validate, y_test = \
             self.testTrainSplit(features_oh_df, self.inputs[ArgumentProcessingService.RESULTS])
-        
+
+        #TODO: Make sure ratios of these correspond to new Timo algorithm.
+        # The Training + Validation = 80% of data, while Testing = 20%
+        # The Validation = 20% of the Training + Validation.
         self.outputs[self.TRAINING_MATRIX] = x_train.transpose().to_dict('list')
         self.outputs[self.TESTING_MATRIX] = x_test.transpose().to_dict('list')
         self.outputs[self.VALIDATION_MATRIX] = x_validate.transpose().to_dict('list')

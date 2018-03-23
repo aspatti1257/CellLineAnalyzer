@@ -4,7 +4,6 @@ from sklearn.ensemble import RandomForestRegressor
 import numpy
 import os
 import csv
-import itertools
 
 from ArgumentProcessingService import ArgumentProcessingService
 from DataFormattingService import DataFormattingService
@@ -16,8 +15,7 @@ class MachineLearningService(object):
     log = logging.getLogger(__name__)
     log.setLevel(logging.INFO)
 
-    TRAINING_PERCENTS = [20, 40, 60, 80, 100]  # Percentage of training data to actually train on.
-    NUM_PERMUTATIONS = 1  # Create and train optimized ML models to get a range of accuracies. Currently unused.
+    MONTE_CARLO_PERMUTATIONS = 10
 
     def __init__(self, data):
         self.inputs = data
@@ -25,31 +23,17 @@ class MachineLearningService(object):
     def analyze(self, input_folder):
         accuracies_by_gene_set = {}
         gene_list_combos = self.determineGeneListCombos()
-        self.log.info("Running permutations on %s different combinations of features", len(gene_list_combos))
+        num_models_to_create = self.MONTE_CARLO_PERMUTATIONS * len(gene_list_combos) * 24
+        self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
+                      "different Random Forest models.", SafeCastUtil.safeCast(len(gene_list_combos), str),
+                      SafeCastUtil.safeCast(num_models_to_create, str))
 
         file_name = "RandomForestAnalysis.csv"
         with open(file_name, 'w') as csv_file:
             try:
                 writer = csv.writer(csv_file)
                 for feature_set in gene_list_combos:
-                    training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set)
-                    validation_matrix = self.trimMatrixByFeatureSet(DataFormattingService.VALIDATION_MATRIX,
-                                                                    feature_set)
-                    testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set)
-                    feature_set_as_string = SafeCastUtil.safeCast(feature_set, str)
-                    self.log.info("Training Random Forest with feature set: %s", feature_set_as_string)
-                    accuracies = {}
-                    for percent in self.TRAINING_PERCENTS:  # TODO: Use updated Timo algorithm.
-                        split_train_training_matrix = self.furtherSplitTrainingMatrix(percent, training_matrix)
-                        most_accurate_model = self.optimizeHyperparametersForRF(split_train_training_matrix,
-                                                                                validation_matrix)
-                        accuracy = self.predictModelAccuracy(most_accurate_model, testing_matrix)
-                        accuracies[percent] = accuracy
-                        self.log.debug("Random Forest Model trained with accuracy: %s", accuracy)
-                    self.log.info("Accuracies by percent for %s: %s", feature_set_as_string, accuracies)
-                    accuracies_by_gene_set[feature_set_as_string] = accuracies
-                    writer.writerow([feature_set_as_string, accuracies])
-
+                    self.runMonteCarloSelection(feature_set, writer, accuracies_by_gene_set)
             except ValueError as error:
                 self.log.error("Error writing to file %s. %s", file_name, error)
             finally:
@@ -63,7 +47,7 @@ class MachineLearningService(object):
     def determineGeneListCombos(self):
         gene_lists = self.inputs.get(ArgumentProcessingService.GENE_LISTS)
         gene_sets_across_files = {}
-        feature_names = self.inputs.get(ArgumentProcessingService.FEATURE_NAMES)
+        feature_names = self.inputs.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES)
         for feature in feature_names:
             split = feature.split(".")
             if gene_sets_across_files.get(split[0]) is not None:
@@ -97,9 +81,6 @@ class MachineLearningService(object):
                       created_permutations)
         return all_arrays
 
-    def blankArray(self, length):
-        return list(numpy.zeros(length, dtype=numpy.int))
-
     def fetchAllArrayPermutations(self, max_depth, num_files):
         all_arrays = []
         current_array = self.blankArray(num_files)
@@ -118,9 +99,34 @@ class MachineLearningService(object):
                     current_array[subsequent_index + 1] = 0
         return all_arrays
 
-    def trimMatrixByFeatureSet(self, matrix_type, gene_lists):
-        full_matrix = self.inputs.get(matrix_type)
-        feature_names = self.inputs.get(ArgumentProcessingService.FEATURE_NAMES)
+    def blankArray(self, length):
+        return list(numpy.zeros(length, dtype=numpy.int))
+
+    def runMonteCarloSelection(self, feature_set, csv_writer, accuracies_by_gene_set):
+        accuracies = []
+        feature_set_as_string = SafeCastUtil.safeCast(feature_set, str)
+        for monte_carlo_perm in range(1, self.MONTE_CARLO_PERMUTATIONS + 1):
+            formatted_data = self.formatData()
+            training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set, formatted_data)
+            validation_matrix = self.trimMatrixByFeatureSet(DataFormattingService.VALIDATION_MATRIX, feature_set, formatted_data)
+            testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set, formatted_data)
+            self.log.info("Training Random Forest with feature set: %s.\n"
+                          "On Monte Carlo permutation %s", feature_set_as_string, monte_carlo_perm)
+            most_accurate_model = self.optimizeHyperparametersForRF(training_matrix, validation_matrix)
+            accuracy = self.predictModelAccuracy(most_accurate_model, testing_matrix)
+            accuracies.append(accuracy)
+            self.log.debug("Random Forest Model trained with accuracy: %s", accuracy)
+        accuracies_by_gene_set[feature_set_as_string] = accuracies
+        self.log.info("Total accuracies of all Monte Carlo runs for %s: %s", feature_set_as_string, accuracies)
+        csv_writer.writerow([feature_set_as_string, accuracies])
+
+    def formatData(self):
+        data_formatting_service = DataFormattingService(self.inputs)
+        return data_formatting_service.formatData()
+
+    def trimMatrixByFeatureSet(self, matrix_type, gene_lists, formatted_inputs):
+        full_matrix = formatted_inputs.get(matrix_type)
+        feature_names = self.inputs.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES)
         important_indices = []
         for i in range(0, len(feature_names)):
             for gene_list in gene_lists:
