@@ -53,7 +53,7 @@ class DataFormattingServiceIT(unittest.TestCase):
         self.validateOutput(self.formatRandomizedData(False))
 
     def formatRandomizedData(self, is_classifier):
-        RandomizedDataGenerator.generateRandomizedFiles(5, 50, 150, is_classifier)
+        RandomizedDataGenerator.generateRandomizedFiles(5, 50, 150, is_classifier, 10, .8)
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         argument_processing_service = ArgumentProcessingService(input_folder)
         arguments = argument_processing_service.handleInputFolder()

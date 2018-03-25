@@ -14,8 +14,7 @@ class DataFormattingService(object):
     log.setLevel(logging.INFO)
     
     TRAINING_MATRIX = "trainingMatrix"
-    TESTING_MATRIX = "testingMatrix"
-    VALIDATION_MATRIX = "validationMatrix"
+    TESTING_MATRIX = "testingMatrix"  # Will either be outer testing or inner validation matrix
 
     def __init__(self, inputs):
         self.inputs = inputs
@@ -25,16 +24,13 @@ class DataFormattingService(object):
         features_df = pd.DataFrame.from_dict(self.inputs[ArgumentProcessingService.FEATURES], orient='index')
         features_df = features_df.drop(ArgumentProcessingService.FEATURE_NAMES)
         features_oh_df = self.oneHot(features_df)
-        
-        x_train, x_validate, x_test, y_train, y_validate, y_test = \
-            self.testTrainSplit(features_oh_df, self.inputs[ArgumentProcessingService.RESULTS])
 
-        #TODO: Make sure ratios of these correspond to new Timo algorithm.
-        # The Training + Validation = 80% of data, while Testing = 20%
-        # The Validation = 20% of the Training + Validation.
+        x_train, x_test, y_train, y_test = self.testTrainSplit(features_oh_df,
+                                                               self.inputs[ArgumentProcessingService.RESULTS],
+                                                               self.inputs[ArgumentProcessingService.DATA_SPLIT])
+
         self.outputs[self.TRAINING_MATRIX] = x_train.transpose().to_dict('list')
         self.outputs[self.TESTING_MATRIX] = x_test.transpose().to_dict('list')
-        self.outputs[self.VALIDATION_MATRIX] = x_validate.transpose().to_dict('list')
         return self.outputs
 
     def encodeCategorical(self, array):
@@ -55,10 +51,10 @@ class DataFormattingService(object):
         dataframe_binary_pd = pd.get_dummies(dataframe)
         return dataframe_binary_pd
 
-    def testTrainSplit(self, x_values, y_values):
-        x_train, x_split, y_train, y_split = train_test_split(x_values, y_values, test_size=0.2)
-        x_test, x_validate, y_test, y_validate = train_test_split(x_split, y_split, test_size=0.5)
-        return x_train, x_validate, x_test, y_train, y_validate, y_test
+    def testTrainSplit(self, x_values, y_values, data_split):
+        x_train, x_test, y_train, y_test = train_test_split(x_values, y_values, test_size=(1 - data_split))
+        # x_test, x_validate, y_test, y_validate = train_test_split(x_split, y_split, test_size=0.5)
+        return x_train, x_test, y_train, y_test
 
     def testStratifySplit(self, x_values, y_values):
         x_train, x_split, y_train, y_split = train_test_split(x_values, y_values, test_size=0.2, random_state=42,

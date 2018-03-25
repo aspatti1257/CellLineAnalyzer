@@ -20,14 +20,15 @@ class RandomizedDataGenerator(object):
 
 
     @staticmethod
-    def generateRandomizedFiles(num_feature_files, num_cells, num_features, is_classifier):
+    def generateRandomizedFiles(num_feature_files, num_cells, num_features, is_classifier, monte_carlo_permutations,
+                                data_split):
 
         features_per_file = SafeCastUtil.safeCast(num_features / num_feature_files, int)
 
         RandomizedDataGenerator.generateFeaturesCSVs(num_feature_files, num_cells, features_per_file)
         RandomizedDataGenerator.generateGeneLists(features_per_file)
         RandomizedDataGenerator.generateResultsCSV(is_classifier, num_cells)
-        RandomizedDataGenerator.generateArgsTxt(is_classifier)
+        RandomizedDataGenerator.generateArgsTxt(is_classifier, monte_carlo_permutations, data_split)
         return
 
     @staticmethod
@@ -107,7 +108,7 @@ class RandomizedDataGenerator(object):
         pass
 
     @staticmethod
-    def generateArgsTxt(is_classifier):
+    def generateArgsTxt(is_classifier, monte_carlo_permutations=10, data_split=.8):
         file_name = RandomizedDataGenerator.GENERATED_DATA_FOLDER + "/" + ArgumentProcessingService.ARGUMENTS_FILE
         args_file = open(file_name, 'w')
         classifier = '0'
@@ -115,5 +116,7 @@ class RandomizedDataGenerator(object):
             classifier = '1'
         args_file.write('results=results.csv\n' +
                         'data_split=[80,10,10]\n' +
-                        'is_classifier=' + classifier + "\n")
+                        'is_classifier=' + classifier + "\n" +
+                        'monte_carlo_permutations=' + SafeCastUtil.safeCast(monte_carlo_permutations, str) + '\n'
+                        'data_split=' + SafeCastUtil.safeCast(data_split, str) + '\n')
         args_file.close()

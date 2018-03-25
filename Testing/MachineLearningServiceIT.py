@@ -4,7 +4,6 @@ import os
 
 from MachineLearningService import MachineLearningService
 from ArgumentProcessingService import ArgumentProcessingService
-from DataFormattingService import DataFormattingService
 from Utilities.RandomizedDataGenerator import RandomizedDataGenerator
 
 
@@ -42,7 +41,7 @@ class MachineLearningServiceIT(unittest.TestCase):
             assert type(rf_results[percentage][0]) is float
 
     def formatRandomizedData(self, is_classifier):
-        RandomizedDataGenerator.generateRandomizedFiles(5, 50, 150, is_classifier)
+        RandomizedDataGenerator.generateRandomizedFiles(3, 1000, 150, is_classifier, 10, .8)
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         argument_processing_service = ArgumentProcessingService(input_folder)
         return argument_processing_service.handleInputFolder()

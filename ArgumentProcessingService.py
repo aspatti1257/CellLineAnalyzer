@@ -18,7 +18,8 @@ class ArgumentProcessingService(object):
     IS_CLASSIFIER = "is_classifier"
     FEATURES = "features"
     FEATURE_NAMES = "featureNames"
-    IMPORTANT_FEATURES = "important_features"  # TODO: Maybe regress
+    MONTE_CARLO_PERMUTATIONS = "monte_carlo_permutations"
+    DATA_SPLIT = "data_split"
 
     def __init__(self, input_folder):
         self.input_folder = input_folder
@@ -26,33 +27,26 @@ class ArgumentProcessingService(object):
     def handleInputFolder(self):
         directory_contents = os.listdir(self.input_folder)
         if not self.validateDirectoryContents(directory_contents):
-            self.log.error("Invalid directory contents, needs a %s file.",
-                           self.ARGUMENTS_FILE)
+            self.log.error("Invalid directory contents, needs a %s file.", self.ARGUMENTS_FILE)
             return None
 
         arguments = self.fetchArguments(self.input_folder + "/" + self.ARGUMENTS_FILE)
         results_file = arguments.get(self.RESULTS)
         is_classifier = SafeCastUtil.safeCast(arguments.get(self.IS_CLASSIFIER), int) == 1
-        important_features = self.extractImportantFeatures(arguments)
         if is_classifier is not None and results_file is not None:
             results_list = self.validateAndExtractResults(results_file, is_classifier)
-            feature_map = self.createAndValidateFeatureMatrix(results_list, results_file, important_features)
+            feature_map = self.createAndValidateFeatureMatrix(results_list, results_file)
             gene_lists = self.extractGeneList()
             return {
                 self.RESULTS: results_list,
                 self.IS_CLASSIFIER: is_classifier,
                 self.FEATURES: feature_map,
-                self.GENE_LISTS: gene_lists
+                self.GENE_LISTS: gene_lists,
+                self.MONTE_CARLO_PERMUTATIONS: self.fetchOrReturnDefault(arguments.get(self.MONTE_CARLO_PERMUTATIONS), int, 10),
+                self.DATA_SPLIT: self.fetchOrReturnDefault(arguments.get(self.DATA_SPLIT), float, 0.8),
             }
         else:
             return None
-
-    def extractImportantFeatures(self, arguments):
-        important_features = arguments.get(self.IMPORTANT_FEATURES)
-        if important_features is not None:
-            return [feature.strip() for feature in important_features.split(",")]
-        else:
-            return []
 
     def validateDirectoryContents(self, directory_contents):
         return self.ARGUMENTS_FILE in directory_contents
@@ -101,7 +95,7 @@ class ArgumentProcessingService(object):
                 data_file.close()
         return sample_list
 
-    def createAndValidateFeatureMatrix(self, results_list, results_file, important_features):
+    def createAndValidateFeatureMatrix(self, results_list, results_file):
         files = os.listdir(self.input_folder)
         feature_map = {self.FEATURE_NAMES: []}
         for file in [f for f in files if f != results_file and f != self.ARGUMENTS_FILE and self.GENE_LISTS not in f]:
@@ -114,9 +108,8 @@ class ArgumentProcessingService(object):
                             feature_names = line.split(",")
                             for i in range(0, len(feature_names)):
                                 feature_name = self.determineFeatureName(feature_names[i], file)
-                                if self.featureIsImportant(important_features, feature_name):
-                                    feature_map[self.FEATURE_NAMES].append(feature_name)
-                                    important_feature_indices.append(i)
+                                feature_map[self.FEATURE_NAMES].append(feature_name)
+                                important_feature_indices.append(i)
                         else:
                             features = self.extractCastedFeatures(line, important_feature_indices)
                             cell_line = results_list[line_index - 1]
@@ -138,14 +131,6 @@ class ArgumentProcessingService(object):
     def determineFeatureName(self, feature_name, file):
         return SafeCastUtil.safeCast(file.split(".")[0] + "." + feature_name.strip(), str)
 
-    def featureIsImportant(self, important_features, feature_name):
-        if len(important_features) == 0:
-            return True
-        for feature in important_features:
-            if feature == feature_name:
-                return True
-        return False
-
     def extractCastedFeatures(self, line, important_feature_indices):
         important_features = []
         feature_names = line.split(",")
@@ -166,3 +151,11 @@ class ArgumentProcessingService(object):
                 gene_lists[file.split(".csv")[0]] = gene_list_file.read().strip().split(",")
 
         return gene_lists
+
+    def fetchOrReturnDefault(self, field, to_type, default):
+        if field:
+            return SafeCastUtil.safeCast(field, to_type)
+        else:
+            return default
+
+
