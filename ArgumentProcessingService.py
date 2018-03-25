@@ -20,6 +20,8 @@ class ArgumentProcessingService(object):
     FEATURE_NAMES = "featureNames"
     MONTE_CARLO_PERMUTATIONS = "monte_carlo_permutations"
     DATA_SPLIT = "data_split"
+    SKIP_RF = "skip_rf"
+    SKIP_SVM = "skip_svm"
 
     def __init__(self, input_folder):
         self.input_folder = input_folder
@@ -44,6 +46,8 @@ class ArgumentProcessingService(object):
                 self.GENE_LISTS: gene_lists,
                 self.MONTE_CARLO_PERMUTATIONS: self.fetchOrReturnDefault(arguments.get(self.MONTE_CARLO_PERMUTATIONS), int, 10),
                 self.DATA_SPLIT: self.fetchOrReturnDefault(arguments.get(self.DATA_SPLIT), float, 0.8),
+                self.SKIP_RF: self.fetchOrReturnDefault(arguments.get(self.SKIP_RF), bool, False),
+                self.SKIP_SVM: self.fetchOrReturnDefault(arguments.get(self.SKIP_SVM), bool, False)
             }
         else:
             return None

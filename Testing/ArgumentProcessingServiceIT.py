@@ -40,7 +40,7 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
         argument_processing_service = ArgumentProcessingService(input_folder)
         arguments = argument_processing_service.handleInputFolder()
         assert arguments is not None
-        assert len(arguments) == 6
+        assert len(arguments) == 8
         assert (len(arguments.get(argument_processing_service.RESULTS)) + 1) == \
                 len(arguments.get(argument_processing_service.FEATURES).keys())
         assert arguments.get(argument_processing_service.IS_CLASSIFIER) == is_classifier

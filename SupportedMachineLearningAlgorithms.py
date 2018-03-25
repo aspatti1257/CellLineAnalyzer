@@ -1,3 +1,3 @@
 class SupportedMachineLearningAlgorithms:
-    RANDOM_FOREST = "RandomForest"
-    LINEAR_SVM = "LinearSVM"
+    RANDOM_FOREST = "RandomForestAnalysis"
+    LINEAR_SVM = "LinearSVMAnalysis"

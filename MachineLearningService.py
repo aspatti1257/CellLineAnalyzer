@@ -1,12 +1,14 @@
 import logging
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestRegressor
+from sklearn import svm
 import numpy
 import os
 import csv
 
 from ArgumentProcessingService import ArgumentProcessingService
 from DataFormattingService import DataFormattingService
+from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Utilities.SafeCastUtil import SafeCastUtil
 from sklearn.metrics import r2_score
 
@@ -15,6 +17,8 @@ class MachineLearningService(object):
     log = logging.getLogger(__name__)
     log.setLevel(logging.INFO)
 
+    DEFAULT_MIN_SCORE = -1
+
     def __init__(self, data):
         self.inputs = data
 
@@ -22,27 +26,42 @@ class MachineLearningService(object):
         accuracies_by_gene_set = {}
         gene_list_combos = self.determineGeneListCombos()
         monte_carlo_perms = self.inputs.get(ArgumentProcessingService.MONTE_CARLO_PERMUTATIONS)
-        num_models_to_create = monte_carlo_perms * 2 * len(gene_list_combos) * 24
-        self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
-                      "different Random Forest models.", SafeCastUtil.safeCast(len(gene_list_combos), str),
-                      SafeCastUtil.safeCast(num_models_to_create, str))
 
-        file_name = "RandomForestAnalysis.csv"
-        # TODO Implement linear SVM.
+        if not self.inputs.get(ArgumentProcessingService.SKIP_RF):
+            num_models_to_create = monte_carlo_perms * 2 * len(gene_list_combos) * (6 * 4)
+            self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
+                          "different Random Forest models.", SafeCastUtil.safeCast(len(gene_list_combos), str),
+                          SafeCastUtil.safeCast(num_models_to_create, str))
+            self.handleCSVWriting(accuracies_by_gene_set, gene_list_combos, input_folder, monte_carlo_perms,
+                                  SupportedMachineLearningAlgorithms.RANDOM_FOREST)
+
+        if not self.inputs.get(ArgumentProcessingService.SKIP_SVM):
+            num_models_to_create = monte_carlo_perms * 2 * len(gene_list_combos) * (9 * 7)
+            if not self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
+                num_models_to_create = num_models_to_create * 5
+            self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
+                          "different Support Vector Machine models.", SafeCastUtil.safeCast(len(gene_list_combos), str),
+                          SafeCastUtil.safeCast(num_models_to_create, str))
+            self.handleCSVWriting(accuracies_by_gene_set, gene_list_combos, input_folder, monte_carlo_perms,
+                                  SupportedMachineLearningAlgorithms.LINEAR_SVM)
+
+        self.log.info("Total accuracies by percentage of training data for %s: %s", self.analysisType(),
+                      accuracies_by_gene_set)
+        return accuracies_by_gene_set
+
+    def handleCSVWriting(self, accuracies_by_gene_set, gene_list_combos, input_folder, monte_carlo_perms, ml_algorithm):
+        file_name = ml_algorithm + ".csv"
         with open(file_name, 'w') as csv_file:
             try:
                 writer = csv.writer(csv_file)
                 for feature_set in gene_list_combos:
-                    self.runMonteCarloSelection(feature_set, writer, accuracies_by_gene_set, monte_carlo_perms)
+                    self.runMonteCarloSelection(feature_set, writer, accuracies_by_gene_set, monte_carlo_perms,
+                                                ml_algorithm)
             except ValueError as error:
                 self.log.error("Error writing to file %s. %s", file_name, error)
             finally:
                 csv_file.close()
                 os.chdir(input_folder)
-
-        self.log.info("Total accuracies by percentage of training data for %s: %s", self.analysisType(),
-                      accuracies_by_gene_set)
-        return accuracies_by_gene_set
 
     def determineGeneListCombos(self):
         gene_lists = self.inputs.get(ArgumentProcessingService.GENE_LISTS)
@@ -102,7 +121,7 @@ class MachineLearningService(object):
     def blankArray(self, length):
         return list(numpy.zeros(length, dtype=numpy.int))
 
-    def runMonteCarloSelection(self, feature_set, csv_writer, accuracies_by_gene_set, monte_carlo_perms):
+    def runMonteCarloSelection(self, feature_set, csv_writer, accuracies_by_gene_set, monte_carlo_perms, ml_algorithm):
         accuracies = []
         feature_set_as_string = SafeCastUtil.safeCast(feature_set, str)
         for i in range(1, monte_carlo_perms + 1):
@@ -112,23 +131,40 @@ class MachineLearningService(object):
 
             self.log.info("Computing outer Monte Carlo Permutation %s for %s.", i, feature_set_as_string)
 
-            optimal_hyperparams = self.determineOptimalHyperparameters(feature_set, formatted_data, monte_carlo_perms)
+            optimal_hyperparams = self.determineOptimalHyperparameters(feature_set, formatted_data, monte_carlo_perms,
+                                                                       ml_algorithm)
             features, results = self.populateFeaturesAndResultsByCellLine(training_matrix)
-            n = len(SafeCastUtil.safeCast(training_matrix.keys(), list))  # number of samples
-
-            self.log.info("Optimal Hyperparameters for %s algorithm chosen as:\n" +
-                          "m_val = %s\n" +
-                          "max depth = %s", feature_set_as_string, optimal_hyperparams[0], optimal_hyperparams[1] * n)
-            model = self.trainRandomForest(results, features, optimal_hyperparams[0], optimal_hyperparams[1] * n)
-            model_score = self.predictModelAccuracy(model, testing_matrix)
-            accuracies.append(model_score)
+            accuracies.append(self.fetchOuterPermutationModelScore(feature_set_as_string, features, ml_algorithm,
+                                                                   optimal_hyperparams, results, testing_matrix,
+                                                                   training_matrix))
 
         average_accuracy = numpy.mean(accuracies)
         accuracies_by_gene_set[feature_set_as_string] = average_accuracy
         self.log.info("Total accuracy of all Monte Carlo runs for %s: %s", feature_set_as_string,average_accuracy)
         csv_writer.writerow([feature_set_as_string, average_accuracy])
 
-    def determineInnerHyperparameters(self, feature_set, formatted_data, monte_carlo_perms):
+    def fetchOuterPermutationModelScore(self, feature_set_as_string, features, ml_algorithm, optimal_hyperparams,
+                                        results, testing_matrix, training_matrix):
+        if ml_algorithm is SupportedMachineLearningAlgorithms.RANDOM_FOREST:
+            n = len(SafeCastUtil.safeCast(training_matrix.keys(), list))  # number of samples
+            self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
+                          "m_val = %s\n" +
+                          "max depth = %s", feature_set_as_string, ml_algorithm, optimal_hyperparams[0],
+                          optimal_hyperparams[1] * n)
+            model = self.trainRandomForest(results, features, optimal_hyperparams[0], optimal_hyperparams[1] * n)
+        elif ml_algorithm is SupportedMachineLearningAlgorithms.LINEAR_SVM:
+            self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
+                          "m_val = %s\n" +
+                          "max depth = %s", feature_set_as_string, ml_algorithm, optimal_hyperparams[0],
+                          optimal_hyperparams[1])
+            model = self.trainLinearSVM(results, features, optimal_hyperparams[0], optimal_hyperparams[1],
+                                        optimal_hyperparams[2])
+        else:
+            return self.DEFAULT_MIN_SCORE
+        model_score = self.predictModelAccuracy(model, testing_matrix)
+        return model_score
+
+    def determineInnerHyperparameters(self, feature_set, formatted_data, monte_carlo_perms, ml_algorithm):
         inner_model_hyperparams = {}
         for j in range(1, monte_carlo_perms + 1):
             formatted_inputs = self.reformatInputsByTrainingMatrix(
@@ -138,7 +174,12 @@ class MachineLearningService(object):
                                                                   further_formatted_data)
             inner_train_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set,
                                                              further_formatted_data)
-            model_data = self.hyperparameterizeForRF(inner_train_matrix, inner_validation_matrix)
+            if ml_algorithm is SupportedMachineLearningAlgorithms.RANDOM_FOREST:
+                model_data = self.hyperparameterizeForRF(inner_train_matrix, inner_validation_matrix)
+            elif ml_algorithm is SupportedMachineLearningAlgorithms.LINEAR_SVM:
+                model_data = self.hyperparameterizeForSVM(inner_train_matrix, inner_validation_matrix)
+            else:
+                return inner_model_hyperparams
             for data in model_data.keys():
                 if inner_model_hyperparams.get(data) is not None:
                     inner_model_hyperparams[data].append(model_data[data])
@@ -168,9 +209,10 @@ class MachineLearningService(object):
         new_inputs[ArgumentProcessingService.DATA_SPLIT] = self.inputs[ArgumentProcessingService.DATA_SPLIT]
         return new_inputs
 
-    def determineOptimalHyperparameters(self, feature_set, formatted_data, monte_carlo_perms):
-        inner_model_hyperparams = self.determineInnerHyperparameters(feature_set, formatted_data, monte_carlo_perms)
-        highest_average = -1
+    def determineOptimalHyperparameters(self, feature_set, formatted_data, monte_carlo_perms, ml_algorithm):
+        inner_model_hyperparams = self.determineInnerHyperparameters(feature_set, formatted_data, monte_carlo_perms,
+                                                                     ml_algorithm)
+        highest_average = self.DEFAULT_MIN_SCORE
         best_hyperparam = None
         for hyperparam_set in inner_model_hyperparams.keys():
             average = numpy.average(inner_model_hyperparams[hyperparam_set])
@@ -211,12 +253,28 @@ class MachineLearningService(object):
         model_data = {}
         p = len(SafeCastUtil.safeCast(training_matrix.values(), list))  # number of features
         n = len(SafeCastUtil.safeCast(training_matrix.keys(), list))  # number of samples
+        features, results = self.populateFeaturesAndResultsByCellLine(training_matrix)
         for m_val in [1, (1 + numpy.sqrt(p)) / 2, numpy.sqrt(p), (numpy.sqrt(p) + p) / 2, p]:
             for max_depth in [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.75, 1]:
-                features, results = self.populateFeaturesAndResultsByCellLine(training_matrix)
                 model = self.trainRandomForest(results, features, m_val, max_depth * n)
                 current_model_score = self.predictModelAccuracy(model, validation_matrix)
                 model_data[m_val, max_depth] = current_model_score
+        return model_data
+
+    def hyperparameterizeForSVM(self, training_matrix, validation_matrix):
+        model_data = {}
+        features, results = self.populateFeaturesAndResultsByCellLine(training_matrix)
+        for c_val in [10E-2, 10E-1, 10E0, 10E1, 10E2, 10E3, 10E4, 10E5, 10E6]:
+            for gamma in [10E-5, 10E-4, 10E-3, 10E-2, 10E-1, 10E0, 10E1]:
+                if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
+                    model = self.trainLinearSVM(results, features, c_val, gamma, None)
+                    current_model_score = self.predictModelAccuracy(model, validation_matrix)
+                    model_data[c_val, gamma, None] = current_model_score
+                else:
+                    for epsilon in [0.01, 0.05, 0.1, 0.15, 0.2]:
+                        model = self.trainLinearSVM(results, features, c_val, gamma, epsilon)
+                        current_model_score = self.predictModelAccuracy(model, validation_matrix)
+                        model_data[c_val, gamma, epsilon] = current_model_score
         return model_data
 
     def populateFeaturesAndResultsByCellLine(self, matrix):
@@ -240,9 +298,18 @@ class MachineLearningService(object):
         self.log.debug("Successful creation of Random Forest model: %s\n", model)
         return model
 
+    def trainLinearSVM(self, results, features, c_val, gamma, epsilon):
+        if epsilon is None or self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
+            model = svm.SVC(kernel='linear', C=c_val, gamma=gamma)
+        else:
+            model = svm.SVR(kernel='linear', C=c_val, gamma=gamma, epsilon=epsilon)
+        model.fit(features, results)
+        self.log.debug("Successful creation of Support Vector Machine model: %s\n", model)
+        return model
+
     def predictModelAccuracy(self, model, validation_matrix):
         if model is None:
-            return 0
+            return self.DEFAULT_MIN_SCORE
         features, results = self.populateFeaturesAndResultsByCellLine(validation_matrix)
         predictions = model.predict(features)
         if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):

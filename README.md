@@ -35,9 +35,17 @@ To run Cell Line Analyzer, update the `arguments.txt` file.
 
 `results`: "File Name of CSV"
 
-`data_split`: [x%, y%, z%], where x + y + z = 100
+`data_split`: Optional float between 0 and 1, representing how much data should be held out for each Monte Carlo
+              subsampling. Defaults to 0.8.
+
+`monte_carlo_permutations`: Integer representing the number of Monte Carlo subsamples to do for hyperparameter
+                            optimization. Defaults to 10.
 
 `is_classifier`: 0 for regression, 1 for classification
+
+`skip_rf` : Optionally skip Random Forest analysis. Defaults to False.
+
+`skip_svm` : Optionally skip Support Vector Machine analysis. Defaults to False.
 
 Also in the path should be files marked with the string "gene_list" in them, e.g. gene_list1.csv,
 gene_list2.csv, etc.
@@ -54,8 +62,10 @@ file.
 
 ```
 results=results.csv
-data_split=[80,10,10]
 is_classifier=1
+monte_carlo_permutations=10
+data_split=0.8
+skip_rf=True
 ```
 
 ### Example of all files in the directory:
