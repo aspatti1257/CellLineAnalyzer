@@ -6,6 +6,9 @@ import numpy
 import os
 import csv
 
+import multiprocessing
+from joblib import Parallel, delayed
+
 from ArgumentProcessingService import ArgumentProcessingService
 from DataFormattingService import DataFormattingService
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
@@ -32,8 +35,8 @@ class MachineLearningService(object):
             self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
                           "different Random Forest models.", SafeCastUtil.safeCast(len(gene_list_combos), str),
                           SafeCastUtil.safeCast(num_models_to_create, str))
-            self.handleCSVWriting(accuracies_by_gene_set, gene_list_combos, input_folder, monte_carlo_perms,
-                                  SupportedMachineLearningAlgorithms.RANDOM_FOREST)
+            self.handleParallellization(accuracies_by_gene_set, gene_list_combos, input_folder, monte_carlo_perms,
+                                        SupportedMachineLearningAlgorithms.RANDOM_FOREST)
 
         if not self.inputs.get(ArgumentProcessingService.SKIP_SVM):
             num_models_to_create = monte_carlo_perms * 2 * len(gene_list_combos) * (9 * 7)
@@ -42,26 +45,20 @@ class MachineLearningService(object):
             self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
                           "different Support Vector Machine models.", SafeCastUtil.safeCast(len(gene_list_combos), str),
                           SafeCastUtil.safeCast(num_models_to_create, str))
-            self.handleCSVWriting(accuracies_by_gene_set, gene_list_combos, input_folder, monte_carlo_perms,
-                                  SupportedMachineLearningAlgorithms.LINEAR_SVM)
+            self.handleParallellization(accuracies_by_gene_set, gene_list_combos, input_folder, monte_carlo_perms,
+                                        SupportedMachineLearningAlgorithms.LINEAR_SVM)
 
         self.log.info("Total accuracies by percentage of training data for %s: %s", self.analysisType(),
                       accuracies_by_gene_set)
         return accuracies_by_gene_set
 
-    def handleCSVWriting(self, accuracies_by_gene_set, gene_list_combos, input_folder, monte_carlo_perms, ml_algorithm):
-        file_name = ml_algorithm + ".csv"
-        with open(file_name, 'w') as csv_file:
-            try:
-                writer = csv.writer(csv_file)
-                for feature_set in gene_list_combos:
-                    self.runMonteCarloSelection(feature_set, writer, accuracies_by_gene_set, monte_carlo_perms,
-                                                ml_algorithm)
-            except ValueError as error:
-                self.log.error("Error writing to file %s. %s", file_name, error)
-            finally:
-                csv_file.close()
-                os.chdir(input_folder)
+    def handleParallellization(self, accuracies_by_gene_set, gene_list_combos, input_folder, monte_carlo_perms, ml_algorithm):
+        num_nodes = multiprocessing.cpu_count()  # TODO: Find out how many nodes we have available.
+
+        Parallel(n_jobs=num_nodes)(delayed(self.runMonteCarloSelection)(feature_set,
+                                                                        accuracies_by_gene_set,
+                                                                        monte_carlo_perms, ml_algorithm, input_folder)
+                                   for feature_set in gene_list_combos)
 
     def determineGeneListCombos(self):
         gene_lists = self.inputs.get(ArgumentProcessingService.GENE_LISTS)
@@ -121,7 +118,7 @@ class MachineLearningService(object):
     def blankArray(self, length):
         return list(numpy.zeros(length, dtype=numpy.int))
 
-    def runMonteCarloSelection(self, feature_set, csv_writer, accuracies_by_gene_set, monte_carlo_perms, ml_algorithm):
+    def runMonteCarloSelection(self, feature_set, accuracies_by_gene_set, monte_carlo_perms, ml_algorithm, input_folder):
         accuracies = []
         feature_set_as_string = SafeCastUtil.safeCast(feature_set, str)
         for i in range(1, monte_carlo_perms + 1):
@@ -141,18 +138,18 @@ class MachineLearningService(object):
         average_accuracy = numpy.mean(accuracies)
         accuracies_by_gene_set[feature_set_as_string] = average_accuracy
         self.log.info("Total accuracy of all Monte Carlo runs for %s: %s", feature_set_as_string,average_accuracy)
-        csv_writer.writerow([feature_set_as_string, average_accuracy])
+        self.writeToCSV(average_accuracy, feature_set_as_string, input_folder, ml_algorithm)
 
     def fetchOuterPermutationModelScore(self, feature_set_as_string, features, ml_algorithm, optimal_hyperparams,
                                         results, testing_matrix, training_matrix):
-        if ml_algorithm is SupportedMachineLearningAlgorithms.RANDOM_FOREST:
+        if ml_algorithm == SupportedMachineLearningAlgorithms.RANDOM_FOREST:
             n = len(SafeCastUtil.safeCast(training_matrix.keys(), list))  # number of samples
             self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
                           "m_val = %s\n" +
                           "max depth = %s", feature_set_as_string, ml_algorithm, optimal_hyperparams[0],
                           optimal_hyperparams[1] * n)
             model = self.trainRandomForest(results, features, optimal_hyperparams[0], optimal_hyperparams[1] * n)
-        elif ml_algorithm is SupportedMachineLearningAlgorithms.LINEAR_SVM:
+        elif ml_algorithm == SupportedMachineLearningAlgorithms.LINEAR_SVM:
             self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
                           "m_val = %s\n" +
                           "max depth = %s", feature_set_as_string, ml_algorithm, optimal_hyperparams[0],
@@ -174,9 +171,9 @@ class MachineLearningService(object):
                                                                   further_formatted_data)
             inner_train_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set,
                                                              further_formatted_data)
-            if ml_algorithm is SupportedMachineLearningAlgorithms.RANDOM_FOREST:
+            if ml_algorithm == SupportedMachineLearningAlgorithms.RANDOM_FOREST:
                 model_data = self.hyperparameterizeForRF(inner_train_matrix, inner_validation_matrix)
-            elif ml_algorithm is SupportedMachineLearningAlgorithms.LINEAR_SVM:
+            elif ml_algorithm == SupportedMachineLearningAlgorithms.LINEAR_SVM:
                 model_data = self.hyperparameterizeForSVM(inner_train_matrix, inner_validation_matrix)
             else:
                 return inner_model_hyperparams
@@ -185,7 +182,7 @@ class MachineLearningService(object):
                     inner_model_hyperparams[data].append(model_data[data])
                 else:
                     inner_model_hyperparams[data] = [model_data[data]]
-        return inner_model_hyperparams
+            return inner_model_hyperparams
 
     def formatData(self, inputs):
         data_formatting_service = DataFormattingService(inputs)
@@ -239,15 +236,6 @@ class MachineLearningService(object):
                     new_cell_line_features.append(full_matrix[cell_line][j])
             trimmed_matrix[cell_line] = new_cell_line_features
         return trimmed_matrix
-
-    def furtherSplitTrainingMatrix(self, percent, matrix):
-        self.log.debug("Splitting training matrix to only use %s percent of data.", percent)
-        new_matrix_len = SafeCastUtil.safeCast(len(matrix.keys()) * (percent / 100), int)
-        split_matrix = {}
-        for cell_line in SafeCastUtil.safeCast(matrix.keys(), list):
-            if len(split_matrix.keys()) < new_matrix_len:
-                split_matrix[cell_line] = matrix[cell_line]
-        return matrix
 
     def hyperparameterizeForRF(self, training_matrix, validation_matrix):
         model_data = {}
@@ -320,6 +308,22 @@ class MachineLearningService(object):
             return accurate_hits / len(predictions)
         else:
             return SafeCastUtil.safeCast(r2_score(results, predictions), float)
+
+    def writeToCSV(self, average_accuracy, feature_set_as_string, input_folder, ml_algorithm):
+        # TODO: This needs to be locked and sent across to one row.
+        file_name = ml_algorithm + ".csv"
+        write_action = "w"
+        if file_name in os.listdir(input_folder):
+            write_action = "a"
+        with open(input_folder + "/" + file_name, write_action) as csv_file:
+            try:
+                writer = csv.writer(csv_file)
+                writer.writerow([feature_set_as_string, average_accuracy])
+            except ValueError as error:
+                self.log.error("Error writing to file %s. %s", file_name, error)
+            finally:
+                csv_file.close()
+                os.chdir(input_folder)
 
     def analysisType(self):
         if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
