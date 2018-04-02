@@ -7,6 +7,7 @@ import os
 import csv
 
 import multiprocessing
+import threading
 from joblib import Parallel, delayed
 
 from ArgumentProcessingService import ArgumentProcessingService
@@ -118,7 +119,8 @@ class MachineLearningService(object):
     def blankArray(self, length):
         return list(numpy.zeros(length, dtype=numpy.int))
 
-    def runMonteCarloSelection(self, feature_set, accuracies_by_gene_set, monte_carlo_perms, ml_algorithm, input_folder):
+    def runMonteCarloSelection(self, feature_set, accuracies_by_gene_set, monte_carlo_perms, ml_algorithm,
+                               input_folder):
         accuracies = []
         feature_set_as_string = SafeCastUtil.safeCast(feature_set, str)
         for i in range(1, monte_carlo_perms + 1):
@@ -138,7 +140,7 @@ class MachineLearningService(object):
         average_accuracy = numpy.mean(accuracies)
         accuracies_by_gene_set[feature_set_as_string] = average_accuracy
         self.log.info("Total accuracy of all Monte Carlo runs for %s: %s", feature_set_as_string,average_accuracy)
-        self.writeToCSV(average_accuracy, feature_set_as_string, input_folder, ml_algorithm)
+        self.writeToCSVInLock(average_accuracy, feature_set_as_string, input_folder, ml_algorithm)
 
     def fetchOuterPermutationModelScore(self, feature_set_as_string, features, ml_algorithm, optimal_hyperparams,
                                         results, testing_matrix, training_matrix):
@@ -309,8 +311,11 @@ class MachineLearningService(object):
         else:
             return SafeCastUtil.safeCast(r2_score(results, predictions), float)
 
-    def writeToCSV(self, average_accuracy, feature_set_as_string, input_folder, ml_algorithm):
-        # TODO: This needs to be locked and sent across to one row.
+    def writeToCSVInLock(self, average_accuracy, feature_set_as_string, input_folder, ml_algorithm):
+        lock = threading.Lock()
+        self.log.debug("Locking current thread %s.", threading.current_thread())
+        lock.acquire(True)
+
         file_name = ml_algorithm + ".csv"
         write_action = "w"
         if file_name in os.listdir(input_folder):
@@ -324,6 +329,8 @@ class MachineLearningService(object):
             finally:
                 csv_file.close()
                 os.chdir(input_folder)
+                self.log.debug("Releasing current thread %s.", threading.current_thread())
+                lock.release()
 
     def analysisType(self):
         if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
