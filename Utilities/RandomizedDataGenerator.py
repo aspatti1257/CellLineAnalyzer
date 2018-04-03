@@ -115,7 +115,6 @@ class RandomizedDataGenerator(object):
         if is_classifier:
             classifier = '1'
         args_file.write('results=results.csv\n' +
-                        'data_split=[80,10,10]\n' +
                         'is_classifier=' + classifier + "\n" +
                         'monte_carlo_permutations=' + SafeCastUtil.safeCast(monte_carlo_permutations, str) + '\n'
                         'data_split=' + SafeCastUtil.safeCast(data_split, str) + '\n')

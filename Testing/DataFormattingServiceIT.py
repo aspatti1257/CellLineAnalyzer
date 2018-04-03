@@ -65,12 +65,9 @@ class DataFormattingServiceIT(unittest.TestCase):
         assert output is not None
         assert output.get(DataFormattingService.TRAINING_MATRIX) is not None
         assert output.get(DataFormattingService.TESTING_MATRIX) is not None
-        assert output.get(DataFormattingService.VALIDATION_MATRIX) is not None
         num_train = len(output.get(DataFormattingService.TRAINING_MATRIX).keys())
         num_test = len(output.get(DataFormattingService.TESTING_MATRIX).keys())
-        num_val = len(output.get(DataFormattingService.VALIDATION_MATRIX).keys())
-        assert math.isclose(num_val, num_test, abs_tol=1.0)
-        assert num_train > (num_test + num_val)
+        assert num_train > num_test
 
     def testCheckImportData(self):
         features = np.genfromtxt(self.current_working_dir +
@@ -93,20 +90,19 @@ class DataFormattingServiceIT(unittest.TestCase):
         s = self.data_formatting_service
         features = pd.read_csv('SampleClassifierDataFolder/features.csv', delimiter=',')
         results = pd.read_csv('SampleClassifierDataFolder/results.csv', delimiter=',')
-        X_train, X_validate, X_test, y_train, y_validate, y_test = s.testTrainSplit(features, results)
-        assert (len(X_train) and len(X_validate) and len(X_test) and len(y_train) and len(y_validate) and len(y_test) != 0)
+        X_train, X_test, y_train, y_test = s.testTrainSplit(features, results,
+                                        self.data_formatting_service.inputs.get(ArgumentProcessingService.DATA_SPLIT))
+        assert (len(X_train) and len(X_test) and len(y_train) and len(y_test) != 0)
 
     def testStratifySplit(self):
         s = self.data_formatting_service
         features = pd.read_csv('SampleClassifierDataFolder/features.csv', delimiter=',')
         results = pd.read_csv('SampleClassifierDataFolder/results.csv', delimiter=',')
-        X_train, X_validate, X_test, y_train, y_validate, y_test = s.testTrainSplit(features, results)
-        assert (len(X_train) and len(X_validate) and len(X_test) and len(y_train) and len(y_validate) and len(y_test) != 0)
+        X_train, X_test, y_train, y_test = s.testTrainSplit(features, results,
+                                        self.data_formatting_service.inputs.get(ArgumentProcessingService.DATA_SPLIT))
+        assert (len(X_train) and len(X_test) and len(y_train) and len(y_test) != 0)
         categorical_pd = pd.read_csv(self.current_working_dir +
                                      '/SampleClassifierDataFolder/categorical.csv', delimiter=',')
         data_formatting_service = DataFormattingService(None)
         categorical_onehot = data_formatting_service.oneHot(categorical_pd)
         assert (np.shape(categorical_onehot))[1] == 2
-
-
-
