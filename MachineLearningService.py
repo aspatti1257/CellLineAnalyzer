@@ -254,7 +254,7 @@ class MachineLearningService(object):
     def hyperparameterizeForSVM(self, training_matrix, validation_matrix):
         model_data = {}
         features, results = self.populateFeaturesAndResultsByCellLine(training_matrix)
-        for c_val in [10E-2, 10E-1, 10E0, 10E1, 10E2, 10E3, 10E4, 10E5, 10E6]:
+        for c_val in [10E-2, 10E-1, 10E0, 10E1, 10E2]:  # 10E3, 10E4, 10E5, 10E6, take way too long to train.
             for gamma in [10E-5, 10E-4, 10E-3, 10E-2, 10E-1, 10E0, 10E1]:
                 if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
                     model = self.trainLinearSVM(results, features, c_val, gamma, None)
