@@ -102,6 +102,7 @@ class ArgumentProcessingService(object):
     def createAndValidateFeatureMatrix(self, results_list, results_file):
         files = os.listdir(self.input_folder)
         feature_map = {self.FEATURE_NAMES: []}
+        # TODO: Check for other files we create like RandomForestAnalysis.csv or LinearSVMAnalysis.csv
         for file in [f for f in files if f != results_file and f != self.ARGUMENTS_FILE and self.GENE_LISTS not in f]:
             features_path = self.input_folder + "/" + file
             with open(features_path) as feature_file:
