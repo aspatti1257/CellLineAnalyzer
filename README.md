@@ -23,7 +23,7 @@ either be passed as a parameter on the command line, or entered at the prompt af
 opt to use.
 
 ## Table of Contents
-Running the Cell Line Analyzer API involves three steps:
+Running the Cell Line Analyzer API involves three steps: <br />
 1.) Dataset Formatting <br />
 2.) The Arguments File <br />
 3.) Running the Code <br />
