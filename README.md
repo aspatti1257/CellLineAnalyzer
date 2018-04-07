@@ -24,10 +24,10 @@ opt to use.
 
 ## Table of Contents
 Running the Cell Line Analyzer API involves three steps:
-1.) Dataset Formatting
-2.) The Arguments File
-3.) Running the Code
-4.) Troubleshooting
+1.) Dataset Formatting <br />
+2.) The Arguments File <br />
+3.) Running the Code <br />
+4.) Troubleshooting <br />
 
 # 1.) Dataset Formatting
 ### Dataset Formatting for the feature files:
