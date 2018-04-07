@@ -1,4 +1,4 @@
-### CellLineAnalyzer - Introduction
+# CellLineAnalyzer - Introduction
 
 The Cell Line analyzer is designed to create machine learning models on large scale bioinformatics data, and
 determine which combination of features are the best predictors for a particular outcome. The inputs to this program
@@ -22,14 +22,14 @@ either be passed as a parameter on the command line, or entered at the prompt af
 .CSV files called RandomForestAnalysis.csv and/or LinearSVMAnalysis.csv depending on which machine learning modules you
 opt to use.
 
-### Table of Contents
+## Table of Contents
 Running the Cell Line Analyzer API involves three steps:
 1.) Dataset Formatting
 2.) The Arguments File
 3.) Running the Code
 4.) Troubleshooting
 
-### 1.) Dataset Formatting
+# 1.) Dataset Formatting
 ### Dataset Formatting for the feature files:
 
 Your feature .CSV files need to be formatted to the following specifications:
@@ -68,7 +68,7 @@ WNT, ERK, p53, beta-catenin
 across the first row of a csv.
 
 
-### 2.) The Arguments File
+# 2.) The Arguments File
 ### Specifying Parameters in `arguments.txt`
 
 The arguments.txt file is simply a list of important, tunable parameters for this analysis. Some are required, and the
@@ -116,7 +116,7 @@ skip_rf=True
    results.csv
 
 
-### 3.)  Running the Code
+# 3.) Running the Code
 
 ```
 python __main__.py
@@ -135,7 +135,7 @@ Alternatively, you can input the path of your target folder as an argument to th
 python __main__.py /PATH/TO/DATA_FOLDER
 ```
 
-### 4.) Troubleshooting
+# 4.) Troubleshooting
 
 - This program requires python 3.6. You can check your version of python by running typing `python --version` in the
 command line. If it's 3.6.x, please upgrade.
@@ -154,6 +154,6 @@ The Python package installer pip should come standard on unix bases operating sy
 Powershell to install both python and pip.
 
 
-## Authorship
+# Authorship
 
 Cell Line Analyzer was created by Andrew Patti and Christine Zhang under supervision of David Craft, MGH/HMS. 2018.
