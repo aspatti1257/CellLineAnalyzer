@@ -4,6 +4,7 @@ import logging
 from ArgumentProcessingService import ArgumentProcessingService
 from MachineLearningService import MachineLearningService
 from Utilities.SafeCastUtil import SafeCastUtil
+from Utilities.FileConverter import FileConverter
 
 log = logging.getLogger(__name__)
 logging.basicConfig()
@@ -15,8 +16,11 @@ def main():
     if len(arguments) == 0:
         promptUserForInput()
     elif len(arguments) == 1:
-        input_folder = arguments[0]
-        runMainCellLineAnalysis(input_folder)
+        first_argument = arguments[0]
+        if first_argument.lower().endswith(".mat"):
+            FileConverter.convertMatLabToCSV(first_argument)
+        else:
+            runMainCellLineAnalysis(first_argument)
     return
 
 
@@ -24,16 +28,20 @@ def promptUserForInput():
     simulation_to_run = input("-------Main Menu-------\n"
                               "Choose your task:\n"
                               "\t0: Analysis of cell lines\n"
+                              "\t1: Convert MATLAB to CSV file\n"  
                               "\tQ: Quit\n")
 
-    simulation_as_int = SafeCastUtil.safeCast(simulation_to_run, int)
-    simulation_as_string = SafeCastUtil.safeCast(simulation_to_run, str, "Q")
+    option_as_int = SafeCastUtil.safeCast(simulation_to_run, int)
+    option_as_string = SafeCastUtil.safeCast(simulation_to_run, str, "Q")
 
-    if simulation_as_string == "Q":
+    if option_as_string == "Q":
         return
-    elif simulation_as_int == 0:
+    elif option_as_int == 0:
         input_folder = recursivelyPromptUser("Enter path of input folder:\n", str)
         runMainCellLineAnalysis(input_folder)
+    elif option_as_int == 1:
+        matlab_file = recursivelyPromptUser("Enter path of .mat file:\n", str)
+        FileConverter.convertMatLabToCSV(matlab_file)
 
 
 def runMainCellLineAnalysis(input_folder):

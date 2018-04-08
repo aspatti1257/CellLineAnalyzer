@@ -22,12 +22,16 @@ either be passed as a parameter on the command line, or entered at the prompt af
 .CSV files called RandomForestAnalysis.csv and/or LinearSVMAnalysis.csv depending on which machine learning modules you
 opt to use.
 
+Also part of this program, is the option to generate a series of .CSVs from MATLAB files. Making the main input to this
+program easier to generate.
+
 ## Table of Contents
 Running the Cell Line Analyzer API involves three steps: <br />
 1.) Dataset Formatting <br />
 2.) The Arguments File <br />
 3.) Running the Code <br />
-4.) Troubleshooting <br />
+4.) File Conversion <br />
+5.) Troubleshooting <br />
 
 # 1.) Dataset Formatting
 ### Dataset Formatting for the feature files:
@@ -123,6 +127,7 @@ skip_rf=True
 
 
 # 3.) Running the Code
+From the command line, type:
 
 ```
 python __main__.py
@@ -133,7 +138,7 @@ Enter `0` for Analysis of Cell Lines
 Type in the path of your desired folder, which contains `Arguments.txt`, Feature Data, and Output Data
 
 Your results will be printed in the terminal and saved to either a RandomForestAnalysis.csv file and/or
-LinearSVMAnalaysis.csv file.
+LinearSVMAnalaysis.csv file. These files will be written to the directory from which the program is called.
 
 Alternatively, you can input the path of your target folder as an argument to the program:
 
@@ -141,7 +146,28 @@ Alternatively, you can input the path of your target folder as an argument to th
 python __main__.py /PATH/TO/DATA_FOLDER
 ```
 
-# 4.) Troubleshooting
+# 4.) File Conversion
+This program also comes with a MATLAB to CSV file conversion tool. Since a lot of genomic data is often stored as
+MATLAB files, this option allows you to take the contents of those MATLAB files and create a series of CSVs, one for
+each declared variable. They will be created in the directory from which the program is called and all of the names will
+be prepended with "convertedFile_". From there, there should be minimal tweaking of these files to get it in a format
+which will be accepted by this data analysis.
+
+To convert files, from the command line type:
+```
+python __main__.py
+```
+Enter `1` to convert the file and type in the path of the .mat file.
+
+Alternatively, you can input the path of your .mat file as an argument to the program:
+
+```
+python __main__.py /PATH/TO/.MAT_FILE
+```
+It will automatically distinguish the input. If it's a folder, it will attempt to run a cell line analysis, and if it's
+a .mat file, it will attempt to convert it to a series of .CSVs.
+
+# 5.) Troubleshooting
 
 - This program requires python 3.6. You can check your version of python by running typing `python --version` in the
 command line. If it's 3.6.x, please upgrade.

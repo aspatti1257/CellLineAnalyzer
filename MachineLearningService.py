@@ -40,7 +40,7 @@ class MachineLearningService(object):
                                         SupportedMachineLearningAlgorithms.RANDOM_FOREST)
 
         if not self.inputs.get(ArgumentProcessingService.SKIP_SVM):
-            num_models_to_create = monte_carlo_perms * 2 * len(gene_list_combos) * (9 * 7)
+            num_models_to_create = monte_carlo_perms * 2 * len(gene_list_combos) * (3 * 7)
             if not self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
                 num_models_to_create = num_models_to_create * 5
             self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
@@ -153,9 +153,10 @@ class MachineLearningService(object):
             model = self.trainRandomForest(results, features, optimal_hyperparams[0], optimal_hyperparams[1] * n)
         elif ml_algorithm == SupportedMachineLearningAlgorithms.LINEAR_SVM:
             self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
-                          "m_val = %s\n" +
-                          "max depth = %s", feature_set_as_string, ml_algorithm, optimal_hyperparams[0],
-                          optimal_hyperparams[1])
+                          "c_val = %s\n" +
+                          "gamma = %s\n" +
+                          "epsilon = %s\n", feature_set_as_string, ml_algorithm, optimal_hyperparams[0],
+                          optimal_hyperparams[1], optimal_hyperparams[2])
             model = self.trainLinearSVM(results, features, optimal_hyperparams[0], optimal_hyperparams[1],
                                         optimal_hyperparams[2])
         else:
@@ -254,7 +255,7 @@ class MachineLearningService(object):
     def hyperparameterizeForSVM(self, training_matrix, validation_matrix):
         model_data = {}
         features, results = self.populateFeaturesAndResultsByCellLine(training_matrix)
-        for c_val in [10E-2, 10E-1, 10E0, 10E1, 10E2]:  # 10E3, 10E4, 10E5, 10E6, take way too long to train.
+        for c_val in [10E-2, 10E-1, 10E0]:  # 10E1, 10E2, 10E3, 10E4, 10E5, 10E6, take way too long to train.
             for gamma in [10E-5, 10E-4, 10E-3, 10E-2, 10E-1, 10E0, 10E1]:
                 if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
                     model = self.trainLinearSVM(results, features, c_val, gamma, None)
