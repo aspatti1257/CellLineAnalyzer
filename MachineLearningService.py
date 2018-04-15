@@ -27,7 +27,6 @@ class MachineLearningService(object):
         self.inputs = data
 
     def analyze(self, input_folder):
-        accuracies_by_gene_set = {}
         gene_list_combos = self.determineGeneListCombos()
         monte_carlo_perms = self.inputs.get(ArgumentProcessingService.MONTE_CARLO_PERMUTATIONS)
 
@@ -36,7 +35,7 @@ class MachineLearningService(object):
             self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
                           "different Random Forest models.", SafeCastUtil.safeCast(len(gene_list_combos), str),
                           SafeCastUtil.safeCast(num_models_to_create, str))
-            self.handleParallellization(accuracies_by_gene_set, gene_list_combos, input_folder, monte_carlo_perms,
+            self.handleParallellization(gene_list_combos, input_folder, monte_carlo_perms,
                                         SupportedMachineLearningAlgorithms.RANDOM_FOREST)
 
         if not self.inputs.get(ArgumentProcessingService.SKIP_SVM):
@@ -46,18 +45,16 @@ class MachineLearningService(object):
             self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
                           "different Support Vector Machine models.", SafeCastUtil.safeCast(len(gene_list_combos), str),
                           SafeCastUtil.safeCast(num_models_to_create, str))
-            self.handleParallellization(accuracies_by_gene_set, gene_list_combos, input_folder, monte_carlo_perms,
+            self.handleParallellization(gene_list_combos, input_folder, monte_carlo_perms,
                                         SupportedMachineLearningAlgorithms.LINEAR_SVM)
 
-        self.log.info("Total accuracies by percentage of training data for %s: %s", self.analysisType(),
-                      accuracies_by_gene_set)
-        return accuracies_by_gene_set
+        return
 
-    def handleParallellization(self, accuracies_by_gene_set, gene_list_combos, input_folder, monte_carlo_perms, ml_algorithm):
-        num_nodes = multiprocessing.cpu_count()  # TODO: Find out how many nodes we have available.
+    def handleParallellization(self, gene_list_combos, input_folder, monte_carlo_perms, ml_algorithm):
+        num_nodes = multiprocessing.cpu_count()
 
         Parallel(n_jobs=num_nodes)(delayed(self.runMonteCarloSelection)(feature_set,
-                                                                        accuracies_by_gene_set,
+
                                                                         monte_carlo_perms, ml_algorithm, input_folder)
                                    for feature_set in gene_list_combos)
 
@@ -119,8 +116,7 @@ class MachineLearningService(object):
     def blankArray(self, length):
         return list(numpy.zeros(length, dtype=numpy.int))
 
-    def runMonteCarloSelection(self, feature_set, accuracies_by_gene_set, monte_carlo_perms, ml_algorithm,
-                               input_folder):
+    def runMonteCarloSelection(self, feature_set, monte_carlo_perms, ml_algorithm, input_folder):
         accuracies = []
         feature_set_as_string = SafeCastUtil.safeCast(feature_set, str)
         for i in range(1, monte_carlo_perms + 1):
@@ -138,7 +134,6 @@ class MachineLearningService(object):
                                                                    training_matrix))
 
         average_accuracy = numpy.mean(accuracies)
-        accuracies_by_gene_set[feature_set_as_string] = average_accuracy
         self.log.info("Total accuracy of all Monte Carlo runs for %s: %s", feature_set_as_string,average_accuracy)
         self.writeToCSVInLock(average_accuracy, feature_set_as_string, input_folder, ml_algorithm)
 
