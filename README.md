@@ -44,9 +44,9 @@ Your feature .CSV files need to be formatted to the following specifications:
 
 - Here's an example of a feature file with 3 features and 2 cell lines: <br />
 ```
-feature1, feature2, feature3 <br />
-1,0,.5, <br />
-0,0,1.2 <br />
+feature1, feature2, feature3
+1,0,.5
+0,0,1.2
 ```
 
 Each column should have the same type of data (e.g. floats, integers, or strings). Strings will be considered
@@ -61,19 +61,19 @@ number of cell lines in all of your feature .CSV files.
 
 - Here's an example of a results.csv file for a regressor with 2 cell lines: <br />
 ```
-cell_line_name,result <br />
-cell_line0,0.46 <br />
-cell_line1,0.32 <br />
+cell_line_name,result
+cell_line0,0.46
+cell_line1,0.32
 ```
 
 ### Dataset Formatting for the gene list files:
-Also in the path should be .CSV files marked with the string "gene_list" in them, e.g. gene_list1.csv, gene_list2.csv,
-etc.
+Also in the path should be .CSV files marked with the substring "gene_list" in the title, e.g. gene_list1.csv,
+gene_list2.csv, gene_list_tissue_enseble, etc.
 
 The format of each of these "gene list" files should be a simple list of genes found as features in the other feature
 files, such as: <br />
 ```
-WNT, ERK, p53, beta-catenin <br />
+WNT, ERK, p53, beta-catenin
 ```
 across the first row of a csv.
 
