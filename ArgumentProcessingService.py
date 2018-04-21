@@ -3,6 +3,7 @@ import logging
 import re
 
 from Utilities.SafeCastUtil import SafeCastUtil
+from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 
 
 class ArgumentProcessingService(object):
@@ -37,18 +38,21 @@ class ArgumentProcessingService(object):
         is_classifier = SafeCastUtil.safeCast(arguments.get(self.IS_CLASSIFIER), int) == 1
         if is_classifier is not None and results_file is not None:
             results_list = self.validateAndExtractResults(results_file, is_classifier)
-            feature_map = self.createAndValidateFeatureMatrix(results_list, results_file)
             gene_lists = self.extractGeneList()
-            return {
-                self.RESULTS: results_list,
-                self.IS_CLASSIFIER: is_classifier,
-                self.FEATURES: feature_map,
-                self.GENE_LISTS: gene_lists,
-                self.MONTE_CARLO_PERMUTATIONS: self.fetchOrReturnDefault(arguments.get(self.MONTE_CARLO_PERMUTATIONS), int, 10),
-                self.DATA_SPLIT: self.fetchOrReturnDefault(arguments.get(self.DATA_SPLIT), float, 0.8),
-                self.SKIP_RF: self.fetchOrReturnDefault(arguments.get(self.SKIP_RF), bool, False),
-                self.SKIP_SVM: self.fetchOrReturnDefault(arguments.get(self.SKIP_SVM), bool, False)
-            }
+            feature_map = self.createAndValidateFeatureMatrix(results_list, results_file, gene_lists)
+            if feature_map and gene_lists and results_list:
+                return {
+                    self.RESULTS: results_list,
+                    self.IS_CLASSIFIER: is_classifier,
+                    self.FEATURES: feature_map,
+                    self.GENE_LISTS: gene_lists,
+                    self.MONTE_CARLO_PERMUTATIONS: self.fetchOrReturnDefault(arguments.get(self.MONTE_CARLO_PERMUTATIONS), int, 10),
+                    self.DATA_SPLIT: self.fetchOrReturnDefault(arguments.get(self.DATA_SPLIT), float, 0.8),
+                    self.SKIP_RF: self.fetchOrReturnDefault(arguments.get(self.SKIP_RF), bool, False),
+                    self.SKIP_SVM: self.fetchOrReturnDefault(arguments.get(self.SKIP_SVM), bool, False)
+                }
+            else:
+                return None
         else:
             return None
 
@@ -99,39 +103,94 @@ class ArgumentProcessingService(object):
                 data_file.close()
         return sample_list
 
-    def createAndValidateFeatureMatrix(self, results_list, results_file):
+    def extractGeneList(self):
+        gene_lists = {"null_gene_list": []}
         files = os.listdir(self.input_folder)
-        feature_map = {self.FEATURE_NAMES: []}
-        # TODO: Check for other files we create like RandomForestAnalysis.csv or LinearSVMAnalysis.csv
-        for file in [f for f in files if f != results_file and f != self.ARGUMENTS_FILE and self.GENE_LISTS not in f]:
+        for file in [f for f in files if self.GENE_LISTS in f]:
+            file_path = self.input_folder + "/" + file
+            with open(file_path) as gene_list_file:
+                gene_lists[file.split(".csv")[0]] = gene_list_file.read().strip().split(",")
+
+        return gene_lists
+
+    def createAndValidateFeatureMatrix(self, results_list, results_file, gene_lists):
+        files = os.listdir(self.input_folder)
+        feature_matrix = {self.FEATURE_NAMES: []}
+        for file in [file for file in files if self.fileIsFeatureFile(file, results_file)]:
             features_path = self.input_folder + "/" + file
-            with open(features_path) as feature_file:
-                try:
-                    important_feature_indices = []
-                    for line_index, line in enumerate(feature_file):
-                        if line_index == 0:
-                            feature_names = line.split(",")
-                            for i in range(0, len(feature_names)):
+            self.validateGeneLists(features_path, file, gene_lists)
+        for file in [file for file in files if self.fileIsFeatureFile(file, results_file)]:
+            features_path = self.input_folder + "/" + file
+            self.extractFeatureMatrix(feature_matrix, features_path, file, gene_lists, results_list)
+        return feature_matrix
+
+    def validateGeneLists(self, features_path, file, gene_lists):
+        with open(features_path) as feature_file:
+            try:
+                for line_index, line in enumerate(feature_file):
+                    if line_index == 0:
+                        feature_names = line.split(",")
+                        self.validateAndTrimGeneList(feature_names, gene_lists, file)
+                    else:
+                        break
+            except ValueError as valueError:
+                self.log.error(valueError)
+                return None
+            finally:
+                self.log.debug("Closing file %s", feature_file)
+
+    def validateAndTrimGeneList(self, feature_list, gene_lists, file):
+        for key in gene_lists.keys():
+            for gene in gene_lists[key]:
+                if gene not in [feature.strip() for feature in feature_list]:
+                    list_lenth = len(gene_lists[key])
+                    gene_lists[key].remove(gene)
+                    self.log.warning("Incomplete dataset: gene %s from gene list %s not found in file %s. "
+                                     "Will not process this gene in any files. "
+                                     "Old gene list size : %s. New gene list size: %s",
+                                     gene, key, file, list_lenth, len(gene_lists[key]))
+
+    def extractFeatureMatrix(self, feature_matrix, features_path, file, gene_lists, results_list):
+        self.log.info("Extracting important features for %s.", file)
+        with open(features_path) as feature_file:
+            try:
+                important_feature_indices = []
+                for line_index, line in enumerate(feature_file):
+                    if line_index == 0:
+                        feature_names = line.split(",")
+                        for i in range(0, len(feature_names)):
+                            if self.feature_in_gene_list(feature_names[i], gene_lists):
                                 feature_name = self.determineFeatureName(feature_names[i], file)
-                                feature_map[self.FEATURE_NAMES].append(feature_name)
+                                feature_matrix[self.FEATURE_NAMES].append(feature_name)
                                 important_feature_indices.append(i)
+                    else:
+                        features = self.extractCastedFeatures(line, important_feature_indices)
+                        cell_line = results_list[line_index - 1]
+                        if not cell_line[0] in feature_matrix:
+                            feature_matrix[cell_line[0]] = features
                         else:
-                            features = self.extractCastedFeatures(line, important_feature_indices)
-                            cell_line = results_list[line_index - 1]
-                            if not cell_line[0] in feature_map:
-                                feature_map[cell_line[0]] = features
-                            else:
-                                feature_map[cell_line[0]] = feature_map[cell_line[0]] + features
-                            if line_index > len(results_list):
-                                self.log.error("Invalid line count for %s", file)
-                                raise ValueError("Invalid line count for" + file + ". Must be " +
-                                                 SafeCastUtil.safeCast(file, str) + "lines long.")
-                except ValueError as valueError:
-                    self.log.error(valueError)
-                    return None
-                finally:
-                    self.log.debug("Closing file %s", feature_file)
-        return feature_map
+                            feature_matrix[cell_line[0]] = feature_matrix[cell_line[0]] + features
+                        if line_index > len(results_list):
+                            self.log.error("Invalid line count for %s", file)
+                            raise ValueError("Invalid line count for" + file + ". Must be " +
+                                             SafeCastUtil.safeCast(file, str) + "lines long.")
+            except ValueError as valueError:
+                self.log.error(valueError)
+                return None
+            finally:
+                self.log.debug("Closing file %s", feature_file)
+
+    def fileIsFeatureFile(self, file, results_file):
+        rf_analysis = SupportedMachineLearningAlgorithms.RANDOM_FOREST + ".csv"
+        svm_analysis = SupportedMachineLearningAlgorithms.LINEAR_SVM + ".csv"
+        return file != results_file and file != self.ARGUMENTS_FILE and self.GENE_LISTS not in file and\
+               file != rf_analysis and file != svm_analysis and ".csv" in file.lower()
+
+    def feature_in_gene_list(self, feature_name, gene_lists):
+        for feature_set in gene_lists.values():
+            if feature_name in feature_set:
+                return True
+        return False
 
     def determineFeatureName(self, feature_name, file):
         return SafeCastUtil.safeCast(file.split(".")[0] + "." + feature_name.strip(), str)
@@ -147,20 +206,8 @@ class ArgumentProcessingService(object):
                     important_features.append(SafeCastUtil.safeCast(feature_names[i].strip(), str))
         return important_features
 
-    def extractGeneList(self):
-        gene_lists = {"null_gene_list": []}
-        files = os.listdir(self.input_folder)
-        for file in [f for f in files if self.GENE_LISTS in f]:
-            file_path = self.input_folder + "/" + file
-            with open(file_path) as gene_list_file:
-                gene_lists[file.split(".csv")[0]] = gene_list_file.read().strip().split(",")
-
-        return gene_lists
-
     def fetchOrReturnDefault(self, field, to_type, default):
         if field:
             return SafeCastUtil.safeCast(field, to_type)
         else:
             return default
-
-
