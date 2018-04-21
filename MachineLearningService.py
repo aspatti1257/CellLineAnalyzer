@@ -91,8 +91,8 @@ class MachineLearningService(object):
         all_arrays = self.fetchAllArrayPermutations((num_gene_lists - 1), num_files)
         required_permutations = num_gene_lists**num_files
         created_permutations = len(all_arrays)
-        self.log.info("Should have created %s permutations, created %s permutations", required_permutations,
-                      created_permutations)
+        self.log.debug("Should have created %s permutations, created %s permutations", required_permutations,
+                       created_permutations)
         return all_arrays
 
     def fetchAllArrayPermutations(self, max_depth, num_files):
@@ -118,7 +118,7 @@ class MachineLearningService(object):
 
     def runMonteCarloSelection(self, feature_set, monte_carlo_perms, ml_algorithm, input_folder):
         accuracies = []
-        feature_set_as_string = SafeCastUtil.safeCast(feature_set, str)
+        feature_set_as_string = self.generateFeatureSetString(feature_set)
         for i in range(1, monte_carlo_perms + 1):
             formatted_data = self.formatData(self.inputs)
             training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set, formatted_data)
@@ -134,8 +134,34 @@ class MachineLearningService(object):
                                                                    training_matrix))
 
         average_accuracy = numpy.mean(accuracies)
-        self.log.info("Total accuracy of all Monte Carlo runs for %s: %s", feature_set_as_string,average_accuracy)
+        self.log.info("Total accuracy of all Monte Carlo runs for %s: %s", feature_set_as_string, average_accuracy)
         self.writeToCSVInLock(average_accuracy, feature_set_as_string, input_folder, ml_algorithm)
+
+    def generateFeatureSetString(self, feature_set):
+        feature_map = {}
+        for feature_list in feature_set:
+            for feature in feature_list:
+                file_name = feature.split(".")[0]
+                feature_name = feature.split(".")[1:][0]
+                if feature_map.get(file_name):
+                    feature_map[file_name].append(feature_name)
+                else:
+                    feature_map[file_name] = [feature_name]
+        gene_lists = self.inputs.get(ArgumentProcessingService.GENE_LISTS)
+
+        feature_set_string = ""
+        for file_key in feature_map.keys():
+            for gene_list_key in gene_lists.keys():
+                if len(feature_map[file_key]) == len(gene_lists[gene_list_key]):
+                    feature_map[file_key].sort()
+                    gene_lists[gene_list_key].sort()
+                    same_list = True
+                    for i in range(0, len(gene_lists[gene_list_key])):
+                        if gene_lists[gene_list_key][i] != feature_map[file_key][i]:
+                            same_list = False
+                    if same_list:
+                        feature_set_string += (file_key + ":"+ gene_list_key + " ")
+        return feature_set_string.strip()
 
     def fetchOuterPermutationModelScore(self, feature_set_as_string, features, ml_algorithm, optimal_hyperparams,
                                         results, testing_matrix, training_matrix):

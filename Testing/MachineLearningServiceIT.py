@@ -61,6 +61,8 @@ class MachineLearningServiceIT(unittest.TestCase):
                 for line_index, line in enumerate(csv_file):
                     num_lines += 1
                     line_split = line.split(",")
+                    feature_gene_list_combo = line_split[0]
+                    assert ":" in feature_gene_list_combo
                     score = SafeCastUtil.safeCast(line_split[len(line_split) - 1], float)
                     assert score > -1
             except ValueError as valueError:
