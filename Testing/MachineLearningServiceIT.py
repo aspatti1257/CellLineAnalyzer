@@ -63,8 +63,10 @@ class MachineLearningServiceIT(unittest.TestCase):
                     line_split = line.split(",")
                     feature_gene_list_combo = line_split[0]
                     assert ":" in feature_gene_list_combo
-                    score = SafeCastUtil.safeCast(line_split[len(line_split) - 1], float)
+                    score = SafeCastUtil.safeCast(line_split[len(line_split) - 2], float)
+                    accuracy = SafeCastUtil.safeCast(line_split[len(line_split) - 1], float)
                     assert score > -1
+                    assert accuracy > 0
             except ValueError as valueError:
                 self.log.error(valueError)
             finally:

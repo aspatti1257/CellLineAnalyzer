@@ -1,6 +1,8 @@
 import logging
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import accuracy_score
 from sklearn import svm
 import numpy
 import os
@@ -14,7 +16,6 @@ from ArgumentProcessingService import ArgumentProcessingService
 from DataFormattingService import DataFormattingService
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Utilities.SafeCastUtil import SafeCastUtil
-from sklearn.metrics import r2_score
 
 
 class MachineLearningService(object):
@@ -117,6 +118,7 @@ class MachineLearningService(object):
         return list(numpy.zeros(length, dtype=numpy.int))
 
     def runMonteCarloSelection(self, feature_set, monte_carlo_perms, ml_algorithm, input_folder):
+        scores = []
         accuracies = []
         feature_set_as_string = self.generateFeatureSetString(feature_set)
         for i in range(1, monte_carlo_perms + 1):
@@ -129,13 +131,16 @@ class MachineLearningService(object):
             optimal_hyperparams = self.determineOptimalHyperparameters(feature_set, formatted_data, monte_carlo_perms,
                                                                        ml_algorithm)
             features, results = self.populateFeaturesAndResultsByCellLine(training_matrix)
-            accuracies.append(self.fetchOuterPermutationModelScore(feature_set_as_string, features, ml_algorithm,
+            prediction_data = self.fetchOuterPermutationModelScore(feature_set_as_string, features, ml_algorithm,
                                                                    optimal_hyperparams, results, testing_matrix,
-                                                                   training_matrix))
+                                                                   training_matrix)
+            scores.append(prediction_data[0])
+            accuracies.append(prediction_data[1])
 
+        average_score = numpy.mean(scores)
         average_accuracy = numpy.mean(accuracies)
         self.log.info("Total accuracy of all Monte Carlo runs for %s: %s", feature_set_as_string, average_accuracy)
-        self.writeToCSVInLock(average_accuracy, feature_set_as_string, input_folder, ml_algorithm)
+        self.writeToCSVInLock(average_score, average_accuracy, feature_set_as_string, input_folder, ml_algorithm)
 
     def generateFeatureSetString(self, feature_set):
         feature_map = {}
@@ -160,7 +165,7 @@ class MachineLearningService(object):
                         if gene_lists[gene_list_key][i] != feature_map[file_key][i]:
                             same_list = False
                     if same_list:
-                        feature_set_string += (file_key + ":"+ gene_list_key + " ")
+                        feature_set_string += (file_key + ":" + gene_list_key + " ")
         return feature_set_string.strip()
 
     def fetchOuterPermutationModelScore(self, feature_set_as_string, features, ml_algorithm, optimal_hyperparams,
@@ -206,7 +211,7 @@ class MachineLearningService(object):
                     inner_model_hyperparams[data].append(model_data[data])
                 else:
                     inner_model_hyperparams[data] = [model_data[data]]
-            return inner_model_hyperparams
+        return inner_model_hyperparams
 
     def formatData(self, inputs):
         data_formatting_service = DataFormattingService(inputs)
@@ -236,7 +241,7 @@ class MachineLearningService(object):
         highest_average = self.DEFAULT_MIN_SCORE
         best_hyperparam = None
         for hyperparam_set in inner_model_hyperparams.keys():
-            average = numpy.average(inner_model_hyperparams[hyperparam_set])
+            average = numpy.average([results[0] for results in inner_model_hyperparams[hyperparam_set]])  # raw score
             if average > highest_average:
                 best_hyperparam = hyperparam_set
                 highest_average = average
@@ -324,16 +329,14 @@ class MachineLearningService(object):
             return self.DEFAULT_MIN_SCORE
         features, results = self.populateFeaturesAndResultsByCellLine(validation_matrix)
         predictions = model.predict(features)
+        score = model.score(features, results)
         if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
-            accurate_hits = 0
-            for i in range(0, len(predictions)):
-                if predictions[i] == results[i]:
-                    accurate_hits += 1
-            return accurate_hits / len(predictions)
+            accuracy = accuracy_score(results, predictions)
         else:
-            return SafeCastUtil.safeCast(r2_score(results, predictions), float)
+            accuracy = mean_squared_error(results, predictions)
+        return score, accuracy
 
-    def writeToCSVInLock(self, average_accuracy, feature_set_as_string, input_folder, ml_algorithm):
+    def writeToCSVInLock(self, average_score, average_accuracy, feature_set_as_string, input_folder, ml_algorithm):
         lock = threading.Lock()
         self.log.debug("Locking current thread %s.", threading.current_thread())
         lock.acquire(True)
@@ -345,7 +348,7 @@ class MachineLearningService(object):
         with open(input_folder + "/" + file_name, write_action) as csv_file:
             try:
                 writer = csv.writer(csv_file)
-                writer.writerow([feature_set_as_string, average_accuracy])
+                writer.writerow([feature_set_as_string, average_score, average_accuracy])
             except ValueError as error:
                 self.log.error("Error writing to file %s. %s", file_name, error)
             finally:
@@ -353,9 +356,3 @@ class MachineLearningService(object):
                 os.chdir(input_folder)
                 self.log.debug("Releasing current thread %s.", threading.current_thread())
                 lock.release()
-
-    def analysisType(self):
-        if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
-            return "classifier"
-        else:
-            return "regressor"
