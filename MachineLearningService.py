@@ -187,8 +187,7 @@ class MachineLearningService(object):
                                         optimal_hyperparams[2])
         else:
             return self.DEFAULT_MIN_SCORE
-        model_score = self.predictModelAccuracy(model, testing_matrix)
-        return model_score
+        return self.fetchPredictionsAndScore(model, testing_matrix)
 
     def determineInnerHyperparameters(self, feature_set, formatted_data, monte_carlo_perms, ml_algorithm):
         inner_model_hyperparams = {}
@@ -274,7 +273,7 @@ class MachineLearningService(object):
         for m_val in [1, (1 + numpy.sqrt(p)) / 2, numpy.sqrt(p), (numpy.sqrt(p) + p) / 2, p]:
             for max_depth in [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.75, 1]:
                 model = self.trainRandomForest(results, features, m_val, max_depth * n)
-                current_model_score = self.predictModelAccuracy(model, validation_matrix)
+                current_model_score = self.fetchPredictionsAndScore(model, validation_matrix)
                 model_data[m_val, max_depth] = current_model_score
         return model_data
 
@@ -285,12 +284,12 @@ class MachineLearningService(object):
             for gamma in [10E-5, 10E-4, 10E-3, 10E-2, 10E-1, 10E0, 10E1]:
                 if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
                     model = self.trainLinearSVM(results, features, c_val, gamma, None)
-                    current_model_score = self.predictModelAccuracy(model, validation_matrix)
+                    current_model_score = self.fetchPredictionsAndScore(model, validation_matrix)
                     model_data[c_val, gamma, None] = current_model_score
                 else:
                     for epsilon in [0.01, 0.05, 0.1, 0.15, 0.2]:
                         model = self.trainLinearSVM(results, features, c_val, gamma, epsilon)
-                        current_model_score = self.predictModelAccuracy(model, validation_matrix)
+                        current_model_score = self.fetchPredictionsAndScore(model, validation_matrix)
                         model_data[c_val, gamma, epsilon] = current_model_score
         return model_data
 
@@ -324,7 +323,7 @@ class MachineLearningService(object):
         self.log.debug("Successful creation of Support Vector Machine model: %s\n", model)
         return model
 
-    def predictModelAccuracy(self, model, validation_matrix):
+    def fetchPredictionsAndScore(self, model, validation_matrix):
         if model is None:
             return self.DEFAULT_MIN_SCORE
         features, results = self.populateFeaturesAndResultsByCellLine(validation_matrix)

@@ -143,12 +143,12 @@ class ArgumentProcessingService(object):
         for key in gene_lists.keys():
             for gene in gene_lists[key]:
                 if gene not in [feature.strip() for feature in feature_list]:
-                    list_lenth = len(gene_lists[key])
+                    list_length = len(gene_lists[key])
                     gene_lists[key].remove(gene)
                     self.log.warning("Incomplete dataset: gene %s from gene list %s not found in file %s. "
                                      "Will not process this gene in any files. "
                                      "Old gene list size : %s. New gene list size: %s",
-                                     gene, key, file, list_lenth, len(gene_lists[key]))
+                                     gene, key, file, list_length, len(gene_lists[key]))
 
     def extractFeatureMatrix(self, feature_matrix, features_path, file, gene_lists, results_list):
         self.log.info("Extracting important features for %s.", file)
