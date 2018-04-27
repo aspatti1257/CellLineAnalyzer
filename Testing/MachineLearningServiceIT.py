@@ -29,11 +29,18 @@ class MachineLearningServiceIT(unittest.TestCase):
     def testRandomForestClassifier(self):
         self.evaluateMachineLearningModel(True, SupportedMachineLearningAlgorithms.RANDOM_FOREST)
 
+    # Linear SVM takes forever to train. Consider a different library?
     def testLinearSVMRegressor(self):
         self.evaluateMachineLearningModel(False, SupportedMachineLearningAlgorithms.LINEAR_SVM)
 
     def testLinearSVMClassifier(self):
         self.evaluateMachineLearningModel(True, SupportedMachineLearningAlgorithms.LINEAR_SVM)
+
+    def testRadialBasisFunctionSVMRegressor(self):
+        self.evaluateMachineLearningModel(False, SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM)
+
+    def testRadialBasisFunctionSVMClassifier(self):
+        self.evaluateMachineLearningModel(True, SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM)
 
     def evaluateMachineLearningModel(self, is_classifier, ml_algorithm):
         ml_service = MachineLearningService(self.formatRandomizedData(is_classifier))
@@ -44,7 +51,7 @@ class MachineLearningServiceIT(unittest.TestCase):
         target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         ml_service.handleParallellization(gene_list_combos_shortened, target_dir, monte_carlo_perms, ml_algorithm)
 
-        self.assertResults(target_dir, ml_algorithm, num_gene_list_combos)
+        self.assertResults(target_dir, ml_algorithm, num_gene_list_combos + 1)
 
     def formatRandomizedData(self, is_classifier):
         RandomizedDataGenerator.generateRandomizedFiles(3, 1000, 150, is_classifier, 1, .8)
@@ -60,7 +67,10 @@ class MachineLearningServiceIT(unittest.TestCase):
             try:
                 for line_index, line in enumerate(csv_file):
                     num_lines += 1
-                    line_split = line.split(",")
+                    line_split = line.strip().split(",")
+                    if line_index == 0:
+                        assert line_split == MachineLearningService.CSV_FILE_HEADER
+                        continue
                     feature_gene_list_combo = line_split[0]
                     assert ":" in feature_gene_list_combo
                     score = SafeCastUtil.safeCast(line_split[len(line_split) - 2], float)

@@ -19,8 +19,8 @@ of the results file, which machine learning models to create, etc.
 
 All of these files should be in the same folder. This program will accept one argument, a path to that folder (it can
 either be passed as a parameter on the command line, or entered at the prompt after running it). The outputs will be
-.CSV files called RandomForestAnalysis.csv and/or LinearSVMAnalysis.csv depending on which machine learning modules you
-opt to use.
+.CSV files called RandomForestAnalysis.csv, LinearSVMAnalysis.csv, and/or RadialBasisFunctionSVMAnalysis.csv
+ depending on which machine learning modules you opt to use.
 
 Also part of this program, is the option to generate a series of .CSVs from MATLAB files. Making the main input to this
 program easier to generate.
@@ -96,7 +96,9 @@ ones that aren't are marked with a star (*).
 
 `skip_rf`* : Optionally skip Random Forest analysis. Defaults to False.
 
-`skip_svm`* : Optionally skip Support Vector Machine analysis. Defaults to False.
+`skip_linear_svm`* : Optionally skip Linear Support Vector Machine analysis. Defaults to False.
+
+`skip_rbf_svm`* : Optionally skip Radial Basis Function Support Vector Machine analysis. Defaults to False.
 
 Any .csv file in this path that is not the a gene list file, or the results.csv file, will be interpreted as a features
 file.
@@ -137,8 +139,9 @@ Enter `0` for Analysis of Cell Lines
 
 Type in the path of your desired folder, which contains `Arguments.txt`, Feature Data, and Output Data
 
-Your results will be printed in the terminal and saved to either a RandomForestAnalysis.csv file and/or
-LinearSVMAnalaysis.csv file. These files will be written to the directory from which the program is called.
+Your results will be printed in the terminal and saved to either a RandomForestAnalysis.csv file, a
+LinearSVMAnalaysis.csv, and or a RadialBasisFunctionSVM.csv file. These files will be written to the directory from
+which the program is called.
 
 Alternatively, you can input the path of your target folder as an argument to the program:
 

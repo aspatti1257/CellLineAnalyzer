@@ -23,6 +23,7 @@ class MachineLearningService(object):
     log.setLevel(logging.INFO)
 
     DEFAULT_MIN_SCORE = -1
+    CSV_FILE_HEADER = ["feature file: gene list combo", "average score", "average accuracy"]
 
     def __init__(self, data):
         self.inputs = data
@@ -39,25 +40,29 @@ class MachineLearningService(object):
             self.handleParallellization(gene_list_combos, input_folder, monte_carlo_perms,
                                         SupportedMachineLearningAlgorithms.RANDOM_FOREST)
 
-        if not self.inputs.get(ArgumentProcessingService.SKIP_SVM):
-            num_models_to_create = monte_carlo_perms * 2 * len(gene_list_combos) * (3 * 7)
+        if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_SVM):
+            num_models_to_create = monte_carlo_perms * 2 * len(gene_list_combos) * 3
             if not self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
                 num_models_to_create = num_models_to_create * 5
             self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
-                          "different Support Vector Machine models.", SafeCastUtil.safeCast(len(gene_list_combos), str),
+                          "different Linear Support Vector Machine models.",
+                          SafeCastUtil.safeCast(len(gene_list_combos), str),
                           SafeCastUtil.safeCast(num_models_to_create, str))
             self.handleParallellization(gene_list_combos, input_folder, monte_carlo_perms,
                                         SupportedMachineLearningAlgorithms.LINEAR_SVM)
 
+        if not self.inputs.get(ArgumentProcessingService.SKIP_RBF_SVM):
+            num_models_to_create = monte_carlo_perms * 2 * len(gene_list_combos) * 3 * 7
+            if not self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
+                num_models_to_create = num_models_to_create * 5
+            self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
+                          "different RBF Support Vector Machine models.",
+                          SafeCastUtil.safeCast(len(gene_list_combos), str),
+                          SafeCastUtil.safeCast(num_models_to_create, str))
+            self.handleParallellization(gene_list_combos, input_folder, monte_carlo_perms,
+                                        SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM)
+
         return
-
-    def handleParallellization(self, gene_list_combos, input_folder, monte_carlo_perms, ml_algorithm):
-        num_nodes = multiprocessing.cpu_count()
-
-        Parallel(n_jobs=num_nodes)(delayed(self.runMonteCarloSelection)(feature_set,
-
-                                                                        monte_carlo_perms, ml_algorithm, input_folder)
-                                   for feature_set in gene_list_combos)
 
     def determineGeneListCombos(self):
         gene_lists = self.inputs.get(ArgumentProcessingService.GENE_LISTS)
@@ -116,6 +121,13 @@ class MachineLearningService(object):
 
     def blankArray(self, length):
         return list(numpy.zeros(length, dtype=numpy.int))
+
+    def handleParallellization(self, gene_list_combos, input_folder, monte_carlo_perms, ml_algorithm):
+        num_nodes = multiprocessing.cpu_count()
+
+        Parallel(n_jobs=num_nodes)(delayed(self.runMonteCarloSelection)(feature_set, monte_carlo_perms, ml_algorithm,
+                                                                        input_folder)
+                                   for feature_set in gene_list_combos)
 
     def runMonteCarloSelection(self, feature_set, monte_carlo_perms, ml_algorithm, input_folder):
         scores = []
@@ -180,11 +192,17 @@ class MachineLearningService(object):
         elif ml_algorithm == SupportedMachineLearningAlgorithms.LINEAR_SVM:
             self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
                           "c_val = %s\n" +
+                          "epsilon = %s\n", feature_set_as_string, ml_algorithm, optimal_hyperparams[0],
+                          optimal_hyperparams[1])
+            model = self.trainLinearSVM(results, features, optimal_hyperparams[0], optimal_hyperparams[1])
+        elif ml_algorithm == SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM:
+            self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
+                          "c_val = %s\n" +
                           "gamma = %s\n" +
                           "epsilon = %s\n", feature_set_as_string, ml_algorithm, optimal_hyperparams[0],
                           optimal_hyperparams[1], optimal_hyperparams[2])
-            model = self.trainLinearSVM(results, features, optimal_hyperparams[0], optimal_hyperparams[1],
-                                        optimal_hyperparams[2])
+            model = self.trainRadialBasisFunctionSVM(results, features, optimal_hyperparams[0],
+                                                     optimal_hyperparams[1], optimal_hyperparams[2])
         else:
             return self.DEFAULT_MIN_SCORE
         return self.fetchPredictionsAndScore(model, testing_matrix)
@@ -202,7 +220,9 @@ class MachineLearningService(object):
             if ml_algorithm == SupportedMachineLearningAlgorithms.RANDOM_FOREST:
                 model_data = self.hyperparameterizeForRF(inner_train_matrix, inner_validation_matrix)
             elif ml_algorithm == SupportedMachineLearningAlgorithms.LINEAR_SVM:
-                model_data = self.hyperparameterizeForSVM(inner_train_matrix, inner_validation_matrix)
+                model_data = self.hyperparameterizeLinearSVM(inner_train_matrix, inner_validation_matrix)
+            elif ml_algorithm == SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM:
+                model_data = self.hyperparameterizeForRadialBasisFunctionSVM(inner_train_matrix, inner_validation_matrix)
             else:
                 return inner_model_hyperparams
             for data in model_data.keys():
@@ -277,18 +297,33 @@ class MachineLearningService(object):
                 model_data[m_val, max_depth] = current_model_score
         return model_data
 
-    def hyperparameterizeForSVM(self, training_matrix, validation_matrix):
+    def hyperparameterizeLinearSVM(self, training_matrix, validation_matrix):
+        model_data = {}
+        features, results = self.populateFeaturesAndResultsByCellLine(training_matrix)
+        for c_val in [10E-2, 10E-1, 10E0]:  # 10E1, 10E2, 10E3, 10E4, 10E5, 10E6, take way too long to train.
+            if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
+                model = self.trainLinearSVM(results, features, c_val, None)
+                current_model_score = self.fetchPredictionsAndScore(model, validation_matrix)
+                model_data[c_val, None] = current_model_score
+            else:
+                for epsilon in [0.01, 0.05, 0.1, 0.15, 0.2]:
+                    model = self.trainLinearSVM(results, features, c_val, epsilon)
+                    current_model_score = self.fetchPredictionsAndScore(model, validation_matrix)
+                    model_data[c_val, epsilon] = current_model_score
+        return model_data
+
+    def hyperparameterizeForRadialBasisFunctionSVM(self, training_matrix, validation_matrix):
         model_data = {}
         features, results = self.populateFeaturesAndResultsByCellLine(training_matrix)
         for c_val in [10E-2, 10E-1, 10E0]:  # 10E1, 10E2, 10E3, 10E4, 10E5, 10E6, take way too long to train.
             for gamma in [10E-5, 10E-4, 10E-3, 10E-2, 10E-1, 10E0, 10E1]:
                 if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
-                    model = self.trainLinearSVM(results, features, c_val, gamma, None)
+                    model = self.trainRadialBasisFunctionSVM(results, features, c_val, gamma, None)
                     current_model_score = self.fetchPredictionsAndScore(model, validation_matrix)
                     model_data[c_val, gamma, None] = current_model_score
                 else:
                     for epsilon in [0.01, 0.05, 0.1, 0.15, 0.2]:
-                        model = self.trainLinearSVM(results, features, c_val, gamma, epsilon)
+                        model = self.trainRadialBasisFunctionSVM(results, features, c_val, gamma, epsilon)
                         current_model_score = self.fetchPredictionsAndScore(model, validation_matrix)
                         model_data[c_val, gamma, epsilon] = current_model_score
         return model_data
@@ -314,13 +349,22 @@ class MachineLearningService(object):
         self.log.debug("Successful creation of Random Forest model: %s\n", model)
         return model
 
-    def trainLinearSVM(self, results, features, c_val, gamma, epsilon):
+    def trainLinearSVM(self, results, features, c_val, epsilon):
         if epsilon is None or self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
-            model = svm.SVC(kernel='linear', C=c_val, gamma=gamma)
+            model = svm.SVC(kernel='linear', C=c_val)
         else:
-            model = svm.SVR(kernel='linear', C=c_val, gamma=gamma, epsilon=epsilon)
+            model = svm.SVR(kernel='linear', C=c_val, epsilon=epsilon)
         model.fit(features, results)
-        self.log.debug("Successful creation of Support Vector Machine model: %s\n", model)
+        self.log.debug("Successful creation of Linear Support Vector Machine model: %s\n", model)
+        return model
+
+    def trainRadialBasisFunctionSVM(self, results, features, c_val, gamma, epsilon):
+        if epsilon is None or self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
+            model = svm.SVC(kernel='rbf', C=c_val, gamma=gamma)
+        else:
+            model = svm.SVR(kernel='rbf', C=c_val, gamma=gamma, epsilon=epsilon)
+        model.fit(features, results)
+        self.log.debug("Successful creation of RBF Support Vector Machine model: %s\n", model)
         return model
 
     def fetchPredictionsAndScore(self, model, validation_matrix):
@@ -347,6 +391,8 @@ class MachineLearningService(object):
         with open(input_folder + "/" + file_name, write_action) as csv_file:
             try:
                 writer = csv.writer(csv_file)
+                if write_action == "w":
+                    writer.writerow(self.CSV_FILE_HEADER)
                 writer.writerow([feature_set_as_string, average_score, average_accuracy])
             except ValueError as error:
                 self.log.error("Error writing to file %s. %s", file_name, error)
