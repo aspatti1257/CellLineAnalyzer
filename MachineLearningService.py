@@ -189,12 +189,7 @@ class MachineLearningService(object):
                           "max depth = %s", feature_set_as_string, ml_algorithm, optimal_hyperparams[0],
                           optimal_hyperparams[1] * n)
             model = self.trainRandomForest(results, features, optimal_hyperparams[0], optimal_hyperparams[1] * n)
-        elif ml_algorithm == SupportedMachineLearningAlgorithms.LINEAR_SVM:
-            self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
-                          "c_val = %s\n" +
-                          "epsilon = %s\n", feature_set_as_string, ml_algorithm, optimal_hyperparams[0],
-                          optimal_hyperparams[1])
-            model = self.trainLinearSVM(results, features, optimal_hyperparams[0], optimal_hyperparams[1])
+
         elif ml_algorithm == SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM:
             self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
                           "c_val = %s\n" +
@@ -203,6 +198,13 @@ class MachineLearningService(object):
                           optimal_hyperparams[1], optimal_hyperparams[2])
             model = self.trainRadialBasisFunctionSVM(results, features, optimal_hyperparams[0],
                                                      optimal_hyperparams[1], optimal_hyperparams[2])
+
+        elif ml_algorithm == SupportedMachineLearningAlgorithms.LINEAR_SVM:
+            self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
+                          "c_val = %s\n" +
+                          "epsilon = %s\n", feature_set_as_string, ml_algorithm, optimal_hyperparams[0],
+                          optimal_hyperparams[1])
+            model = self.trainLinearSVM(results, features, optimal_hyperparams[0], optimal_hyperparams[1])
         else:
             return self.DEFAULT_MIN_SCORE
         return self.fetchPredictionsAndScore(model, testing_matrix)
@@ -353,7 +355,7 @@ class MachineLearningService(object):
         if epsilon is None or self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
             model = svm.SVC(kernel='linear', C=c_val)
         else:
-            model = svm.SVR(kernel='linear', C=c_val, epsilon=epsilon)
+            model = svm.SVR(kernel='linear', C=c_val, epsilon=epsilon, cache_size=15000)
         model.fit(features, results)
         self.log.debug("Successful creation of Linear Support Vector Machine model: %s\n", model)
         return model

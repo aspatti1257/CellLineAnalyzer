@@ -4,7 +4,9 @@ from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 import logging
 
+from collections import OrderedDict
 from ArgumentProcessingService import ArgumentProcessingService
+from Utilities import SafeCastUtil
 
 
 class DataFormattingService(object):
@@ -18,7 +20,7 @@ class DataFormattingService(object):
 
     def __init__(self, inputs):
         self.inputs = inputs
-        self.outputs = {}
+        self.outputs = OrderedDict()
 
     def formatData(self):
         features_df = pd.DataFrame.from_dict(self.inputs[ArgumentProcessingService.FEATURES], orient='index')
@@ -29,9 +31,28 @@ class DataFormattingService(object):
                                                                self.inputs[ArgumentProcessingService.RESULTS],
                                                                self.inputs[ArgumentProcessingService.DATA_SPLIT])
 
-        self.outputs[self.TRAINING_MATRIX] = x_train.transpose().to_dict('list')
-        self.outputs[self.TESTING_MATRIX] = x_test.transpose().to_dict('list')
+        self.outputs[self.TRAINING_MATRIX] = self.scaleFeatures(x_train)
+        self.outputs[self.TESTING_MATRIX] = self.scaleFeatures(x_test)
         return self.outputs
+
+    def scaleFeatures(self, data_frame):
+        #TODO: Write test to verify this behavior.
+        as_dict = data_frame.transpose().to_dict('list')
+        scaled_dict = OrderedDict()
+
+        keys_as_list = SafeCastUtil.SafeCastUtil.safeCast(as_dict.keys(), list)
+        for key in keys_as_list:
+            scaled_dict[key] = []
+
+        for i in range(0, len(as_dict[keys_as_list[0]])):
+            array_to_scale = []
+            for key in keys_as_list:
+                array_to_scale.append(as_dict[key][i])
+            scaled_array = preprocessing.scale(array_to_scale)
+            for j in range(0, len(keys_as_list)):
+                scaled_dict[keys_as_list[j]].append(scaled_array[j])
+
+        return scaled_dict
 
     def encodeCategorical(self, array):
         if array.dtype == np.dtype('float64') or array.dtype == np.dtype('int64'):
