@@ -22,7 +22,7 @@ class MachineLearningService(object):
     log = logging.getLogger(__name__)
     log.setLevel(logging.INFO)
 
-    DEFAULT_MIN_SCORE = -1
+    DEFAULT_MIN_SCORE = -10
     CSV_FILE_HEADER = ["feature file: gene list combo", "average score", "average accuracy"]
 
     def __init__(self, data):
@@ -151,7 +151,8 @@ class MachineLearningService(object):
 
         average_score = numpy.mean(scores)
         average_accuracy = numpy.mean(accuracies)
-        self.log.info("Total accuracy of all Monte Carlo runs for %s: %s", feature_set_as_string, average_accuracy)
+        self.log.info("Average score and accuracy of all Monte Carlo runs for %s: %s, %s",
+                      feature_set_as_string, average_score, average_accuracy)
         self.writeToCSVInLock(average_score, average_accuracy, feature_set_as_string, input_folder, ml_algorithm)
 
     def generateFeatureSetString(self, feature_set):
