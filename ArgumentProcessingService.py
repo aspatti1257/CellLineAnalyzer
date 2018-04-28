@@ -24,6 +24,7 @@ class ArgumentProcessingService(object):
     SKIP_RF = "skip_rf"
     SKIP_LINEAR_SVM = "skip_linear_svm"
     SKIP_RBF_SVM = "skip_rbf_svm"
+    SKIP_ELASTIC_NET = "skip_elastic_net"
 
     def __init__(self, input_folder):
         self.input_folder = input_folder
@@ -51,7 +52,8 @@ class ArgumentProcessingService(object):
                     self.DATA_SPLIT: self.fetchOrReturnDefault(arguments.get(self.DATA_SPLIT), float, 0.8),
                     self.SKIP_RF: self.fetchOrReturnDefault(arguments.get(self.SKIP_RF), bool, False),
                     self.SKIP_LINEAR_SVM: self.fetchOrReturnDefault(arguments.get(self.SKIP_LINEAR_SVM), bool, False),
-                    self.SKIP_RBF_SVM: self.fetchOrReturnDefault(arguments.get(self.SKIP_RBF_SVM), bool, False)
+                    self.SKIP_RBF_SVM: self.fetchOrReturnDefault(arguments.get(self.SKIP_RBF_SVM), bool, False),
+                    self.SKIP_ELASTIC_NET: self.fetchOrReturnDefault(arguments.get(self.SKIP_ELASTIC_NET), bool, False)
                 }
             else:
                 return None
@@ -186,9 +188,10 @@ class ArgumentProcessingService(object):
         rf_analysis = SupportedMachineLearningAlgorithms.RANDOM_FOREST + ".csv"
         linear_svm_analysis = SupportedMachineLearningAlgorithms.LINEAR_SVM + ".csv"
         rbf_svm_analysis = SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM + ".csv"
+        elastic_net_analysis = SupportedMachineLearningAlgorithms.ELASTIC_NET + ".csv"
         return file != results_file and file != self.ARGUMENTS_FILE and self.GENE_LISTS not in file and\
                file != rf_analysis and file != rbf_svm_analysis and file != linear_svm_analysis and\
-               ".csv" in file.lower()
+               file != elastic_net_analysis and ".csv" in file.lower()
 
     def feature_in_gene_list(self, feature_name, gene_lists):
         for feature_set in gene_lists.values():

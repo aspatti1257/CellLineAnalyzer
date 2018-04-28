@@ -4,6 +4,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import accuracy_score
 from sklearn import svm
+from sklearn.linear_model import ElasticNet
 import numpy
 import os
 import csv
@@ -61,6 +62,17 @@ class MachineLearningService(object):
                           SafeCastUtil.safeCast(num_models_to_create, str))
             self.handleParallellization(gene_list_combos, input_folder, monte_carlo_perms,
                                         SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM)
+
+        if not self.inputs.get(ArgumentProcessingService.SKIP_ELASTIC_NET) and \
+                not self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
+            num_models_to_create = monte_carlo_perms * 2 * len(gene_list_combos) * 3 * 2
+            self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
+                          "different Elastic Net models.",
+                          SafeCastUtil.safeCast(len(gene_list_combos), str),
+                          num_models_to_create)
+            self.handleParallellization(gene_list_combos, input_folder, monte_carlo_perms,
+                                        SupportedMachineLearningAlgorithms.ELASTIC_NET)
+
 
         return
 
@@ -206,6 +218,13 @@ class MachineLearningService(object):
                           "epsilon = %s\n", feature_set_as_string, ml_algorithm, optimal_hyperparams[0],
                           optimal_hyperparams[1])
             model = self.trainLinearSVM(results, features, optimal_hyperparams[0], optimal_hyperparams[1])
+
+        elif ml_algorithm == SupportedMachineLearningAlgorithms.ELASTIC_NET:
+            self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
+                          "alpha = %s\n" +
+                          "l_one_ratio = %s\n", feature_set_as_string, ml_algorithm, optimal_hyperparams[0],
+                          optimal_hyperparams[1])
+            model = self.trainElasticNet(results, features, optimal_hyperparams[0], optimal_hyperparams[1])
         else:
             return self.DEFAULT_MIN_SCORE
         return self.fetchPredictionsAndScore(model, testing_matrix)
@@ -226,6 +245,8 @@ class MachineLearningService(object):
                 model_data = self.hyperparameterizeLinearSVM(inner_train_matrix, inner_validation_matrix)
             elif ml_algorithm == SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM:
                 model_data = self.hyperparameterizeForRadialBasisFunctionSVM(inner_train_matrix, inner_validation_matrix)
+            elif ml_algorithm == SupportedMachineLearningAlgorithms.ELASTIC_NET:
+                model_data = self.hyperparameterizeForElasticNet(inner_train_matrix, inner_validation_matrix)
             else:
                 return inner_model_hyperparams
             for data in model_data.keys():
@@ -331,6 +352,16 @@ class MachineLearningService(object):
                         model_data[c_val, gamma, epsilon] = current_model_score
         return model_data
 
+    def hyperparameterizeForElasticNet(self, training_matrix, validation_matrix):
+        model_data = {}
+        features, results = self.populateFeaturesAndResultsByCellLine(training_matrix)
+        for alpha in [0.5, 1, 10]:
+            for l_one_ratio in [0.1, 0.9]:
+                model = self.trainElasticNet(results, features, alpha, l_one_ratio)
+                current_model_score = self.fetchPredictionsAndScore(model, validation_matrix)
+                model_data[alpha, l_one_ratio] = current_model_score
+        return model_data
+
     def populateFeaturesAndResultsByCellLine(self, matrix):
         features = []
         results = []
@@ -366,6 +397,16 @@ class MachineLearningService(object):
             model = svm.SVC(kernel='rbf', C=c_val, gamma=gamma)
         else:
             model = svm.SVR(kernel='rbf', C=c_val, gamma=gamma, epsilon=epsilon)
+        model.fit(features, results)
+        self.log.debug("Successful creation of RBF Support Vector Machine model: %s\n", model)
+        return model
+
+    def trainElasticNet(self, results, features, alpha, l_one_ratio):
+        if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
+            self.log.debug("Unable to train Elastic Net classifier. Returning default min score.")
+            return None
+        else:
+            model = ElasticNet(alpha=alpha, l1_ratio=l_one_ratio)
         model.fit(features, results)
         self.log.debug("Successful creation of RBF Support Vector Machine model: %s\n", model)
         return model

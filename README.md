@@ -19,8 +19,8 @@ of the results file, which machine learning models to create, etc.
 
 All of these files should be in the same folder. This program will accept one argument, a path to that folder (it can
 either be passed as a parameter on the command line, or entered at the prompt after running it). The outputs will be
-.CSV files called RandomForestAnalysis.csv, LinearSVMAnalysis.csv, and/or RadialBasisFunctionSVMAnalysis.csv
- depending on which machine learning modules you opt to use.
+.CSV files called RandomForestAnalysis.csv, LinearSVMAnalysis.csv, RadialBasisFunctionSVMAnalysis.csv, and/or
+ElasticNetAnalysis.csv depending on which machine learning modules you opt to use.
 
 Also part of this program, is the option to generate a series of .CSVs from MATLAB files. Making the main input to this
 program easier to generate.
@@ -90,7 +90,7 @@ ones that aren't are marked with a star (*).
               subsampling. Defaults to 0.8.
 
 `monte_carlo_permutations`*: Integer representing the number of Monte Carlo subsamples to do for hyperparameter
-                            optimization. Defaults to 10.
+                             optimization. Defaults to 10.
 
 `is_classifier`: 0 for regression, 1 for classification
 
@@ -99,6 +99,8 @@ ones that aren't are marked with a star (*).
 `skip_linear_svm`* : Optionally skip Linear Support Vector Machine analysis. Defaults to False.
 
 `skip_rbf_svm`* : Optionally skip Radial Basis Function Support Vector Machine analysis. Defaults to False.
+
+`skip_elastic_net`* : Optionally skip Elastic Net analysis. Defaults to False. Only applies for regressors.
 
 Any .csv file in this path that is not the a gene list file, or the results.csv file, will be interpreted as a features
 file.

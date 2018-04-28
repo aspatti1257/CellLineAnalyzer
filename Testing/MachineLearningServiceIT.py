@@ -29,7 +29,6 @@ class MachineLearningServiceIT(unittest.TestCase):
     def testRandomForestClassifier(self):
         self.evaluateMachineLearningModel(True, SupportedMachineLearningAlgorithms.RANDOM_FOREST)
 
-    # Linear SVM takes forever to train. Consider a different library?
     def testLinearSVMRegressor(self):
         self.evaluateMachineLearningModel(False, SupportedMachineLearningAlgorithms.LINEAR_SVM)
 
@@ -41,6 +40,9 @@ class MachineLearningServiceIT(unittest.TestCase):
 
     def testRadialBasisFunctionSVMClassifier(self):
         self.evaluateMachineLearningModel(True, SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM)
+
+    def testElasticNetRegressor(self):
+        self.evaluateMachineLearningModel(False, SupportedMachineLearningAlgorithms.ELASTIC_NET)
 
     def evaluateMachineLearningModel(self, is_classifier, ml_algorithm):
         ml_service = MachineLearningService(self.formatRandomizedData(is_classifier))
@@ -75,7 +77,7 @@ class MachineLearningServiceIT(unittest.TestCase):
                     assert ":" in feature_gene_list_combo
                     score = SafeCastUtil.safeCast(line_split[len(line_split) - 2], float)
                     accuracy = SafeCastUtil.safeCast(line_split[len(line_split) - 1], float)
-                    assert score > -1
+                    assert score > MachineLearningService.DEFAULT_MIN_SCORE
                     assert accuracy > 0
             except ValueError as valueError:
                 self.log.error(valueError)
