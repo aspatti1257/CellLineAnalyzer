@@ -71,7 +71,8 @@ class ArgumentProcessingService(object):
             try:
                 for line in data_file:
                     line_trimmed_split = line.strip().split("=")
-                    arguments[line_trimmed_split[0]] = line_trimmed_split[1]
+                    if len(line_trimmed_split) > 1:
+                        arguments[line_trimmed_split[0]] = line_trimmed_split[1]
             except ValueError as valueError:
                 self.log.error(valueError)
             finally:
@@ -217,6 +218,8 @@ class ArgumentProcessingService(object):
 
     def fetchOrReturnDefault(self, field, to_type, default):
         if field:
+            if field.lower() == 'false' and to_type is bool:
+                return False
             return SafeCastUtil.safeCast(field, to_type)
         else:
             return default

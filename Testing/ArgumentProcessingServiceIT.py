@@ -67,6 +67,15 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
         arguments = argument_processing_service.handleInputFolder()
         assert bogus_gene not in arguments.get(argument_processing_service.GENE_LISTS).get(gene_list.split(".")[0])
 
+    def testCommentsInArgumentsFileAllowed(self):
+        input_folder = self.current_working_dir + "/SampleClassifierDataFolder"
+        argument_processing_service = ArgumentProcessingService(input_folder)
+        arguments = argument_processing_service.handleInputFolder()
+        assert arguments.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS) == 10
+        assert arguments.get(ArgumentProcessingService.INNER_MONTE_CARLO_PERMUTATIONS) == 10
+        assert arguments.get(ArgumentProcessingService.SKIP_RF)
+        assert not arguments.get(ArgumentProcessingService.SKIP_ELASTIC_NET)
+
     def processAndValidateArguments(self, input_folder, is_classifier):
         argument_processing_service = ArgumentProcessingService(input_folder)
         arguments = argument_processing_service.handleInputFolder()
