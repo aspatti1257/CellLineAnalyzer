@@ -32,6 +32,15 @@ class DataFormattingServiceIT(unittest.TestCase):
         arguments = argument_processing_service.handleInputFolder()
         self.data_formatting_service = DataFormattingService(arguments)
 
+    def fetchTrainAndTestData(self):
+        s = self.data_formatting_service
+        features = pd.read_csv('SampleClassifierDataFolder/features.csv', delimiter=',')
+        results = pd.read_csv('SampleClassifierDataFolder/results.csv', delimiter=',')
+        X_train, X_test, y_train, y_test = s.testTrainSplit(features, results,
+                                                            self.data_formatting_service.inputs.get(
+                                                                ArgumentProcessingService.DATA_SPLIT))
+        return X_test, X_train, y_test, y_train
+
     def testFormattingDataRandomizesMatrices(self):
         original_outputs = self.data_formatting_service.formatData()
         self.validateOutput(original_outputs)
@@ -87,22 +96,41 @@ class DataFormattingServiceIT(unittest.TestCase):
         assert ((s.oneHot(categorical_pd).dtypes.values != np.dtype('float64')).all())
 
     def testSplit(self):
-        s = self.data_formatting_service
-        features = pd.read_csv('SampleClassifierDataFolder/features.csv', delimiter=',')
-        results = pd.read_csv('SampleClassifierDataFolder/results.csv', delimiter=',')
-        X_train, X_test, y_train, y_test = s.testTrainSplit(features, results,
-                                        self.data_formatting_service.inputs.get(ArgumentProcessingService.DATA_SPLIT))
-        assert (len(X_train) and len(X_test) and len(y_train) and len(y_test) != 0)
+        x_test, x_train, y_test, y_train = self.fetchTrainAndTestData()
+        assert (len(x_train) and len(x_test) and len(y_train) and len(y_test) != 0)
 
     def testStratifySplit(self):
-        s = self.data_formatting_service
-        features = pd.read_csv('SampleClassifierDataFolder/features.csv', delimiter=',')
-        results = pd.read_csv('SampleClassifierDataFolder/results.csv', delimiter=',')
-        X_train, X_test, y_train, y_test = s.testTrainSplit(features, results,
-                                        self.data_formatting_service.inputs.get(ArgumentProcessingService.DATA_SPLIT))
-        assert (len(X_train) and len(X_test) and len(y_train) and len(y_test) != 0)
+        x_test, x_train, y_test, y_train = self.fetchTrainAndTestData()
+        assert (len(x_train) and len(x_test) and len(y_train) and len(y_test) != 0)
         categorical_pd = pd.read_csv(self.current_working_dir +
                                      '/SampleClassifierDataFolder/categorical.csv', delimiter=',')
         data_formatting_service = DataFormattingService(None)
         categorical_onehot = data_formatting_service.oneHot(categorical_pd)
         assert (np.shape(categorical_onehot))[1] == 2
+
+    def testFeatureScaling(self):
+        x_test, x_train, y_test, y_train = self.fetchTrainAndTestData()
+
+        self.scaleFeaturesAndAssert(x_test)
+        self.scaleFeaturesAndAssert(x_train)
+
+    def scaleFeaturesAndAssert(self, x_vals):
+        feature_one_orig = list(x_vals.get("feature_one"))
+        feature_two_orig = list(x_vals.get("feature_two"))
+        feature_three_orig = list(x_vals.get("feature_three"))
+        scaled_test = self.data_formatting_service.scaleFeatures(x_vals)
+        assert scaled_test
+        scaled_test_vals_as_list = SafeCastUtil.safeCast(scaled_test.values(), list)
+        self.assertFeaturesScaled(feature_one_orig, scaled_test_vals_as_list, 0)
+        self.assertFeaturesScaled(feature_two_orig, scaled_test_vals_as_list, 1)
+        self.assertFeaturesScaled(feature_three_orig, scaled_test_vals_as_list, 2)
+
+    def assertFeaturesScaled(self, feature, scaled_test_vals_as_list, index):
+        for i in range(0, len(feature)):
+            for j in range(0, len(feature)):
+                if feature[i] == feature[j]:
+                    assert scaled_test_vals_as_list[i][index] == scaled_test_vals_as_list[j][index]
+                elif feature[i] < feature[j]:
+                    assert scaled_test_vals_as_list[i][index] < scaled_test_vals_as_list[j][index]
+                else:
+                    assert scaled_test_vals_as_list[i][index] > scaled_test_vals_as_list[j][index]

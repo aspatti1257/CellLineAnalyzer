@@ -36,7 +36,6 @@ class DataFormattingService(object):
         return self.outputs
 
     def scaleFeatures(self, data_frame):
-        #TODO: Write test to verify this behavior.
         as_dict = data_frame.transpose().to_dict('list')
         scaled_dict = OrderedDict()
 
