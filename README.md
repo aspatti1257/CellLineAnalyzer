@@ -89,8 +89,11 @@ ones that aren't are marked with a star (*).
 `data_split`*: Optional float between 0 and 1, representing how much data should be held out for each Monte Carlo
               subsampling. Defaults to 0.8.
 
-`monte_carlo_permutations`*: Integer representing the number of Monte Carlo subsamples to do for hyperparameter
-                             optimization. Defaults to 10.
+`outer_monte_carlo_permutations`*: Integer representing the number of Monte Carlo outer subsamples to do for
+                                   hyperparameter optimization. Defaults to 10.
+
+`inner_monte_carlo_permutations`*: Integer representing the number of Monte Carlo inner subsamples to do for
+                                   hyperparameter optimization. Defaults to 10.
 
 `is_classifier`: 0 for regression, 1 for classification
 

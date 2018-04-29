@@ -72,7 +72,7 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
         arguments = argument_processing_service.handleInputFolder()
         features = arguments.get(argument_processing_service.FEATURES)
         assert arguments is not None
-        assert len(arguments) == 8
+        assert len(arguments) == 11
         assert (len(arguments.get(argument_processing_service.RESULTS)) + 1) == len(features.keys())
         assert arguments.get(argument_processing_service.IS_CLASSIFIER) == is_classifier
         assert len(features.get(argument_processing_service.FEATURE_NAMES)) < self.total_features_in_files

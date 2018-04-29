@@ -31,48 +31,44 @@ class MachineLearningService(object):
 
     def analyze(self, input_folder):
         gene_list_combos = self.determineGeneListCombos()
-        monte_carlo_perms = self.inputs.get(ArgumentProcessingService.MONTE_CARLO_PERMUTATIONS)
-
+        inner_monte_carlo_perms = self.inputs.get(ArgumentProcessingService.INNER_MONTE_CARLO_PERMUTATIONS)
+        outer_monte_carlo_perms = self.inputs.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS)
         if not self.inputs.get(ArgumentProcessingService.SKIP_RF):
-            num_models_to_create = monte_carlo_perms * 2 * len(gene_list_combos) * (6 * 4)
+            num_models_to_create = inner_monte_carlo_perms * outer_monte_carlo_perms * len(gene_list_combos) * (6 * 4)
             self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
                           "different Random Forest models.", SafeCastUtil.safeCast(len(gene_list_combos), str),
                           SafeCastUtil.safeCast(num_models_to_create, str))
-            self.handleParallellization(gene_list_combos, input_folder, monte_carlo_perms,
-                                        SupportedMachineLearningAlgorithms.RANDOM_FOREST)
+            self.handleParallellization(gene_list_combos, input_folder, SupportedMachineLearningAlgorithms.RANDOM_FOREST)
 
         if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_SVM):
-            num_models_to_create = monte_carlo_perms * 2 * len(gene_list_combos) * 3
+            num_models_to_create = inner_monte_carlo_perms * outer_monte_carlo_perms * len(gene_list_combos) * 3
             if not self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
                 num_models_to_create = num_models_to_create * 5
             self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
                           "different Linear Support Vector Machine models.",
                           SafeCastUtil.safeCast(len(gene_list_combos), str),
                           SafeCastUtil.safeCast(num_models_to_create, str))
-            self.handleParallellization(gene_list_combos, input_folder, monte_carlo_perms,
-                                        SupportedMachineLearningAlgorithms.LINEAR_SVM)
+            self.handleParallellization(gene_list_combos, input_folder, SupportedMachineLearningAlgorithms.LINEAR_SVM)
 
         if not self.inputs.get(ArgumentProcessingService.SKIP_RBF_SVM):
-            num_models_to_create = monte_carlo_perms * 2 * len(gene_list_combos) * 3 * 7
+            num_models_to_create = inner_monte_carlo_perms * outer_monte_carlo_perms * len(gene_list_combos) * 3 * 7
             if not self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
                 num_models_to_create = num_models_to_create * 5
             self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
                           "different RBF Support Vector Machine models.",
                           SafeCastUtil.safeCast(len(gene_list_combos), str),
                           SafeCastUtil.safeCast(num_models_to_create, str))
-            self.handleParallellization(gene_list_combos, input_folder, monte_carlo_perms,
+            self.handleParallellization(gene_list_combos, input_folder,
                                         SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM)
 
         if not self.inputs.get(ArgumentProcessingService.SKIP_ELASTIC_NET) and \
                 not self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
-            num_models_to_create = monte_carlo_perms * 2 * len(gene_list_combos) * 3 * 2
+            num_models_to_create = inner_monte_carlo_perms * outer_monte_carlo_perms * len(gene_list_combos) * 3 * 2
             self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
                           "different Elastic Net models.",
                           SafeCastUtil.safeCast(len(gene_list_combos), str),
                           num_models_to_create)
-            self.handleParallellization(gene_list_combos, input_folder, monte_carlo_perms,
-                                        SupportedMachineLearningAlgorithms.ELASTIC_NET)
-
+            self.handleParallellization(gene_list_combos, input_folder, SupportedMachineLearningAlgorithms.ELASTIC_NET)
 
         return
 
@@ -134,26 +130,25 @@ class MachineLearningService(object):
     def blankArray(self, length):
         return list(numpy.zeros(length, dtype=numpy.int))
 
-    def handleParallellization(self, gene_list_combos, input_folder, monte_carlo_perms, ml_algorithm):
+    def handleParallellization(self, gene_list_combos, input_folder, ml_algorithm):
         num_nodes = multiprocessing.cpu_count()
 
-        Parallel(n_jobs=num_nodes)(delayed(self.runMonteCarloSelection)(feature_set, monte_carlo_perms, ml_algorithm,
+        Parallel(n_jobs=num_nodes)(delayed(self.runMonteCarloSelection)(feature_set, ml_algorithm,
                                                                         input_folder)
                                    for feature_set in gene_list_combos)
 
-    def runMonteCarloSelection(self, feature_set, monte_carlo_perms, ml_algorithm, input_folder):
+    def runMonteCarloSelection(self, feature_set, ml_algorithm, input_folder):
         scores = []
         accuracies = []
         feature_set_as_string = self.generateFeatureSetString(feature_set)
-        for i in range(1, monte_carlo_perms + 1):
+        for i in range(1, self.inputs.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS) + 1):
             formatted_data = self.formatData(self.inputs)
             training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set, formatted_data)
             testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set, formatted_data)
 
             self.log.info("Computing outer Monte Carlo Permutation %s for %s.", i, feature_set_as_string)
 
-            optimal_hyperparams = self.determineOptimalHyperparameters(feature_set, formatted_data, monte_carlo_perms,
-                                                                       ml_algorithm)
+            optimal_hyperparams = self.determineOptimalHyperparameters(feature_set, formatted_data, ml_algorithm)
             features, results = self.populateFeaturesAndResultsByCellLine(training_matrix)
             prediction_data = self.fetchOuterPermutationModelScore(feature_set_as_string, features, ml_algorithm,
                                                                    optimal_hyperparams, results, testing_matrix,
@@ -229,9 +224,9 @@ class MachineLearningService(object):
             return self.DEFAULT_MIN_SCORE
         return self.fetchPredictionsAndScore(model, testing_matrix)
 
-    def determineInnerHyperparameters(self, feature_set, formatted_data, monte_carlo_perms, ml_algorithm):
+    def determineInnerHyperparameters(self, feature_set, formatted_data, ml_algorithm):
         inner_model_hyperparams = {}
-        for j in range(1, monte_carlo_perms + 1):
+        for j in range(1, self.inputs.get(ArgumentProcessingService.INNER_MONTE_CARLO_PERMUTATIONS) + 1):
             formatted_inputs = self.reformatInputsByTrainingMatrix(
                 formatted_data.get(DataFormattingService.TRAINING_MATRIX))
             further_formatted_data = self.formatData(formatted_inputs)
@@ -278,9 +273,8 @@ class MachineLearningService(object):
         new_inputs[ArgumentProcessingService.DATA_SPLIT] = self.inputs[ArgumentProcessingService.DATA_SPLIT]
         return new_inputs
 
-    def determineOptimalHyperparameters(self, feature_set, formatted_data, monte_carlo_perms, ml_algorithm):
-        inner_model_hyperparams = self.determineInnerHyperparameters(feature_set, formatted_data, monte_carlo_perms,
-                                                                     ml_algorithm)
+    def determineOptimalHyperparameters(self, feature_set, formatted_data, ml_algorithm):
+        inner_model_hyperparams = self.determineInnerHyperparameters(feature_set, formatted_data, ml_algorithm)
         highest_average = self.DEFAULT_MIN_SCORE
         best_hyperparam = None
         for hyperparam_set in inner_model_hyperparams.keys():

@@ -49,9 +49,8 @@ class MachineLearningServiceIT(unittest.TestCase):
         ml_service.log.setLevel(logging.DEBUG)
         num_gene_list_combos = 4
         gene_list_combos_shortened = ml_service.determineGeneListCombos()[0:num_gene_list_combos]
-        monte_carlo_perms = ml_service.inputs.get(ArgumentProcessingService.MONTE_CARLO_PERMUTATIONS)
         target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
-        ml_service.handleParallellization(gene_list_combos_shortened, target_dir, monte_carlo_perms, ml_algorithm)
+        ml_service.handleParallellization(gene_list_combos_shortened, target_dir, ml_algorithm)
 
         self.assertResults(target_dir, ml_algorithm, num_gene_list_combos + 1)
 

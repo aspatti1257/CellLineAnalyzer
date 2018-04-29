@@ -19,7 +19,8 @@ class ArgumentProcessingService(object):
     IS_CLASSIFIER = "is_classifier"
     FEATURES = "features"
     FEATURE_NAMES = "featureNames"
-    MONTE_CARLO_PERMUTATIONS = "monte_carlo_permutations"
+    INNER_MONTE_CARLO_PERMUTATIONS = "inner_monte_carlo_permutations"
+    OUTER_MONTE_CARLO_PERMUTATIONS = "outer_monte_carlo_permutations"
     DATA_SPLIT = "data_split"
     SKIP_RF = "skip_rf"
     SKIP_LINEAR_SVM = "skip_linear_svm"
@@ -48,7 +49,8 @@ class ArgumentProcessingService(object):
                     self.IS_CLASSIFIER: is_classifier,
                     self.FEATURES: feature_map,
                     self.GENE_LISTS: gene_lists,
-                    self.MONTE_CARLO_PERMUTATIONS: self.fetchOrReturnDefault(arguments.get(self.MONTE_CARLO_PERMUTATIONS), int, 10),
+                    self.INNER_MONTE_CARLO_PERMUTATIONS: self.fetchOrReturnDefault(arguments.get(self.INNER_MONTE_CARLO_PERMUTATIONS), int, 10),
+                    self.OUTER_MONTE_CARLO_PERMUTATIONS: self.fetchOrReturnDefault(arguments.get(self.OUTER_MONTE_CARLO_PERMUTATIONS), int, 10),
                     self.DATA_SPLIT: self.fetchOrReturnDefault(arguments.get(self.DATA_SPLIT), float, 0.8),
                     self.SKIP_RF: self.fetchOrReturnDefault(arguments.get(self.SKIP_RF), bool, False),
                     self.SKIP_LINEAR_SVM: self.fetchOrReturnDefault(arguments.get(self.SKIP_LINEAR_SVM), bool, False),
