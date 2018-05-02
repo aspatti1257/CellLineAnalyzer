@@ -113,7 +113,8 @@ file.
 ```
 results=results.csv
 is_classifier=1
-monte_carlo_permutations=10
+inner_monte_carlo_permutations=5
+outer_monte_carlo_permutations=20
 data_split=0.8
 skip_rf=True
 ```

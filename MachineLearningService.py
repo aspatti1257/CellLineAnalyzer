@@ -8,6 +8,7 @@ from sklearn.linear_model import ElasticNet
 import numpy
 import os
 import csv
+import gc
 
 import multiprocessing
 import threading
@@ -24,7 +25,6 @@ class MachineLearningService(object):
     log.setLevel(logging.INFO)
 
     DEFAULT_MIN_SCORE = -10
-    CSV_FILE_HEADER = ["feature file: gene list combo", "average score", "average accuracy"]
 
     def __init__(self, data):
         self.inputs = data
@@ -63,7 +63,7 @@ class MachineLearningService(object):
 
         if not self.inputs.get(ArgumentProcessingService.SKIP_ELASTIC_NET) and \
                 not self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
-            num_models_to_create = inner_monte_carlo_perms * outer_monte_carlo_perms * len(gene_list_combos) * 3 * 2
+            num_models_to_create = inner_monte_carlo_perms * outer_monte_carlo_perms * len(gene_list_combos) * 4 * 2
             self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
                           "different Elastic Net models.",
                           SafeCastUtil.safeCast(len(gene_list_combos), str),
@@ -227,6 +227,7 @@ class MachineLearningService(object):
     def determineInnerHyperparameters(self, feature_set, formatted_data, ml_algorithm):
         inner_model_hyperparams = {}
         for j in range(1, self.inputs.get(ArgumentProcessingService.INNER_MONTE_CARLO_PERMUTATIONS) + 1):
+            gc.collect()
             formatted_inputs = self.reformatInputsByTrainingMatrix(
                 formatted_data.get(DataFormattingService.TRAINING_MATRIX))
             further_formatted_data = self.formatData(formatted_inputs)
@@ -349,7 +350,7 @@ class MachineLearningService(object):
     def hyperparameterizeForElasticNet(self, training_matrix, validation_matrix):
         model_data = {}
         features, results = self.populateFeaturesAndResultsByCellLine(training_matrix)
-        for alpha in [0.5, 1, 10]:
+        for alpha in [0.01, 0.1, 0.5, 1]:
             for l_one_ratio in [0.1, 0.9]:
                 model = self.trainElasticNet(results, features, alpha, l_one_ratio)
                 current_model_score = self.fetchPredictionsAndScore(model, validation_matrix)
@@ -415,6 +416,7 @@ class MachineLearningService(object):
             accuracy = accuracy_score(results, predictions)
         else:
             accuracy = mean_squared_error(results, predictions)
+        del model
         return score, accuracy
 
     def writeToCSVInLock(self, average_score, average_accuracy, feature_set_as_string, input_folder, ml_algorithm):
@@ -430,7 +432,7 @@ class MachineLearningService(object):
             try:
                 writer = csv.writer(csv_file)
                 if write_action == "w":
-                    writer.writerow(self.CSV_FILE_HEADER)
+                    writer.writerow(self.getCSVFileHeader(self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER)))
                 writer.writerow([feature_set_as_string, average_score, average_accuracy])
             except ValueError as error:
                 self.log.error("Error writing to file %s. %s", file_name, error)
@@ -439,3 +441,10 @@ class MachineLearningService(object):
                 os.chdir(input_folder)
                 self.log.debug("Releasing current thread %s.", threading.current_thread())
                 lock.release()
+
+    @staticmethod
+    def getCSVFileHeader(is_classifier):
+        if is_classifier:
+            return ["feature file: gene list combo", "percentage accurate predictions", "accuracy score"]
+        else:
+            return ["feature file: gene list combo", "R^2 score", "mean squared error"]

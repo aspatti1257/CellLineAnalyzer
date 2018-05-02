@@ -52,7 +52,7 @@ class MachineLearningServiceIT(unittest.TestCase):
         target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         ml_service.handleParallellization(gene_list_combos_shortened, target_dir, ml_algorithm)
 
-        self.assertResults(target_dir, ml_algorithm, num_gene_list_combos + 1)
+        self.assertResults(target_dir, ml_algorithm, num_gene_list_combos + 1, is_classifier)
 
     def formatRandomizedData(self, is_classifier):
         RandomizedDataGenerator.generateRandomizedFiles(3, 1000, 150, is_classifier, 1, .8)
@@ -60,7 +60,7 @@ class MachineLearningServiceIT(unittest.TestCase):
         argument_processing_service = ArgumentProcessingService(input_folder)
         return argument_processing_service.handleInputFolder()
 
-    def assertResults(self, target_dir, ml_algorithm, expected_lines):
+    def assertResults(self, target_dir, ml_algorithm, expected_lines, is_classifier):
         file_name = ml_algorithm + ".csv"
         assert file_name in os.listdir(target_dir)
         num_lines = 0
@@ -70,7 +70,7 @@ class MachineLearningServiceIT(unittest.TestCase):
                     num_lines += 1
                     line_split = line.strip().split(",")
                     if line_index == 0:
-                        assert line_split == MachineLearningService.CSV_FILE_HEADER
+                        assert line_split == MachineLearningService.getCSVFileHeader(is_classifier)
                         continue
                     feature_gene_list_combo = line_split[0]
                     assert ":" in feature_gene_list_combo
@@ -84,4 +84,3 @@ class MachineLearningServiceIT(unittest.TestCase):
                 self.log.debug("Closing file %s", file_name)
                 csv_file.close()
                 assert num_lines == expected_lines
-
