@@ -142,9 +142,10 @@ class MachineLearningService(object):
         accuracies = []
         feature_set_as_string = self.generateFeatureSetString(feature_set)
         for i in range(1, self.inputs.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS) + 1):
+            gc.collect()
             formatted_data = self.formatData(self.inputs)
             training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set, formatted_data)
-            testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set, formatted_data)
+            testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set, formatted_data)
 
             self.log.info("Computing outer Monte Carlo Permutation %s for %s.", i, feature_set_as_string)
 
@@ -227,7 +228,6 @@ class MachineLearningService(object):
     def determineInnerHyperparameters(self, feature_set, formatted_data, ml_algorithm):
         inner_model_hyperparams = {}
         for j in range(1, self.inputs.get(ArgumentProcessingService.INNER_MONTE_CARLO_PERMUTATIONS) + 1):
-            gc.collect()
             formatted_inputs = self.reformatInputsByTrainingMatrix(
                 formatted_data.get(DataFormattingService.TRAINING_MATRIX))
             further_formatted_data = self.formatData(formatted_inputs)
@@ -406,10 +406,10 @@ class MachineLearningService(object):
         self.log.debug("Successful creation of RBF Support Vector Machine model: %s\n", model)
         return model
 
-    def fetchPredictionsAndScore(self, model, validation_matrix):
+    def fetchPredictionsAndScore(self, model, testing_matrix):
         if model is None:
             return self.DEFAULT_MIN_SCORE
-        features, results = self.populateFeaturesAndResultsByCellLine(validation_matrix)
+        features, results = self.populateFeaturesAndResultsByCellLine(testing_matrix)
         predictions = model.predict(features)
         score = model.score(features, results)
         if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):

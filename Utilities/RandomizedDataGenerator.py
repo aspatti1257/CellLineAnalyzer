@@ -24,7 +24,7 @@ class RandomizedDataGenerator(object):
                                 data_split):
 
         features_per_file = SafeCastUtil.safeCast(num_features / num_feature_files, int)
-
+        #TODO: Plant some significant features and test scores/accuracies.
         RandomizedDataGenerator.generateFeaturesCSVs(num_feature_files, num_cells, features_per_file)
         RandomizedDataGenerator.generateGeneLists(features_per_file)
         RandomizedDataGenerator.generateResultsCSV(is_classifier, num_cells)
