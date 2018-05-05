@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 import logging
 import re
@@ -22,6 +23,7 @@ class ArgumentProcessingService(object):
     INNER_MONTE_CARLO_PERMUTATIONS = "inner_monte_carlo_permutations"
     OUTER_MONTE_CARLO_PERMUTATIONS = "outer_monte_carlo_permutations"
     DATA_SPLIT = "data_split"
+    NUM_THREADS = "num_threads"
     SKIP_RF = "skip_rf"
     SKIP_LINEAR_SVM = "skip_linear_svm"
     SKIP_RBF_SVM = "skip_rbf_svm"
@@ -55,7 +57,9 @@ class ArgumentProcessingService(object):
                     self.SKIP_RF: self.fetchOrReturnDefault(arguments.get(self.SKIP_RF), bool, False),
                     self.SKIP_LINEAR_SVM: self.fetchOrReturnDefault(arguments.get(self.SKIP_LINEAR_SVM), bool, False),
                     self.SKIP_RBF_SVM: self.fetchOrReturnDefault(arguments.get(self.SKIP_RBF_SVM), bool, False),
-                    self.SKIP_ELASTIC_NET: self.fetchOrReturnDefault(arguments.get(self.SKIP_ELASTIC_NET), bool, False)
+                    self.SKIP_ELASTIC_NET: self.fetchOrReturnDefault(arguments.get(self.SKIP_ELASTIC_NET), bool, False),
+                    self.NUM_THREADS: self.fetchOrReturnDefault(arguments.get(self.NUM_THREADS), int,
+                                                                multiprocessing.cpu_count())
                 }
             else:
                 return None

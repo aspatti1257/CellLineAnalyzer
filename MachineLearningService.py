@@ -131,11 +131,12 @@ class MachineLearningService(object):
         return list(numpy.zeros(length, dtype=numpy.int))
 
     def handleParallellization(self, gene_list_combos, input_folder, ml_algorithm):
-        num_nodes = multiprocessing.cpu_count()
+        max_nodes = multiprocessing.cpu_count()
+        requested_threads = self.inputs.get(ArgumentProcessingService.NUM_THREADS)
+        nodes_to_use = numpy.amin([requested_threads, max_nodes])
 
-        Parallel(n_jobs=num_nodes)(delayed(self.runMonteCarloSelection)(feature_set, ml_algorithm,
-                                                                        input_folder)
-                                   for feature_set in gene_list_combos)
+        Parallel(n_jobs=nodes_to_use)(delayed(self.runMonteCarloSelection)(feature_set, ml_algorithm, input_folder)
+                 for feature_set in gene_list_combos)
 
     def runMonteCarloSelection(self, feature_set, ml_algorithm, input_folder):
         scores = []

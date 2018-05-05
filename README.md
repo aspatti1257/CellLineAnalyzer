@@ -97,6 +97,9 @@ ones that aren't are marked with a star (*).
 
 `is_classifier`: 0 for regression, 1 for classification
 
+`num_threads`* : Optional integer representing the number of threads to use for multi-processing operations. Defaults to
+                 the number of CPUs on your computer. Cannot exceed this value.
+
 `skip_rf`* : Optionally skip Random Forest analysis. Defaults to False.
 
 `skip_linear_svm`* : Optionally skip Linear Support Vector Machine analysis. Defaults to False.
