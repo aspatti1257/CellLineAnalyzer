@@ -14,6 +14,8 @@ class MachineLearningServiceIT(unittest.TestCase):
     log = logging.getLogger(__name__)
     log.setLevel(logging.INFO)
 
+    THRESHOLD_OF_SIGNIFICANCE = 0.60
+
     def setUp(self):
         self.current_working_dir = os.getcwd()  # Should be this package.
 
@@ -47,7 +49,7 @@ class MachineLearningServiceIT(unittest.TestCase):
     def evaluateMachineLearningModel(self, is_classifier, ml_algorithm):
         ml_service = MachineLearningService(self.formatRandomizedData(is_classifier))
         ml_service.log.setLevel(logging.DEBUG)
-        num_gene_list_combos = 4
+        num_gene_list_combos = 8
         gene_list_combos_shortened = ml_service.determineGeneListCombos()[0:num_gene_list_combos]
         target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         ml_service.handleParallellization(gene_list_combos_shortened, target_dir, ml_algorithm)
@@ -77,6 +79,10 @@ class MachineLearningServiceIT(unittest.TestCase):
                     score = SafeCastUtil.safeCast(line_split[len(line_split) - 2], float)
                     accuracy = SafeCastUtil.safeCast(line_split[len(line_split) - 1], float)
                     assert score > MachineLearningService.DEFAULT_MIN_SCORE
+                    if RandomizedDataGenerator.SIGNIFICANT_GENE_LIST in feature_gene_list_combo:
+                        assert score >= self.THRESHOLD_OF_SIGNIFICANCE
+                    else:
+                        assert score < self.THRESHOLD_OF_SIGNIFICANCE
                     assert accuracy > 0
             except ValueError as valueError:
                 self.log.error(valueError)
