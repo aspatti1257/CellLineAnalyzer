@@ -16,7 +16,7 @@ class FileConverter(object):
         log.setLevel(logging.INFO)
 
         ctr = 0
-        # TODO: Consider making a separate folder and putting the contents in there?
+
         for key in mat_file:
             if '__' not in key and 'readme' not in key:
                 save_name = 'convertedFile_' + SafeCastUtil.safeCast(key, str) + '.csv'

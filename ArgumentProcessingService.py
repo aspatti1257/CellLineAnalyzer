@@ -28,6 +28,7 @@ class ArgumentProcessingService(object):
     SKIP_LINEAR_SVM = "skip_linear_svm"
     SKIP_RBF_SVM = "skip_rbf_svm"
     SKIP_ELASTIC_NET = "skip_elastic_net"
+    RECORD_DIAGNOSTICS = "record_diagnostics"
 
     def __init__(self, input_folder):
         self.input_folder = input_folder
@@ -44,7 +45,8 @@ class ArgumentProcessingService(object):
         if is_classifier is not None and results_file is not None:
             results_list = self.validateAndExtractResults(results_file, is_classifier)
             gene_lists = self.extractGeneList()
-            feature_map = self.createAndValidateFeatureMatrix(results_list, results_file, gene_lists)
+            write_diagnostics = self.fetchOrReturnDefault(arguments.get(self.RECORD_DIAGNOSTICS), bool, False)
+            feature_map = self.createAndValidateFeatureMatrix(results_list, results_file, gene_lists, write_diagnostics)
             if feature_map and gene_lists and results_list:
                 return {
                     self.RESULTS: results_list,
@@ -124,42 +126,70 @@ class ArgumentProcessingService(object):
 
         return gene_lists
 
-    def createAndValidateFeatureMatrix(self, results_list, results_file, gene_lists):
+    def createAndValidateFeatureMatrix(self, results_list, results_file, gene_lists, write_diagnostics):
         files = os.listdir(self.input_folder)
         feature_matrix = {self.FEATURE_NAMES: []}
+        features_removed = []
         for file in [file for file in files if self.fileIsFeatureFile(file, results_file)]:
             features_path = self.input_folder + "/" + file
-            self.validateGeneLists(features_path, file, gene_lists)
+            features_removed.append([file, self.validateGeneLists(features_path, file, gene_lists)])
+        if write_diagnostics:
+            self.writeDiagnostics(features_removed)
+
         for file in [file for file in files if self.fileIsFeatureFile(file, results_file)]:
             features_path = self.input_folder + "/" + file
             self.extractFeatureMatrix(feature_matrix, features_path, file, gene_lists, results_list)
         return feature_matrix
 
     def validateGeneLists(self, features_path, file, gene_lists):
+        features_removed_by_file = {}
         with open(features_path) as feature_file:
             try:
                 for line_index, line in enumerate(feature_file):
                     if line_index == 0:
                         feature_names = line.split(",")
-                        self.validateAndTrimGeneList(feature_names, gene_lists, file)
-                    else:
-                        break
+                        features_removed_by_file = self.validateAndTrimGeneList(feature_names, gene_lists, file)
+                    break
             except ValueError as valueError:
                 self.log.error(valueError)
                 return None
             finally:
                 self.log.debug("Closing file %s", feature_file)
+        return features_removed_by_file
 
     def validateAndTrimGeneList(self, feature_list, gene_lists, file):
+        unused_features = {}
         for key in gene_lists.keys():
             for gene in gene_lists[key]:
                 if gene not in [feature.strip() for feature in feature_list]:
                     list_length = len(gene_lists[key])
+                    index = gene_lists[key].index(gene)
                     gene_lists[key].remove(gene)
+                    if unused_features.get(key) is None:
+                        unused_features[key] = [[gene, index]]
+                    else:
+                        unused_features[key].append([gene, (index + len(unused_features[key]))])
                     self.log.warning("Incomplete dataset: gene %s from gene list %s not found in file %s. "
                                      "Will not process this gene in any files. "
                                      "Old gene list size : %s. New gene list size: %s",
                                      gene, key, file, list_length, len(gene_lists[key]))
+        return unused_features
+
+    def writeDiagnostics(self, features_removed):
+        with open(self.input_folder + "/Diagnostics.txt", "w") as diagnostics_file:
+            try:
+                diagnostics_file.write("### Diagnostics ###\n")
+                for feature_file in features_removed:
+                    diagnostics_file.write("\nFeatures from gene lists not available in " + feature_file[0] + ":\n")
+                    for gene_list in feature_file[1].keys():
+                        diagnostics_file.write("\tFeatures needed from gene list " + gene_list + ":\n")
+                        for gene in feature_file[1][gene_list]:
+                            diagnostics_file.write("\t\t" + gene[0] + " at index "
+                                                   + SafeCastUtil.safeCast(gene[1], str) + "\n")
+            except ValueError as error:
+                self.log.error("Error writing to file %s. %s", diagnostics_file, error)
+            finally:
+                diagnostics_file.close()
 
     def extractFeatureMatrix(self, feature_matrix, features_path, file, gene_lists, results_list):
         self.log.info("Extracting important features for %s.", file)

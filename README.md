@@ -108,6 +108,9 @@ ones that aren't are marked with a star (*).
 
 `skip_elastic_net`* : Optionally skip Elastic Net analysis. Defaults to False. Only applies for regressors.
 
+`record_diagnostics`*: Optionally print out a diagnostics file which tells you which genes (and their indices) from
+                       your gene_lists are missing in which feature files. Defaults to False.
+
 Any .csv file in this path that is not the a gene list file, or the results.csv file, will be interpreted as a features
 file.
 
