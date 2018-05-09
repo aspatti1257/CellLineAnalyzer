@@ -381,9 +381,9 @@ class MachineLearningService(object):
 
     def trainLinearSVM(self, results, features, c_val, epsilon):
         if epsilon is None or self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
-            model = svm.SVC(kernel='linear', C=c_val)
+            model = svm.LinearSVC(C=c_val)
         else:
-            model = svm.SVR(kernel='linear', C=c_val, epsilon=epsilon, cache_size=15000)
+            model = svm.LinearSVR(C=c_val, epsilon=epsilon)
         model.fit(features, results)
         self.log.debug("Successful creation of Linear Support Vector Machine model: %s\n", model)
         return model
