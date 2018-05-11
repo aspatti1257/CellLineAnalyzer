@@ -22,8 +22,9 @@ class MachineLearningServiceIT(unittest.TestCase):
     def tearDown(self):
         if self.current_working_dir != "/":
             for file in os.listdir(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER):
-                os.remove(
-                    self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER + "/" + file)
+                if file == "__init__.py":
+                    continue
+                os.remove(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER + "/" + file)
 
     def testRandomForestRegressor(self):
         self.evaluateMachineLearningModel(False, SupportedMachineLearningAlgorithms.RANDOM_FOREST)

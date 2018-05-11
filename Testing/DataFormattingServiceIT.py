@@ -3,7 +3,6 @@ import numpy as np
 import os
 import logging
 import pandas as pd
-import math
 
 from DataFormattingService import DataFormattingService
 from ArgumentProcessingService import ArgumentProcessingService
@@ -24,8 +23,9 @@ class DataFormattingServiceIT(unittest.TestCase):
     def tearDown(self):
         if self.current_working_dir != "/":
             for file in os.listdir(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER):
-                os.remove(
-                    self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER + "/" + file)
+                if file == "__init__.py":
+                    continue
+                os.remove(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER + "/" + file)
 
     def instantiateDataFormattingService(self, input_folder):
         argument_processing_service = ArgumentProcessingService(input_folder)
