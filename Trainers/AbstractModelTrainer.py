@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
-import logging
 from Utilities.SafeCastUtil import SafeCastUtil
-import numpy
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import accuracy_score
+import logging
+import numpy
+
 
 class AbstractModelTrainer(ABC):
 

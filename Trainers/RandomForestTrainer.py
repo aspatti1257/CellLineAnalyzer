@@ -1,10 +1,10 @@
-
-from AbstractModelTrainer import AbstractModelTrainer
-from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
-from Utilities.SafeCastUtil import SafeCastUtil
 import numpy
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestRegressor
+
+from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
+from Trainers.AbstractModelTrainer import AbstractModelTrainer
+from Utilities.SafeCastUtil import SafeCastUtil
 
 
 class RandomForestTrainer(AbstractModelTrainer):

@@ -1,15 +1,16 @@
-import unittest
 import logging
 import os
+import unittest
 
-from MachineLearningService import MachineLearningService
+from Trainers.ElasticNetTrainer import ElasticNetTrainer
+from Trainers.RandomForestTrainer import RandomForestTrainer
+from Trainers.LinearSVMTrainer import LinearSVMTrainer
+from Trainers.RadialBasisFunctionSVMTrainer import RadialBasisFunctionSVMTrainer
+
 from ArgumentProcessingService import ArgumentProcessingService
+from MachineLearningService import MachineLearningService
 from Utilities.RandomizedDataGenerator import RandomizedDataGenerator
 from Utilities.SafeCastUtil import SafeCastUtil
-import RandomForestTrainer
-import LinearSVMTrainer
-import RadialBasisFunctionSVMTrainer
-import ElasticNetTrainer
 
 
 class MachineLearningServiceIT(unittest.TestCase):
@@ -30,25 +31,25 @@ class MachineLearningServiceIT(unittest.TestCase):
                 os.remove(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER + "/" + file)
 
     def testRandomForestRegressor(self):
-        self.evaluateMachineLearningModel(RandomForestTrainer.RandomForestTrainer(False))
+        self.evaluateMachineLearningModel(RandomForestTrainer(False))
 
     def testRandomForestClassifier(self):
-        self.evaluateMachineLearningModel(RandomForestTrainer.RandomForestTrainer(True))
+        self.evaluateMachineLearningModel(RandomForestTrainer(True))
 
     def testLinearSVMRegressor(self):
-        self.evaluateMachineLearningModel(LinearSVMTrainer.LinearSVMTrainer(False))
+        self.evaluateMachineLearningModel(LinearSVMTrainer(False))
 
     def testLinearSVMClassifier(self):
-        self.evaluateMachineLearningModel(LinearSVMTrainer.LinearSVMTrainer(True))
+        self.evaluateMachineLearningModel(LinearSVMTrainer(True))
 
     def testRadialBasisFunctionSVMRegressor(self):
-        self.evaluateMachineLearningModel(RadialBasisFunctionSVMTrainer.RadialBasisFunctionSVMTrainer(False))
+        self.evaluateMachineLearningModel(RadialBasisFunctionSVMTrainer(False))
 
     def testRadialBasisFunctionSVMClassifier(self):
-        self.evaluateMachineLearningModel(RadialBasisFunctionSVMTrainer.RadialBasisFunctionSVMTrainer(True))
+        self.evaluateMachineLearningModel(RadialBasisFunctionSVMTrainer(True))
 
     def testElasticNetRegressor(self):
-        self.evaluateMachineLearningModel(ElasticNetTrainer.ElasticNetTrainer(False))
+        self.evaluateMachineLearningModel(ElasticNetTrainer(False))
 
     def evaluateMachineLearningModel(self, trainer):
         ml_service = MachineLearningService(self.formatRandomizedData(trainer.is_classifier))
@@ -58,7 +59,7 @@ class MachineLearningServiceIT(unittest.TestCase):
         target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         ml_service.handleParallellization(gene_list_combos_shortened, target_dir, trainer)
 
-        self.assertResults(target_dir, trainer.algorithm, num_gene_list_combos + 1, trainer.is_classifier)
+        self.assertResults(target_dir, trainer, num_gene_list_combos + 1, trainer.is_classifier)
 
     def formatRandomizedData(self, is_classifier):
         RandomizedDataGenerator.generateRandomizedFiles(3, 1000, 150, is_classifier, 1, .8)
@@ -66,8 +67,8 @@ class MachineLearningServiceIT(unittest.TestCase):
         argument_processing_service = ArgumentProcessingService(input_folder)
         return argument_processing_service.handleInputFolder()
 
-    def assertResults(self, target_dir, ml_algorithm, expected_lines, is_classifier):
-        file_name = ml_algorithm + ".csv"
+    def assertResults(self, target_dir, trainer, expected_lines, is_classifier):
+        file_name = trainer.algorithm + ".csv"
         assert file_name in os.listdir(target_dir)
         num_lines = 0
         with open(target_dir + "/" + file_name) as csv_file:
@@ -82,7 +83,7 @@ class MachineLearningServiceIT(unittest.TestCase):
                     assert ":" in feature_gene_list_combo
                     score = SafeCastUtil.safeCast(line_split[len(line_split) - 2], float)
                     accuracy = SafeCastUtil.safeCast(line_split[len(line_split) - 1], float)
-                    assert score > MachineLearningService.DEFAULT_MIN_SCORE
+                    assert score > trainer.DEFAULT_MIN_SCORE
                     if RandomizedDataGenerator.SIGNIFICANT_GENE_LIST in feature_gene_list_combo:
                         assert score >= self.THRESHOLD_OF_SIGNIFICANCE
                     else:

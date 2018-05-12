@@ -1,27 +1,24 @@
-import logging
-import numpy
-import os
 import csv
 import gc
-
+import logging
 import multiprocessing
+import numpy
+import os
 import threading
-from joblib import Parallel, delayed
 
+from joblib import Parallel, delayed
 from ArgumentProcessingService import ArgumentProcessingService
 from DataFormattingService import DataFormattingService
+from Trainers.ElasticNetTrainer import ElasticNetTrainer
+from Trainers.RandomForestTrainer import RandomForestTrainer
+from Trainers.LinearSVMTrainer import LinearSVMTrainer
+from Trainers.RadialBasisFunctionSVMTrainer import RadialBasisFunctionSVMTrainer
 from Utilities.SafeCastUtil import SafeCastUtil
-import RandomForestTrainer
-import LinearSVMTrainer
-import RadialBasisFunctionSVMTrainer
-import ElasticNetTrainer
 
 
 class MachineLearningService(object):
     log = logging.getLogger(__name__)
     log.setLevel(logging.INFO)
-
-    DEFAULT_MIN_SCORE = -10
 
     def __init__(self, data):
         self.inputs = data
@@ -32,19 +29,19 @@ class MachineLearningService(object):
         outer_monte_carlo_perms = self.inputs.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS)
         is_classifier = self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER)
         if not self.inputs.get(ArgumentProcessingService.SKIP_RF):
-            rf_trainer = RandomForestTrainer.RandomForestTrainer(is_classifier)
+            rf_trainer = RandomForestTrainer(is_classifier)
             rf_trainer.trainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, rf_trainer)
         if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_SVM):
-            linear_svm_trainer = LinearSVMTrainer.LinearSVMTrainer(is_classifier)
+            linear_svm_trainer = LinearSVMTrainer(is_classifier)
             linear_svm_trainer.trainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, linear_svm_trainer)
         if not self.inputs.get(ArgumentProcessingService.SKIP_RBF_SVM):
-            rbf_svm_trainer = RadialBasisFunctionSVMTrainer.RadialBasisFunctionSVMTrainer(is_classifier)
+            rbf_svm_trainer = RadialBasisFunctionSVMTrainer(is_classifier)
             rbf_svm_trainer.trainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, rbf_svm_trainer)
         if not self.inputs.get(ArgumentProcessingService.SKIP_ELASTIC_NET):
-            elasticnet_trainer = ElasticNetTrainer.ElasticNetTrainer(is_classifier)
+            elasticnet_trainer = ElasticNetTrainer(is_classifier)
             elasticnet_trainer.trainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, elasticnet_trainer)
         return
@@ -218,7 +215,7 @@ class MachineLearningService(object):
 
     def determineOptimalHyperparameters(self, feature_set, formatted_data, trainer):
         inner_model_hyperparams = self.determineInnerHyperparameters(feature_set, formatted_data, trainer)
-        highest_average = self.DEFAULT_MIN_SCORE
+        highest_average = trainer.DEFAULT_MIN_SCORE
         best_hyperparam = None
         for hyperparam_set in inner_model_hyperparams.keys():
             average = numpy.average([results[0] for results in inner_model_hyperparams[hyperparam_set]])  # raw score

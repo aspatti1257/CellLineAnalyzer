@@ -1,6 +1,7 @@
-from AbstractModelTrainer import AbstractModelTrainer
-from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from sklearn import svm
+
+from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
+from Trainers.AbstractModelTrainer import AbstractModelTrainer
 
 
 class RadialBasisFunctionSVMTrainer(AbstractModelTrainer):

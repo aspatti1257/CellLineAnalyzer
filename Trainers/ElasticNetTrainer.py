@@ -1,6 +1,7 @@
-from AbstractModelTrainer import AbstractModelTrainer
-from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from sklearn.linear_model import ElasticNet
+
+from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
+from Trainers.AbstractModelTrainer import AbstractModelTrainer
 
 
 class ElasticNetTrainer(AbstractModelTrainer):
