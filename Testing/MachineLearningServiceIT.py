@@ -5,8 +5,11 @@ import os
 from MachineLearningService import MachineLearningService
 from ArgumentProcessingService import ArgumentProcessingService
 from Utilities.RandomizedDataGenerator import RandomizedDataGenerator
-from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Utilities.SafeCastUtil import SafeCastUtil
+import RandomForestTrainer
+import LinearSVMTrainer
+import RadialBasisFunctionSVMTrainer
+import ElasticNetTrainer
 
 
 class MachineLearningServiceIT(unittest.TestCase):
@@ -27,35 +30,35 @@ class MachineLearningServiceIT(unittest.TestCase):
                 os.remove(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER + "/" + file)
 
     def testRandomForestRegressor(self):
-        self.evaluateMachineLearningModel(False, SupportedMachineLearningAlgorithms.RANDOM_FOREST)
+        self.evaluateMachineLearningModel(RandomForestTrainer.RandomForestTrainer(False))
 
     def testRandomForestClassifier(self):
-        self.evaluateMachineLearningModel(True, SupportedMachineLearningAlgorithms.RANDOM_FOREST)
+        self.evaluateMachineLearningModel(RandomForestTrainer.RandomForestTrainer(True))
 
     def testLinearSVMRegressor(self):
-        self.evaluateMachineLearningModel(False, SupportedMachineLearningAlgorithms.LINEAR_SVM)
+        self.evaluateMachineLearningModel(LinearSVMTrainer.LinearSVMTrainer(False))
 
     def testLinearSVMClassifier(self):
-        self.evaluateMachineLearningModel(True, SupportedMachineLearningAlgorithms.LINEAR_SVM)
+        self.evaluateMachineLearningModel(LinearSVMTrainer.LinearSVMTrainer(True))
 
     def testRadialBasisFunctionSVMRegressor(self):
-        self.evaluateMachineLearningModel(False, SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM)
+        self.evaluateMachineLearningModel(RadialBasisFunctionSVMTrainer.RadialBasisFunctionSVMTrainer(False))
 
     def testRadialBasisFunctionSVMClassifier(self):
-        self.evaluateMachineLearningModel(True, SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM)
+        self.evaluateMachineLearningModel(RadialBasisFunctionSVMTrainer.RadialBasisFunctionSVMTrainer(True))
 
     def testElasticNetRegressor(self):
-        self.evaluateMachineLearningModel(False, SupportedMachineLearningAlgorithms.ELASTIC_NET)
+        self.evaluateMachineLearningModel(ElasticNetTrainer.ElasticNetTrainer(False))
 
-    def evaluateMachineLearningModel(self, is_classifier, ml_algorithm):
-        ml_service = MachineLearningService(self.formatRandomizedData(is_classifier))
+    def evaluateMachineLearningModel(self, trainer):
+        ml_service = MachineLearningService(self.formatRandomizedData(trainer.is_classifier))
         ml_service.log.setLevel(logging.DEBUG)
         num_gene_list_combos = 8
         gene_list_combos_shortened = ml_service.determineGeneListCombos()[0:num_gene_list_combos]
         target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
-        ml_service.handleParallellization(gene_list_combos_shortened, target_dir, ml_algorithm)
+        ml_service.handleParallellization(gene_list_combos_shortened, target_dir, trainer)
 
-        self.assertResults(target_dir, ml_algorithm, num_gene_list_combos + 1, is_classifier)
+        self.assertResults(target_dir, trainer.algorithm, num_gene_list_combos + 1, trainer.is_classifier)
 
     def formatRandomizedData(self, is_classifier):
         RandomizedDataGenerator.generateRandomizedFiles(3, 1000, 150, is_classifier, 1, .8)

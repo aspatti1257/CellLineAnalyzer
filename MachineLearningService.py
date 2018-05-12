@@ -1,10 +1,4 @@
 import logging
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error
-from sklearn.metrics import accuracy_score
-from sklearn import svm
-from sklearn.linear_model import ElasticNet
 import numpy
 import os
 import csv
@@ -16,8 +10,11 @@ from joblib import Parallel, delayed
 
 from ArgumentProcessingService import ArgumentProcessingService
 from DataFormattingService import DataFormattingService
-from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Utilities.SafeCastUtil import SafeCastUtil
+import RandomForestTrainer
+import LinearSVMTrainer
+import RadialBasisFunctionSVMTrainer
+import ElasticNetTrainer
 
 
 class MachineLearningService(object):
@@ -33,43 +30,23 @@ class MachineLearningService(object):
         gene_list_combos = self.determineGeneListCombos()
         inner_monte_carlo_perms = self.inputs.get(ArgumentProcessingService.INNER_MONTE_CARLO_PERMUTATIONS)
         outer_monte_carlo_perms = self.inputs.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS)
+        is_classifier = self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER)
         if not self.inputs.get(ArgumentProcessingService.SKIP_RF):
-            num_models_to_create = inner_monte_carlo_perms * outer_monte_carlo_perms * len(gene_list_combos) * (6 * 4)
-            self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
-                          "different Random Forest models.", SafeCastUtil.safeCast(len(gene_list_combos), str),
-                          SafeCastUtil.safeCast(num_models_to_create, str))
-            self.handleParallellization(gene_list_combos, input_folder, SupportedMachineLearningAlgorithms.RANDOM_FOREST)
-
+            rf_trainer = RandomForestTrainer.RandomForestTrainer(is_classifier)
+            rf_trainer.trainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
+            self.handleParallellization(gene_list_combos, input_folder, rf_trainer)
         if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_SVM):
-            num_models_to_create = inner_monte_carlo_perms * outer_monte_carlo_perms * len(gene_list_combos) * 3
-            if not self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
-                num_models_to_create = num_models_to_create * 5
-            self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
-                          "different Linear Support Vector Machine models.",
-                          SafeCastUtil.safeCast(len(gene_list_combos), str),
-                          SafeCastUtil.safeCast(num_models_to_create, str))
-            self.handleParallellization(gene_list_combos, input_folder, SupportedMachineLearningAlgorithms.LINEAR_SVM)
-
+            linear_svm_trainer = LinearSVMTrainer.LinearSVMTrainer(is_classifier)
+            linear_svm_trainer.trainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
+            self.handleParallellization(gene_list_combos, input_folder, linear_svm_trainer)
         if not self.inputs.get(ArgumentProcessingService.SKIP_RBF_SVM):
-            num_models_to_create = inner_monte_carlo_perms * outer_monte_carlo_perms * len(gene_list_combos) * 3 * 7
-            if not self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
-                num_models_to_create = num_models_to_create * 5
-            self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
-                          "different RBF Support Vector Machine models.",
-                          SafeCastUtil.safeCast(len(gene_list_combos), str),
-                          SafeCastUtil.safeCast(num_models_to_create, str))
-            self.handleParallellization(gene_list_combos, input_folder,
-                                        SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM)
-
-        if not self.inputs.get(ArgumentProcessingService.SKIP_ELASTIC_NET) and \
-                not self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
-            num_models_to_create = inner_monte_carlo_perms * outer_monte_carlo_perms * len(gene_list_combos) * 4 * 2
-            self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
-                          "different Elastic Net models.",
-                          SafeCastUtil.safeCast(len(gene_list_combos), str),
-                          num_models_to_create)
-            self.handleParallellization(gene_list_combos, input_folder, SupportedMachineLearningAlgorithms.ELASTIC_NET)
-
+            rbf_svm_trainer = RadialBasisFunctionSVMTrainer.RadialBasisFunctionSVMTrainer(is_classifier)
+            rbf_svm_trainer.trainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
+            self.handleParallellization(gene_list_combos, input_folder, rbf_svm_trainer)
+        if not self.inputs.get(ArgumentProcessingService.SKIP_ELASTIC_NET):
+            elasticnet_trainer = ElasticNetTrainer.ElasticNetTrainer(is_classifier)
+            elasticnet_trainer.trainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
+            self.handleParallellization(gene_list_combos, input_folder, elasticnet_trainer)
         return
 
     def determineGeneListCombos(self):
@@ -128,17 +105,17 @@ class MachineLearningService(object):
         return all_arrays
 
     def blankArray(self, length):
-        return list(numpy.zeros(length, dtype=numpy.int))
+        return SafeCastUtil.safeCast(numpy.zeros(length, dtype=numpy.int), list)
 
-    def handleParallellization(self, gene_list_combos, input_folder, ml_algorithm):
+    def handleParallellization(self, gene_list_combos, input_folder, trainer):
         max_nodes = multiprocessing.cpu_count()
         requested_threads = self.inputs.get(ArgumentProcessingService.NUM_THREADS)
         nodes_to_use = numpy.amin([requested_threads, max_nodes])
 
-        Parallel(n_jobs=nodes_to_use)(delayed(self.runMonteCarloSelection)(feature_set, ml_algorithm, input_folder)
+        Parallel(n_jobs=nodes_to_use)(delayed(self.runMonteCarloSelection)(feature_set, trainer, input_folder)
                  for feature_set in gene_list_combos)
 
-    def runMonteCarloSelection(self, feature_set, ml_algorithm, input_folder):
+    def runMonteCarloSelection(self, feature_set, trainer, input_folder):
         scores = []
         accuracies = []
         feature_set_as_string = self.generateFeatureSetString(feature_set)
@@ -150,10 +127,9 @@ class MachineLearningService(object):
 
             self.log.info("Computing outer Monte Carlo Permutation %s for %s.", i, feature_set_as_string)
 
-            optimal_hyperparams = self.determineOptimalHyperparameters(feature_set, formatted_data, ml_algorithm)
-            features, results = self.populateFeaturesAndResultsByCellLine(training_matrix)
-            prediction_data = self.fetchOuterPermutationModelScore(feature_set_as_string, features, ml_algorithm,
-                                                                   optimal_hyperparams, results, testing_matrix,
+            optimal_hyperparams = self.determineOptimalHyperparameters(feature_set, formatted_data, trainer)
+            prediction_data = self.fetchOuterPermutationModelScore(feature_set_as_string, trainer,
+                                                                   optimal_hyperparams, testing_matrix,
                                                                    training_matrix)
             scores.append(prediction_data[0])
             accuracies.append(prediction_data[1])
@@ -162,7 +138,7 @@ class MachineLearningService(object):
         average_accuracy = numpy.mean(accuracies)
         self.log.info("Average score and accuracy of all Monte Carlo runs for %s: %s, %s",
                       feature_set_as_string, average_score, average_accuracy)
-        self.writeToCSVInLock(average_score, average_accuracy, feature_set_as_string, input_folder, ml_algorithm)
+        self.writeToCSVInLock(average_score, average_accuracy, feature_set_as_string, input_folder, trainer.algorithm)
 
     def generateFeatureSetString(self, feature_set):
         feature_map = {}
@@ -190,43 +166,16 @@ class MachineLearningService(object):
                         feature_set_string += (file_key + ":" + gene_list_key + " ")
         return feature_set_string.strip()
 
-    def fetchOuterPermutationModelScore(self, feature_set_as_string, features, ml_algorithm, optimal_hyperparams,
-                                        results, testing_matrix, training_matrix):
-        if ml_algorithm == SupportedMachineLearningAlgorithms.RANDOM_FOREST:
-            n = len(SafeCastUtil.safeCast(training_matrix.keys(), list))  # number of samples
-            self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
-                          "m_val = %s\n" +
-                          "max depth = %s", feature_set_as_string, ml_algorithm, optimal_hyperparams[0],
-                          optimal_hyperparams[1] * n)
-            model = self.trainRandomForest(results, features, optimal_hyperparams[0], optimal_hyperparams[1] * n)
+    def fetchOuterPermutationModelScore(self, feature_set_as_string, trainer, optimal_hyperparams,
+                                        testing_matrix, training_matrix):
+        #TODO: Handle hyperparams with n
+        results = self.inputs.get(ArgumentProcessingService.RESULTS)
+        features, relevant_results = trainer.populateFeaturesAndResultsByCellLine(training_matrix, results)
+        trainer.logOptimalHyperParams(optimal_hyperparams, feature_set_as_string)
+        model = trainer.train(relevant_results, features, optimal_hyperparams)
+        return trainer.fetchPredictionsAndScore(model, testing_matrix, results)
 
-        elif ml_algorithm == SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM:
-            self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
-                          "c_val = %s\n" +
-                          "gamma = %s\n" +
-                          "epsilon = %s\n", feature_set_as_string, ml_algorithm, optimal_hyperparams[0],
-                          optimal_hyperparams[1], optimal_hyperparams[2])
-            model = self.trainRadialBasisFunctionSVM(results, features, optimal_hyperparams[0],
-                                                     optimal_hyperparams[1], optimal_hyperparams[2])
-
-        elif ml_algorithm == SupportedMachineLearningAlgorithms.LINEAR_SVM:
-            self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
-                          "c_val = %s\n" +
-                          "epsilon = %s\n", feature_set_as_string, ml_algorithm, optimal_hyperparams[0],
-                          optimal_hyperparams[1])
-            model = self.trainLinearSVM(results, features, optimal_hyperparams[0], optimal_hyperparams[1])
-
-        elif ml_algorithm == SupportedMachineLearningAlgorithms.ELASTIC_NET:
-            self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
-                          "alpha = %s\n" +
-                          "l_one_ratio = %s\n", feature_set_as_string, ml_algorithm, optimal_hyperparams[0],
-                          optimal_hyperparams[1])
-            model = self.trainElasticNet(results, features, optimal_hyperparams[0], optimal_hyperparams[1])
-        else:
-            return self.DEFAULT_MIN_SCORE
-        return self.fetchPredictionsAndScore(model, testing_matrix)
-
-    def determineInnerHyperparameters(self, feature_set, formatted_data, ml_algorithm):
+    def determineInnerHyperparameters(self, feature_set, formatted_data, trainer):
         inner_model_hyperparams = {}
         for j in range(1, self.inputs.get(ArgumentProcessingService.INNER_MONTE_CARLO_PERMUTATIONS) + 1):
             formatted_inputs = self.reformatInputsByTrainingMatrix(
@@ -236,16 +185,8 @@ class MachineLearningService(object):
                                                                   further_formatted_data)
             inner_train_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set,
                                                              further_formatted_data)
-            if ml_algorithm == SupportedMachineLearningAlgorithms.RANDOM_FOREST:
-                model_data = self.hyperparameterizeForRF(inner_train_matrix, inner_validation_matrix)
-            elif ml_algorithm == SupportedMachineLearningAlgorithms.LINEAR_SVM:
-                model_data = self.hyperparameterizeLinearSVM(inner_train_matrix, inner_validation_matrix)
-            elif ml_algorithm == SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM:
-                model_data = self.hyperparameterizeForRadialBasisFunctionSVM(inner_train_matrix, inner_validation_matrix)
-            elif ml_algorithm == SupportedMachineLearningAlgorithms.ELASTIC_NET:
-                model_data = self.hyperparameterizeForElasticNet(inner_train_matrix, inner_validation_matrix)
-            else:
-                return inner_model_hyperparams
+            results = self.inputs.get(ArgumentProcessingService.RESULTS)
+            model_data = trainer.hyperparameterize(inner_train_matrix, inner_validation_matrix, results)
             for data in model_data.keys():
                 if inner_model_hyperparams.get(data) is not None:
                     inner_model_hyperparams[data].append(model_data[data])
@@ -275,8 +216,8 @@ class MachineLearningService(object):
         new_inputs[ArgumentProcessingService.DATA_SPLIT] = self.inputs[ArgumentProcessingService.DATA_SPLIT]
         return new_inputs
 
-    def determineOptimalHyperparameters(self, feature_set, formatted_data, ml_algorithm):
-        inner_model_hyperparams = self.determineInnerHyperparameters(feature_set, formatted_data, ml_algorithm)
+    def determineOptimalHyperparameters(self, feature_set, formatted_data, trainer):
+        inner_model_hyperparams = self.determineInnerHyperparameters(feature_set, formatted_data, trainer)
         highest_average = self.DEFAULT_MIN_SCORE
         best_hyperparam = None
         for hyperparam_set in inner_model_hyperparams.keys():
@@ -304,121 +245,6 @@ class MachineLearningService(object):
                     new_cell_line_features.append(full_matrix[cell_line][j])
             trimmed_matrix[cell_line] = new_cell_line_features
         return trimmed_matrix
-
-    def hyperparameterizeForRF(self, training_matrix, validation_matrix):
-        model_data = {}
-        p = len(SafeCastUtil.safeCast(training_matrix.values(), list))  # number of features
-        n = len(SafeCastUtil.safeCast(training_matrix.keys(), list))  # number of samples
-        features, results = self.populateFeaturesAndResultsByCellLine(training_matrix)
-        for m_val in [1, (1 + numpy.sqrt(p)) / 2, numpy.sqrt(p), (numpy.sqrt(p) + p) / 2, p]:
-            for max_depth in [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.75, 1]:
-                model = self.trainRandomForest(results, features, m_val, max_depth * n)
-                current_model_score = self.fetchPredictionsAndScore(model, validation_matrix)
-                model_data[m_val, max_depth] = current_model_score
-        return model_data
-
-    def hyperparameterizeLinearSVM(self, training_matrix, validation_matrix):
-        model_data = {}
-        features, results = self.populateFeaturesAndResultsByCellLine(training_matrix)
-        for c_val in [10E-2, 10E-1, 10E0]:  # 10E1, 10E2, 10E3, 10E4, 10E5, 10E6, take way too long to train.
-            if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
-                model = self.trainLinearSVM(results, features, c_val, None)
-                current_model_score = self.fetchPredictionsAndScore(model, validation_matrix)
-                model_data[c_val, None] = current_model_score
-            else:
-                for epsilon in [0.01, 0.05, 0.1, 0.15, 0.2]:
-                    model = self.trainLinearSVM(results, features, c_val, epsilon)
-                    current_model_score = self.fetchPredictionsAndScore(model, validation_matrix)
-                    model_data[c_val, epsilon] = current_model_score
-        return model_data
-
-    def hyperparameterizeForRadialBasisFunctionSVM(self, training_matrix, validation_matrix):
-        model_data = {}
-        features, results = self.populateFeaturesAndResultsByCellLine(training_matrix)
-        for c_val in [10E-2, 10E-1, 10E0]:  # 10E1, 10E2, 10E3, 10E4, 10E5, 10E6, take way too long to train.
-            for gamma in [10E-5, 10E-4, 10E-3, 10E-2, 10E-1, 10E0, 10E1]:
-                if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
-                    model = self.trainRadialBasisFunctionSVM(results, features, c_val, gamma, None)
-                    current_model_score = self.fetchPredictionsAndScore(model, validation_matrix)
-                    model_data[c_val, gamma, None] = current_model_score
-                else:
-                    for epsilon in [0.01, 0.05, 0.1, 0.15, 0.2]:
-                        model = self.trainRadialBasisFunctionSVM(results, features, c_val, gamma, epsilon)
-                        current_model_score = self.fetchPredictionsAndScore(model, validation_matrix)
-                        model_data[c_val, gamma, epsilon] = current_model_score
-        return model_data
-
-    def hyperparameterizeForElasticNet(self, training_matrix, validation_matrix):
-        model_data = {}
-        features, results = self.populateFeaturesAndResultsByCellLine(training_matrix)
-        for alpha in [0.01, 0.1, 0.5, 1]:
-            for l_one_ratio in [0.1, 0.9]:
-                model = self.trainElasticNet(results, features, alpha, l_one_ratio)
-                current_model_score = self.fetchPredictionsAndScore(model, validation_matrix)
-                model_data[alpha, l_one_ratio] = current_model_score
-        return model_data
-
-    def populateFeaturesAndResultsByCellLine(self, matrix):
-        features = []
-        results = []
-        for cell in matrix.keys():
-            features.append(matrix[cell])
-            for result in self.inputs.get(ArgumentProcessingService.RESULTS):
-                if result[0] == cell:
-                    results.append(result[1])
-        return features, results
-
-    def trainRandomForest(self, results, features, m_val, max_depth):
-        max_leaf_nodes = numpy.maximum(2, SafeCastUtil.safeCast(numpy.ceil(max_depth), int))
-        max_features = numpy.min([SafeCastUtil.safeCast(numpy.floor(m_val), int), len(features[0])])
-        if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
-            model = RandomForestClassifier(n_estimators=100, max_leaf_nodes=max_leaf_nodes, max_features=max_features)
-        else:
-            model = RandomForestRegressor(n_estimators=100, max_leaf_nodes=max_leaf_nodes, max_features=max_features)
-        model.fit(features, results)
-        self.log.debug("Successful creation of Random Forest model: %s\n", model)
-        return model
-
-    def trainLinearSVM(self, results, features, c_val, epsilon):
-        if epsilon is None or self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
-            model = svm.LinearSVC(C=c_val)
-        else:
-            model = svm.LinearSVR(C=c_val, epsilon=epsilon)
-        model.fit(features, results)
-        self.log.debug("Successful creation of Linear Support Vector Machine model: %s\n", model)
-        return model
-
-    def trainRadialBasisFunctionSVM(self, results, features, c_val, gamma, epsilon):
-        if epsilon is None or self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
-            model = svm.SVC(kernel='rbf', C=c_val, gamma=gamma)
-        else:
-            model = svm.SVR(kernel='rbf', C=c_val, gamma=gamma, epsilon=epsilon)
-        model.fit(features, results)
-        self.log.debug("Successful creation of RBF Support Vector Machine model: %s\n", model)
-        return model
-
-    def trainElasticNet(self, results, features, alpha, l_one_ratio):
-        if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
-            self.log.debug("Unable to train Elastic Net classifier. Returning default min score.")
-            return None
-        else:
-            model = ElasticNet(alpha=alpha, l1_ratio=l_one_ratio)
-        model.fit(features, results)
-        self.log.debug("Successful creation of RBF Support Vector Machine model: %s\n", model)
-        return model
-
-    def fetchPredictionsAndScore(self, model, testing_matrix):
-        if model is None:
-            return self.DEFAULT_MIN_SCORE
-        features, results = self.populateFeaturesAndResultsByCellLine(testing_matrix)
-        predictions = model.predict(features)
-        score = model.score(features, results)
-        if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
-            accuracy = accuracy_score(results, predictions)
-        else:
-            accuracy = mean_squared_error(results, predictions)
-        del model
-        return score, accuracy
 
     def writeToCSVInLock(self, average_score, average_accuracy, feature_set_as_string, input_folder, ml_algorithm):
         lock = threading.Lock()
