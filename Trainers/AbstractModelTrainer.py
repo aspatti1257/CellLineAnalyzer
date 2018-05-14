@@ -111,7 +111,7 @@ class AbstractModelTrainer(ABC):
         for i in range(0, len(hyperparam_keys)):
             hyperparam_set = self.hyperparameters[hyperparam_keys[i]]
             if best_hyperparams[i] >= hyperparam_set[len(hyperparam_set) - 1]:
-                self.log.info("Best hyperparam on upper threshold of provided hyperparam set: %s = %s",
+                self.log.info("Best hyperparam for %s upper threshold of provided hyperparam set: %s = %s",
                               self.algorithm, hyperparam_keys[i], best_hyperparams[i])
             elif best_hyperparams[i] <= hyperparam_set[0]:
                 self.log.info("Best hyperparam for %s on lower threshold of provided hyperparam set: %s = %s",
