@@ -17,6 +17,7 @@ from Utilities.SafeCastUtil import SafeCastUtil
 
 
 class MachineLearningService(object):
+
     log = logging.getLogger(__name__)
     log.setLevel(logging.INFO)
 
@@ -30,19 +31,19 @@ class MachineLearningService(object):
         is_classifier = self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER)
         if not self.inputs.get(ArgumentProcessingService.SKIP_RF):
             rf_trainer = RandomForestTrainer(is_classifier)
-            rf_trainer.trainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
+            rf_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, rf_trainer)
         if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_SVM):
             linear_svm_trainer = LinearSVMTrainer(is_classifier)
-            linear_svm_trainer.trainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
+            linear_svm_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, linear_svm_trainer)
         if not self.inputs.get(ArgumentProcessingService.SKIP_RBF_SVM):
             rbf_svm_trainer = RadialBasisFunctionSVMTrainer(is_classifier)
-            rbf_svm_trainer.trainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
+            rbf_svm_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, rbf_svm_trainer)
         if not self.inputs.get(ArgumentProcessingService.SKIP_ELASTIC_NET):
             elasticnet_trainer = ElasticNetTrainer(is_classifier)
-            elasticnet_trainer.trainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
+            elasticnet_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, elasticnet_trainer)
         return
 
@@ -125,6 +126,8 @@ class MachineLearningService(object):
             self.log.info("Computing outer Monte Carlo Permutation %s for %s.", i, feature_set_as_string)
 
             optimal_hyperparams = self.determineOptimalHyperparameters(feature_set, formatted_data, trainer)
+            trainer.logIfBestHyperparamsOnRangeThreshold(optimal_hyperparams)
+
             prediction_data = self.fetchOuterPermutationModelScore(feature_set_as_string, trainer,
                                                                    optimal_hyperparams, testing_matrix,
                                                                    training_matrix)

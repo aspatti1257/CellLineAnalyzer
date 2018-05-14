@@ -35,7 +35,7 @@ class AbstractModelTrainer(ABC):
     def logOptimalHyperParams(self, hyperparams, feature_set_as_string):
         pass
 
-    def trainingMessage(self, outer_monte_carlo_perms, inner_monte_carlo_perms, num_gene_list_combos):
+    def logTrainingMessage(self, outer_monte_carlo_perms, inner_monte_carlo_perms, num_gene_list_combos):
         num_models = self.determineNumModelsToCreate(outer_monte_carlo_perms, inner_monte_carlo_perms, num_gene_list_combos)
         self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
                       "different %s models.", SafeCastUtil.safeCast(num_gene_list_combos, str),
@@ -48,6 +48,8 @@ class AbstractModelTrainer(ABC):
         return num_models
 
     def loopThroughHyperparams(self, hyperparams, training_matrix, testing_matrix, results):
+        self.hyperparameters = hyperparams
+
         features, relevant_results = self.populateFeaturesAndResultsByCellLine(training_matrix, results)
 
         model_data = {}
@@ -103,3 +105,14 @@ class AbstractModelTrainer(ABC):
                 if result[0] == cell:
                     relevant_results.append(result[1])
         return features, relevant_results
+
+    def logIfBestHyperparamsOnRangeThreshold(self, best_hyperparams):
+        hyperparam_keys = SafeCastUtil.safeCast(self.hyperparameters.keys(), list)
+        for i in range(0, len(hyperparam_keys)):
+            hyperparam_set = self.hyperparameters[hyperparam_keys[i]]
+            if best_hyperparams[i] >= hyperparam_set[len(hyperparam_set) - 1]:
+                self.log.info("Best hyperparam on upper threshold of provided hyperparam set: %s = %s",
+                              self.algorithm, hyperparam_keys[i], best_hyperparams[i])
+            elif best_hyperparams[i] <= hyperparam_set[0]:
+                self.log.info("Best hyperparam for %s on lower threshold of provided hyperparam set: %s = %s",
+                              self.algorithm, hyperparam_keys[i], best_hyperparams[i])

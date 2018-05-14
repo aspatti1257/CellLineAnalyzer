@@ -24,10 +24,7 @@ class LinearSVMTrainer(AbstractModelTrainer):
 
     def train(self, results, features, hyperparams):
         if self.is_classifier:
-            if type(hyperparams) is float:
-                model = svm.LinearSVC(C=hyperparams)
-            else:
-                model = svm.LinearSVC(C=hyperparams[0])
+            model = svm.LinearSVC(C=hyperparams[0])
         else:
             model = svm.LinearSVR(C=hyperparams[0], epsilon=hyperparams[1])
         model.fit(features, results)
@@ -35,10 +32,10 @@ class LinearSVMTrainer(AbstractModelTrainer):
         return model
 
     def setModelDataDictionary(self, model_data, hyperparam_set, current_model_score):
-        if not self.is_classifier:
-            model_data[hyperparam_set[0], hyperparam_set[1]] = current_model_score
+        if self.is_classifier:
+            model_data[hyperparam_set[0], None] = current_model_score
         else:
-            model_data[hyperparam_set[0]] = current_model_score
+            model_data[hyperparam_set[0], hyperparam_set[1]] = current_model_score
 
     def logOptimalHyperParams(self, hyperparams, feature_set_as_string):
         if self.is_classifier:
