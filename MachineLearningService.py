@@ -41,10 +41,15 @@ class MachineLearningService(object):
             rbf_svm_trainer = RadialBasisFunctionSVMTrainer(is_classifier)
             rbf_svm_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, rbf_svm_trainer)
-        if not self.inputs.get(ArgumentProcessingService.SKIP_ELASTIC_NET):
+        if not self.inputs.get(ArgumentProcessingService.SKIP_ELASTIC_NET) and not is_classifier:
             elasticnet_trainer = ElasticNetTrainer(is_classifier)
             elasticnet_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, elasticnet_trainer)
+        if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_REGRESSION) and not is_classifier:
+            linear_regression_trainer = ElasticNetTrainer(is_classifier)
+            linear_regression_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms,
+                                                         len(gene_list_combos))
+            self.handleParallellization(gene_list_combos, input_folder, linear_regression_trainer)
         return
 
     def determineGeneListCombos(self):

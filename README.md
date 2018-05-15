@@ -19,8 +19,8 @@ of the results file, which machine learning models to create, etc.
 
 All of these files should be in the same folder. This program will accept one argument, a path to that folder (it can
 either be passed as a parameter on the command line, or entered at the prompt after running it). The outputs will be
-.CSV files called RandomForestAnalysis.csv, LinearSVMAnalysis.csv, RadialBasisFunctionSVMAnalysis.csv, and/or
-ElasticNetAnalysis.csv depending on which machine learning modules you opt to use.
+.CSV files called RandomForestAnalysis.csv, LinearSVMAnalysis.csv, RadialBasisFunctionSVMAnalysis.csv,
+ElasticNetAnalysis.csv, and/or LinearRegressionAnalysis.csv depending on which machine learning modules you opt to use.
 
 Also part of this program, is the option to generate a series of .CSVs from MATLAB files. Making the main input to this
 program easier to generate.
@@ -107,6 +107,8 @@ ones that aren't are marked with a star (*).
 `skip_rbf_svm`* : Optionally skip Radial Basis Function Support Vector Machine analysis. Defaults to False.
 
 `skip_elastic_net`* : Optionally skip Elastic Net analysis. Defaults to False. Only applies for regressors.
+
+`skip_linear_regression`*: Optionally skip Linear Regression analysis. Defaults to False. Only applies for regressors.
 
 `record_diagnostics`*: Optionally print out a diagnostics file which tells you which genes (and their indices) from
                        your gene_lists are missing in which feature files. Defaults to False.

@@ -9,6 +9,9 @@ class ElasticNetTrainer(AbstractModelTrainer):
     def __init__(self, is_classifier):
         super().__init__(SupportedMachineLearningAlgorithms.ELASTIC_NET, self.initializeHyperParameters(), is_classifier)
 
+    def supportsHyperparams(self):
+        return True
+
     def initializeHyperParameters(self):
         return {
             "alpha": [0.01, 0.1, 0.5, 1],

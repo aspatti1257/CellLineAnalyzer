@@ -10,6 +10,9 @@ class LinearSVMTrainer(AbstractModelTrainer):
         super().__init__(SupportedMachineLearningAlgorithms.LINEAR_SVM, self.initializeHyperParameters(is_classifier),
                          is_classifier)
 
+    def supportsHyperparams(self):
+        return True
+
     def initializeHyperParameters(self, is_classifier):
         hyperparams = {
             "c_val": [10E-2, 10E-1, 10E0]

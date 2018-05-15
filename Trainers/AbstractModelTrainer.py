@@ -35,6 +35,10 @@ class AbstractModelTrainer(ABC):
     def logOptimalHyperParams(self, hyperparams, feature_set_as_string):
         pass
 
+    @abstractmethod
+    def supportsHyperparams(self):
+        pass
+
     def logTrainingMessage(self, outer_monte_carlo_perms, inner_monte_carlo_perms, num_gene_list_combos):
         num_models = self.determineNumModelsToCreate(outer_monte_carlo_perms, inner_monte_carlo_perms, num_gene_list_combos)
         self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
@@ -107,6 +111,8 @@ class AbstractModelTrainer(ABC):
         return features, relevant_results
 
     def logIfBestHyperparamsOnRangeThreshold(self, best_hyperparams):
+        if not self.supportsHyperparams():
+            return
         hyperparam_keys = SafeCastUtil.safeCast(self.hyperparameters.keys(), list)
         for i in range(0, len(hyperparam_keys)):
             hyperparam_set = self.hyperparameters[hyperparam_keys[i]]

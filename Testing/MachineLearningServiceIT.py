@@ -6,6 +6,7 @@ from Trainers.ElasticNetTrainer import ElasticNetTrainer
 from Trainers.RandomForestTrainer import RandomForestTrainer
 from Trainers.LinearSVMTrainer import LinearSVMTrainer
 from Trainers.RadialBasisFunctionSVMTrainer import RadialBasisFunctionSVMTrainer
+from Trainers.LinearRegressionTrainer import LinearRegressionTrainer
 
 from ArgumentProcessingService import ArgumentProcessingService
 from MachineLearningService import MachineLearningService
@@ -50,6 +51,9 @@ class MachineLearningServiceIT(unittest.TestCase):
 
     def testElasticNetRegressor(self):
         self.evaluateMachineLearningModel(ElasticNetTrainer(False))
+
+    def testLinearRegressor(self):
+        self.evaluateMachineLearningModel(LinearRegressionTrainer(False))
 
     def evaluateMachineLearningModel(self, trainer):
         ml_service = MachineLearningService(self.formatRandomizedData(trainer.is_classifier))

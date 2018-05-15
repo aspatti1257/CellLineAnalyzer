@@ -12,6 +12,9 @@ class RandomForestTrainer(AbstractModelTrainer):
     def __init__(self, is_classifier):
         super().__init__(SupportedMachineLearningAlgorithms.RANDOM_FOREST, self.initializeHyperParameters(0, 0), is_classifier)
 
+    def supportsHyperparams(self):
+        return True
+
     def initializeHyperParameters(self, n, p):
         return {
             "max_depth": [0.05 * n, 0.1 * n, 0.2 * n, 0.3 * n, 0.4 * n, 0.5 * n, 0.75 * n, 1 * n],
