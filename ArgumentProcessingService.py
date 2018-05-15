@@ -219,6 +219,7 @@ class ArgumentProcessingService(object):
                             raise ValueError("Invalid line count for" + file + ". Must be " +
                                              SafeCastUtil.safeCast(file, str) + "lines long.")
             except ValueError as valueError:
+                self.log.error("Please verify results file is the same number of rows as all feature files.")
                 self.log.error(valueError)
                 return None
             finally:
