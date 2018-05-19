@@ -22,17 +22,17 @@ class RandomForestTrainer(AbstractModelTrainer):
         }
 
     def hyperparameterize(self, training_matrix, testing_matrix, results):
-        p = len(SafeCastUtil.safeCast(training_matrix.values(), list))  # number of features
         n = len(SafeCastUtil.safeCast(training_matrix.keys(), list))  # number of samples
+        p = len(SafeCastUtil.safeCast(training_matrix.values(), list)[0])  # number of features
         return super().loopThroughHyperparams(self.initializeHyperParameters(n, p), training_matrix, testing_matrix, results)
 
     def train(self, results, features, hyperparams):
+        max_depth = numpy.min([SafeCastUtil.safeCast(numpy.floor(hyperparams[0]), int), len(features)])
         max_leaf_nodes = numpy.maximum(2, SafeCastUtil.safeCast(numpy.ceil(hyperparams[1]), int))
-        max_features = numpy.min([SafeCastUtil.safeCast(numpy.floor(hyperparams[0]), int), len(features[0])])
         if self.is_classifier:
-            model = RandomForestClassifier(n_estimators=100, max_leaf_nodes=max_leaf_nodes, max_features=max_features)
+            model = RandomForestClassifier(n_estimators=100, max_leaf_nodes=max_leaf_nodes, max_depth=max_depth)
         else:
-            model = RandomForestRegressor(n_estimators=100, max_leaf_nodes=max_leaf_nodes, max_features=max_features)
+            model = RandomForestRegressor(n_estimators=100, max_leaf_nodes=max_leaf_nodes, max_depth=max_depth)
         model.fit(features, results)
         self.log.debug("Successful creation of Random Forest model: %s\n", model)
         return model
