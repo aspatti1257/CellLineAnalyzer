@@ -111,7 +111,9 @@ ones that aren't are marked with a star (*).
 `skip_linear_regression`*: Optionally skip Linear Regression analysis. Defaults to False. Only applies for regressors.
 
 `record_diagnostics`*: Optionally print out a diagnostics file which tells you which genes (and their indices) from
-                       your gene_lists are missing in which feature files. Defaults to False.
+                       your gene_lists are missing in which feature files. Also, logs when optimal hyperparameter for a
+                       particular training algorithm is on upper or lower bound of hyperparameter set.
+                       Defaults to False.
 
 Any .csv file in this path that is not the a gene list file, or the results.csv file, will be interpreted as a features
 file.

@@ -1,9 +1,11 @@
+import logging
+import numpy
+import os
+
 from abc import ABC, abstractmethod
 from Utilities.SafeCastUtil import SafeCastUtil
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import accuracy_score
-import logging
-import numpy
 
 
 class AbstractModelTrainer(ABC):
@@ -110,7 +112,7 @@ class AbstractModelTrainer(ABC):
                     relevant_results.append(result[1])
         return features, relevant_results
 
-    def logIfBestHyperparamsOnRangeThreshold(self, best_hyperparams):
+    def logIfBestHyperparamsOnRangeThreshold(self, best_hyperparams, record_diagnostics, input_folder):
         if not self.supportsHyperparams():
             return
         hyperparam_keys = SafeCastUtil.safeCast(self.hyperparameters.keys(), list)
@@ -119,6 +121,25 @@ class AbstractModelTrainer(ABC):
             if best_hyperparams[i] >= hyperparam_set[len(hyperparam_set) - 1]:
                 self.log.info("Best hyperparam for %s upper threshold of provided hyperparam set: %s = %s",
                               self.algorithm, hyperparam_keys[i], best_hyperparams[i])
+                if record_diagnostics:
+                    self.writeToDiagnosticsFile(hyperparam_keys[i], best_hyperparams[i], input_folder, "upper")
             elif best_hyperparams[i] <= hyperparam_set[0]:
                 self.log.info("Best hyperparam for %s on lower threshold of provided hyperparam set: %s = %s",
                               self.algorithm, hyperparam_keys[i], best_hyperparams[i])
+                if record_diagnostics:
+                    self.writeToDiagnosticsFile(hyperparam_keys[i], best_hyperparams[i], input_folder, "lower")
+
+    def writeToDiagnosticsFile(self, hyperparam_key, hyperparam_value, input_folder, threshold):
+        write_action = "w"
+        file_name = input_folder + "/Diagnostics.txt"
+        if file_name in os.listdir(input_folder):
+            write_action = "a"
+        with open(file_name, write_action) as diagnostics_file:
+            try:
+                diagnostics_file.write("Best hyperparam for " + self.algorithm + " is on " + threshold + " threshold "
+                                       "of provided hyperparam set: " + hyperparam_key + " = " +
+                                       SafeCastUtil.safeCast(hyperparam_value, str) + "\n")
+            except ValueError as error:
+                self.log.error("Error writing to file %s. %s", diagnostics_file, error)
+            finally:
+                diagnostics_file.close()

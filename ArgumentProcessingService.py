@@ -64,7 +64,8 @@ class ArgumentProcessingService(object):
                     self.SKIP_LINEAR_REGRESSION: self.fetchOrReturnDefault(arguments.get(self.SKIP_LINEAR_REGRESSION),
                                                                            bool, False),
                     self.NUM_THREADS: self.fetchOrReturnDefault(arguments.get(self.NUM_THREADS), int,
-                                                                multiprocessing.cpu_count())
+                                                                multiprocessing.cpu_count()),
+                    self.RECORD_DIAGNOSTICS: write_diagnostics
                 }
             else:
                 return None
@@ -189,6 +190,7 @@ class ArgumentProcessingService(object):
                         for gene in feature_file[1][gene_list]:
                             diagnostics_file.write("\t\t" + gene[0] + " at index "
                                                    + SafeCastUtil.safeCast(gene[1], str) + "\n")
+                diagnostics_file.write("\n\n######################\n\n")
             except ValueError as error:
                 self.log.error("Error writing to file %s. %s", diagnostics_file, error)
             finally:

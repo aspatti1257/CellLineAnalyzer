@@ -72,6 +72,8 @@ class MachineLearningServiceIT(unittest.TestCase):
         return argument_processing_service.handleInputFolder()
 
     def assertResults(self, target_dir, trainer, expected_lines, is_classifier):
+        self.assertDiagnosticResults(target_dir, trainer)
+
         file_name = trainer.algorithm + ".csv"
         assert file_name in os.listdir(target_dir)
         num_lines = 0
@@ -99,3 +101,17 @@ class MachineLearningServiceIT(unittest.TestCase):
                 self.log.debug("Closing file %s", file_name)
                 csv_file.close()
                 assert num_lines == expected_lines
+
+    def assertDiagnosticResults(self, target_dir, trainer):
+        if trainer.supportsHyperparams():
+            diagnostics_file = "Diagnostics.txt"
+            if diagnostics_file in os.listdir(target_dir):
+                with open(target_dir + "/" + diagnostics_file) as open_file:
+                    try:
+                        for line_index, line in enumerate(open_file):
+                            assert trainer.algorithm in line
+                            assert "upper" in line or "lower" in line
+                    except ValueError as valueError:
+                        self.log.error(valueError)
+                    finally:
+                        self.log.debug("Closing file %s", open_file)

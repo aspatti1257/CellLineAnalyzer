@@ -154,5 +154,6 @@ class RandomizedDataGenerator(object):
                         'is_classifier=' + classifier + "\n"
                         'inner_monte_carlo_permutations=' + SafeCastUtil.safeCast(monte_carlo_permutations, str) + '\n'
                         'outer_monte_carlo_permutations=' + SafeCastUtil.safeCast(monte_carlo_permutations, str) + '\n'
-                        'data_split=' + SafeCastUtil.safeCast(data_split, str) + '\n')
+                        'data_split=' + SafeCastUtil.safeCast(data_split, str) + '\n'
+                        'record_diagnostics=True\n')
         args_file.close()

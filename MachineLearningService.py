@@ -17,7 +17,6 @@ from Utilities.SafeCastUtil import SafeCastUtil
 
 
 class MachineLearningService(object):
-
     log = logging.getLogger(__name__)
     log.setLevel(logging.INFO)
 
@@ -35,7 +34,8 @@ class MachineLearningService(object):
             self.handleParallellization(gene_list_combos, input_folder, rf_trainer)
         if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_SVM):
             linear_svm_trainer = LinearSVMTrainer(is_classifier)
-            linear_svm_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
+            linear_svm_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms,
+                                                  len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, linear_svm_trainer)
         if not self.inputs.get(ArgumentProcessingService.SKIP_RBF_SVM):
             rbf_svm_trainer = RadialBasisFunctionSVMTrainer(is_classifier)
@@ -43,7 +43,8 @@ class MachineLearningService(object):
             self.handleParallellization(gene_list_combos, input_folder, rbf_svm_trainer)
         if not self.inputs.get(ArgumentProcessingService.SKIP_ELASTIC_NET) and not is_classifier:
             elasticnet_trainer = ElasticNetTrainer(is_classifier)
-            elasticnet_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
+            elasticnet_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms,
+                                                  len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, elasticnet_trainer)
         if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_REGRESSION) and not is_classifier:
             linear_regression_trainer = ElasticNetTrainer(is_classifier)
@@ -83,7 +84,7 @@ class MachineLearningService(object):
         num_gene_lists = len(gene_lists)
         num_files = len(gene_sets_across_files)
         all_arrays = self.fetchAllArrayPermutations((num_gene_lists - 1), num_files)
-        required_permutations = num_gene_lists**num_files
+        required_permutations = num_gene_lists ** num_files
         created_permutations = len(all_arrays)
         self.log.debug("Should have created %s permutations, created %s permutations", required_permutations,
                        created_permutations)
@@ -116,7 +117,7 @@ class MachineLearningService(object):
         nodes_to_use = numpy.amin([requested_threads, max_nodes])
 
         Parallel(n_jobs=nodes_to_use)(delayed(self.runMonteCarloSelection)(feature_set, trainer, input_folder)
-                 for feature_set in gene_list_combos)
+                                      for feature_set in gene_list_combos)
 
     def runMonteCarloSelection(self, feature_set, trainer, input_folder):
         scores = []
@@ -125,13 +126,16 @@ class MachineLearningService(object):
         for i in range(1, self.inputs.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS) + 1):
             gc.collect()
             formatted_data = self.formatData(self.inputs)
-            training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set, formatted_data)
-            testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set, formatted_data)
+            training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set,
+                                                          formatted_data)
+            testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set,
+                                                         formatted_data)
 
             self.log.info("Computing outer Monte Carlo Permutation %s for %s.", i, feature_set_as_string)
 
             optimal_hyperparams = self.determineOptimalHyperparameters(feature_set, formatted_data, trainer)
-            trainer.logIfBestHyperparamsOnRangeThreshold(optimal_hyperparams)
+            record_diagnostics = self.inputs.get(ArgumentProcessingService.RECORD_DIAGNOSTICS)
+            trainer.logIfBestHyperparamsOnRangeThreshold(optimal_hyperparams, record_diagnostics, input_folder)
 
             prediction_data = self.fetchOuterPermutationModelScore(feature_set_as_string, trainer,
                                                                    optimal_hyperparams, testing_matrix,
@@ -173,7 +177,7 @@ class MachineLearningService(object):
 
     def fetchOuterPermutationModelScore(self, feature_set_as_string, trainer, optimal_hyperparams,
                                         testing_matrix, training_matrix):
-        #TODO: Handle hyperparams with n
+        # TODO: Handle hyperparams with n
         results = self.inputs.get(ArgumentProcessingService.RESULTS)
         features, relevant_results = trainer.populateFeaturesAndResultsByCellLine(training_matrix, results)
         trainer.logOptimalHyperParams(optimal_hyperparams, feature_set_as_string)
