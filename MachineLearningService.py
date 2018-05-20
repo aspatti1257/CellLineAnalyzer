@@ -9,10 +9,11 @@ import threading
 from joblib import Parallel, delayed
 from ArgumentProcessingService import ArgumentProcessingService
 from DataFormattingService import DataFormattingService
-from Trainers.ElasticNetTrainer import ElasticNetTrainer
 from Trainers.RandomForestTrainer import RandomForestTrainer
 from Trainers.LinearSVMTrainer import LinearSVMTrainer
 from Trainers.RadialBasisFunctionSVMTrainer import RadialBasisFunctionSVMTrainer
+from Trainers.ElasticNetTrainer import ElasticNetTrainer
+from Trainers.LinearRegressionTrainer import LinearRegressionTrainer
 from Utilities.SafeCastUtil import SafeCastUtil
 
 
@@ -46,8 +47,8 @@ class MachineLearningService(object):
             elasticnet_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms,
                                                   len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, elasticnet_trainer)
-        if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_REGRESSION) and not is_classifier:
-            linear_regression_trainer = ElasticNetTrainer(is_classifier)
+        if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_REGRESSION) and is_classifier:
+            linear_regression_trainer = LinearRegressionTrainer(is_classifier)
             linear_regression_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms,
                                                          len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, linear_regression_trainer)
