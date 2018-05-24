@@ -31,6 +31,10 @@ class ArgumentProcessingService(object):
     SKIP_LINEAR_REGRESSION = "skip_linear_regression"
     RECORD_DIAGNOSTICS = "record_diagnostics"
 
+    INDIVIDUAL_TRAIN_ALGORITHM = "individual_train_algorithm"
+    INDIVIDUAL_TRAIN_HYPERPARAMS = "individual_train_hyperparams"
+    INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO = "individual_train_combo"
+
     def __init__(self, input_folder):
         self.input_folder = input_folder
 
@@ -65,7 +69,10 @@ class ArgumentProcessingService(object):
                                                                            bool, False),
                     self.NUM_THREADS: self.fetchOrReturnDefault(arguments.get(self.NUM_THREADS), int,
                                                                 multiprocessing.cpu_count()),
-                    self.RECORD_DIAGNOSTICS: write_diagnostics
+                    self.RECORD_DIAGNOSTICS: write_diagnostics,
+                    self.INDIVIDUAL_TRAIN_ALGORITHM: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_ALGORITHM), str, None),
+                    self.INDIVIDUAL_TRAIN_HYPERPARAMS: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_HYPERPARAMS), str, ""),
+                    self.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO), str, None)
                 }
             else:
                 return None

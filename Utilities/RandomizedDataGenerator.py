@@ -24,13 +24,13 @@ class RandomizedDataGenerator(object):
 
     @staticmethod
     def generateRandomizedFiles(num_feature_files, num_cells, num_features, is_classifier, monte_carlo_permutations,
-                                data_split):
-
+                                data_split, individual_algorithm=None, individual_hyperparams=None):
         features_per_file = SafeCastUtil.safeCast(num_features / num_feature_files, int)
         results = RandomizedDataGenerator.generateResultsCSV(is_classifier, num_cells)
-        RandomizedDataGenerator.generateFeaturesCSVs(num_feature_files, num_cells, features_per_file, results)
+        file_names = RandomizedDataGenerator.generateFeaturesCSVs(num_feature_files, num_cells, features_per_file, results)
         RandomizedDataGenerator.generateGeneLists(features_per_file)
-        RandomizedDataGenerator.generateArgsTxt(is_classifier, monte_carlo_permutations, data_split)
+        RandomizedDataGenerator.generateArgsTxt(is_classifier, monte_carlo_permutations, data_split,
+                                                individual_algorithm, file_names[0], individual_hyperparams)
         return
 
     @staticmethod
@@ -61,9 +61,10 @@ class RandomizedDataGenerator(object):
             features.append(RandomizedDataGenerator.SIGNIFICANT_FEATURE_PREFIX +
                             SafeCastUtil.safeCast(significant_feature, str))
 
+        file_names = []
         for file_num in range(1, num_feature_files + 1):
             file_name = RandomizedDataGenerator.determineFileName(file_num)
-
+            file_names.append(file_name.split("/")[1].split(".csv")[0])
             with open(file_name, 'w') as feature_file:
                 writer = csv.writer(feature_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                 writer.writerow(features)
@@ -76,6 +77,20 @@ class RandomizedDataGenerator(object):
                         else:
                             line += RandomizedDataGenerator.writeRandomFeature(file_name)
                     writer.writerow(line)
+        return file_names
+
+    @staticmethod
+    def determineFileName(file_num):
+        file_name = RandomizedDataGenerator.GENERATED_DATA_FOLDER + "/features_" + SafeCastUtil.safeCast(file_num, str)
+        rand = np.random.random_sample()
+        if rand < RandomizedDataGenerator.PCT_CATEGORICAL:
+            file_name += RandomizedDataGenerator.CATEGORICAL_SUFFIX + ".csv"
+        elif RandomizedDataGenerator.PCT_CATEGORICAL <= rand < \
+                (RandomizedDataGenerator.PCT_CATEGORICAL + (1 - RandomizedDataGenerator.PCT_CATEGORICAL) / 2):
+            file_name += RandomizedDataGenerator.INTEGER_SUFFIX + ".csv"
+        else:
+            file_name += RandomizedDataGenerator.FLOAT_SUFFIX + ".csv"
+        return file_name
 
     @staticmethod
     def writeSignificantFeature(file_name, result, feature):
@@ -102,19 +117,6 @@ class RandomizedDataGenerator(object):
             return [SafeCastUtil.safeCast(np.random.randint(0, 100), str)]
         else:
             return [SafeCastUtil.safeCast(np.random.random_sample(), str)]
-
-    @staticmethod
-    def determineFileName(file_num):
-        file_name = RandomizedDataGenerator.GENERATED_DATA_FOLDER + "/features_" + SafeCastUtil.safeCast(file_num, str)
-        rand = np.random.random_sample()
-        if rand < RandomizedDataGenerator.PCT_CATEGORICAL:
-            file_name += RandomizedDataGenerator.CATEGORICAL_SUFFIX + ".csv"
-        elif RandomizedDataGenerator.PCT_CATEGORICAL <= rand < \
-                (RandomizedDataGenerator.PCT_CATEGORICAL + (1 - RandomizedDataGenerator.PCT_CATEGORICAL) / 2):
-            file_name += RandomizedDataGenerator.INTEGER_SUFFIX + ".csv"
-        else:
-            file_name += RandomizedDataGenerator.FLOAT_SUFFIX + ".csv"
-        return file_name
 
     @staticmethod
     def generateGeneLists(features_per_file):
@@ -144,7 +146,8 @@ class RandomizedDataGenerator(object):
             writer.writerow(gene_list)
 
     @staticmethod
-    def generateArgsTxt(is_classifier, monte_carlo_permutations=10, data_split=.8):
+    def generateArgsTxt(is_classifier, monte_carlo_permutations=10, data_split=.8,
+                        individual_algorithm=None, important_features=None, individual_hyperparams=None):
         file_name = RandomizedDataGenerator.GENERATED_DATA_FOLDER + "/" + ArgumentProcessingService.ARGUMENTS_FILE
         args_file = open(file_name, 'w')
         classifier = '0'
@@ -156,4 +159,10 @@ class RandomizedDataGenerator(object):
                         'outer_monte_carlo_permutations=' + SafeCastUtil.safeCast(monte_carlo_permutations, str) + '\n'
                         'data_split=' + SafeCastUtil.safeCast(data_split, str) + '\n'
                         'record_diagnostics=True\n')
+        if individual_algorithm is not None and important_features is not None:
+            args_file.write('individual_train_algorithm=' + individual_algorithm + '\n'
+                            'individual_train_combo=' + important_features + ":" +
+                            RandomizedDataGenerator.SIGNIFICANT_GENE_LIST + '\n')
+            if individual_hyperparams is not None:
+                args_file.write('individual_train_hyperparams=' + individual_hyperparams + '\n')
         args_file.close()

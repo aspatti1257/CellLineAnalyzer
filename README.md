@@ -115,6 +115,23 @@ ones that aren't are marked with a star (*).
                        particular training algorithm is on upper or lower bound of hyperparameter set.
                        Defaults to False.
 
+`individual_train_algorithm`*: Optionally train only a specified ML algorithm with specified gene list feature combo and
+                               specified hyperparameters. Acceptable parameters are:
+                                    "RandomForestAnalysis"
+                                    "LinearSVMAnalysis"
+                                    "RadialBasisFunctionSVMAnalysis"
+                                    "ElasticNetAnalysis"
+                                    "LinearRegressionAnalysis"
+
+`individual_train_hyperparams`*: Optionally train only the specified ML algorithm with these hyperparams and a specified
+                                 gene list feature combo. Values should be a comma separated list with no quotes or
+                                 spaces. Not required for algorithms that don't use hyperparameters (e.g. linear
+                                 regression).
+
+`individual_train_combo`*: Optionally train only on the specified ML algorithm with this gene list feature combo and the
+                           specified hyperparameters. Should be formatted as FEATURE_FILE_NAME:GENE_LIST_FILE_NAME
+                           without the .csv extensions. See example below.
+
 Any .csv file in this path that is not the a gene list file, or the results.csv file, will be interpreted as a features
 file.
 
@@ -128,6 +145,18 @@ outer_monte_carlo_permutations=20
 data_split=0.8
 skip_rf=True
 ```
+
+### Example of a completed argument.txt with proper syntax for individual ML algorithm training:
+```
+results=results.csv
+is_classifier=0
+outer_monte_carlo_permutations=20
+data_split=0.8
+individual_train_algorithm=ElasticNetAnalysis
+individual_train_combo=features_1int:significant_gene_list
+individual_train_hyperparams=0.1,0.1
+```
+
 
 ### Example of all files in the directory:
 

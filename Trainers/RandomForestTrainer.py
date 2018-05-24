@@ -43,5 +43,4 @@ class RandomForestTrainer(AbstractModelTrainer):
     def logOptimalHyperParams(self, hyperparams, feature_set_as_string):
         self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
                       "m_val = %s\n" +
-                      "max depth = %s", feature_set_as_string, self.algorithm, hyperparams[0],
-                      hyperparams[1])
+                      "max depth = %s", feature_set_as_string, self.algorithm, hyperparams[0], hyperparams[1])

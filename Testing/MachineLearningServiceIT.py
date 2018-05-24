@@ -10,6 +10,7 @@ from Trainers.LinearRegressionTrainer import LinearRegressionTrainer
 
 from ArgumentProcessingService import ArgumentProcessingService
 from MachineLearningService import MachineLearningService
+from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Utilities.RandomizedDataGenerator import RandomizedDataGenerator
 from Utilities.SafeCastUtil import SafeCastUtil
 
@@ -115,3 +116,68 @@ class MachineLearningServiceIT(unittest.TestCase):
                         self.log.error(valueError)
                     finally:
                         self.log.debug("Closing file %s", open_file)
+
+    def testIndividualRandomForestRegressor(self):
+        self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.RANDOM_FOREST,
+                                                            "400,2", False)
+
+    def testIndividualRandomForestClassifier(self):
+        self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.RANDOM_FOREST,
+                                                            "400,2", True)
+
+    def testIndividualLinearSVMRegressor(self):
+        self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.LINEAR_SVM, "0.1,0,1",
+                                                            False)
+
+    def testIndividualLinearSVMClassifier(self):
+        self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.LINEAR_SVM, "0.1",
+                                                            True)
+
+    def testIndividualRadialBasisFunctionSVMRegressor(self):
+        self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM,
+                                                            "0.1,0.1,0.1", False)
+
+    def testIndividualRadialBasisFunctionSVMClassifier(self):
+        self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM,
+                                                            "0.1,0.1,0.1", True)
+
+    def testIndividualElasticNetRegressor(self):
+        self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.ELASTIC_NET, "0.1,0.1",
+                                                            False)
+
+    def testIndividualLinearRegressor(self):
+        self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.LINEAR_REGRESSION,
+                                                            None, False)
+
+    def evaluateMachineLearningModelForIndividualCombo(self, algorithm, hyperparams, is_classifier):
+        input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
+        ml_service = MachineLearningService(self.formatRandomizedDataForIndividualCombo(is_classifier, algorithm,
+                                                                                        hyperparams, input_folder))
+        ml_service.analyze(input_folder)
+        self.assertResultsForIndividualCombo(input_folder, algorithm, 11, is_classifier)
+
+    def formatRandomizedDataForIndividualCombo(self, is_classifier, algorithm, hyperparams, input_folder):
+        RandomizedDataGenerator.generateRandomizedFiles(3, 1000, 150, is_classifier, 10, .8, algorithm, hyperparams)
+        argument_processing_service = ArgumentProcessingService(input_folder)
+        return argument_processing_service.handleInputFolder()
+
+    def assertResultsForIndividualCombo(self, target_dir, algorithm, expected_lines, is_classifier):
+        file_name = algorithm + ".csv"
+        assert file_name in os.listdir(target_dir)
+        num_lines = 0
+        with open(target_dir + "/" + file_name) as csv_file:
+            try:
+                for line_index, line in enumerate(csv_file):
+                    num_lines += 1
+                    line_split = line.strip().split(",")
+                    if line_index == 0:
+                        assert line_split == MachineLearningService.getCSVFileHeader(is_classifier)
+                        continue
+                    feature_gene_list_combo = line_split[0]
+                    assert ":" in feature_gene_list_combo
+            except ValueError as valueError:
+                self.log.error(valueError)
+            finally:
+                self.log.debug("Closing file %s", file_name)
+                csv_file.close()
+                assert num_lines == expected_lines

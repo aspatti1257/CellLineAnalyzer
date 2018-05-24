@@ -7,6 +7,8 @@ import os
 import threading
 
 from joblib import Parallel, delayed
+
+from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from ArgumentProcessingService import ArgumentProcessingService
 from DataFormattingService import DataFormattingService
 from Trainers.RandomForestTrainer import RandomForestTrainer
@@ -26,32 +28,13 @@ class MachineLearningService(object):
 
     def analyze(self, input_folder):
         gene_list_combos = self.determineGeneListCombos()
-        inner_monte_carlo_perms = self.inputs.get(ArgumentProcessingService.INNER_MONTE_CARLO_PERMUTATIONS)
-        outer_monte_carlo_perms = self.inputs.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS)
         is_classifier = self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER)
-        if not self.inputs.get(ArgumentProcessingService.SKIP_RF):
-            rf_trainer = RandomForestTrainer(is_classifier)
-            rf_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
-            self.handleParallellization(gene_list_combos, input_folder, rf_trainer)
-        if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_SVM):
-            linear_svm_trainer = LinearSVMTrainer(is_classifier)
-            linear_svm_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms,
-                                                  len(gene_list_combos))
-            self.handleParallellization(gene_list_combos, input_folder, linear_svm_trainer)
-        if not self.inputs.get(ArgumentProcessingService.SKIP_RBF_SVM):
-            rbf_svm_trainer = RadialBasisFunctionSVMTrainer(is_classifier)
-            rbf_svm_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
-            self.handleParallellization(gene_list_combos, input_folder, rbf_svm_trainer)
-        if not self.inputs.get(ArgumentProcessingService.SKIP_ELASTIC_NET) and not is_classifier:
-            elasticnet_trainer = ElasticNetTrainer(is_classifier)
-            elasticnet_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms,
-                                                  len(gene_list_combos))
-            self.handleParallellization(gene_list_combos, input_folder, elasticnet_trainer)
-        if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_REGRESSION) and not is_classifier:
-            linear_regression_trainer = LinearRegressionTrainer(is_classifier)
-            linear_regression_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms,
-                                                         len(gene_list_combos))
-            self.handleParallellization(gene_list_combos, input_folder, linear_regression_trainer)
+
+        if self.inputs.get(ArgumentProcessingService.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO) is not None\
+                and self.inputs.get(ArgumentProcessingService.INDIVIDUAL_TRAIN_ALGORITHM) is not None:
+            self.analyzeIndividualGeneListCombo(gene_list_combos, input_folder, is_classifier)
+        else:
+            self.analyzeAllGeneListCombos(gene_list_combos, input_folder, is_classifier)
         return
 
     def determineGeneListCombos(self):
@@ -111,6 +94,77 @@ class MachineLearningService(object):
 
     def blankArray(self, length):
         return SafeCastUtil.safeCast(numpy.zeros(length, dtype=numpy.int), list)
+
+    def analyzeIndividualGeneListCombo(self, gene_list_combos, input_folder, is_classifier):
+        target_combo = self.inputs.get(ArgumentProcessingService.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO)
+        target_algorithm = self.inputs.get(ArgumentProcessingService.INDIVIDUAL_TRAIN_ALGORITHM)
+        hyperparams = self.inputs.get(ArgumentProcessingService.INDIVIDUAL_TRAIN_HYPERPARAMS).split(",")
+        casted_params = [SafeCastUtil.safeCast(param, float) for param in hyperparams]
+
+        for gene_list_combo in gene_list_combos:
+            plain_text_name = self.generateFeatureSetString(gene_list_combo)
+            if plain_text_name == target_combo:
+                trainer = self.createTrainerFromTargetAlgorithm(is_classifier, target_algorithm)
+                for permutation in range(0, self.inputs.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS)):
+                    results = self.inputs.get(ArgumentProcessingService.RESULTS)
+                    formatted_data = self.formatData(self.inputs)
+                    training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
+                                                                  gene_list_combo, formatted_data)
+                    testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, gene_list_combo,
+                                                                 formatted_data)
+                    features, relevant_results = trainer.populateFeaturesAndResultsByCellLine(training_matrix, results)
+                    model = trainer.train(relevant_results, features, casted_params)
+                    model_score = trainer.fetchPredictionsAndScore(model, testing_matrix, results)
+                    score = model_score[0]
+                    accuracy = model_score[1]
+                    self.log.info("Final score and accuracy of individual analysis for feature gene combo %s "
+                                  "using algorithm %s: %s, %s", target_combo, target_algorithm, score, accuracy)
+                    self.writeToCSVInLock(score, accuracy, target_combo, input_folder, target_algorithm)
+                return
+        self.log.info("Gene list feature file %s combo not found in current dataset.", target_combo)
+        return
+
+    def createTrainerFromTargetAlgorithm(self, is_classifier, target_algorithm):
+        if target_algorithm == SupportedMachineLearningAlgorithms.RANDOM_FOREST:
+            trainer = RandomForestTrainer(is_classifier)
+        elif target_algorithm == SupportedMachineLearningAlgorithms.LINEAR_SVM:
+            trainer = LinearSVMTrainer(is_classifier)
+        elif target_algorithm == SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM:
+            trainer = RadialBasisFunctionSVMTrainer(is_classifier)
+        elif target_algorithm == SupportedMachineLearningAlgorithms.ELASTIC_NET and not is_classifier:
+            trainer = ElasticNetTrainer(is_classifier)
+        elif target_algorithm == SupportedMachineLearningAlgorithms.LINEAR_REGRESSION and not is_classifier:
+            trainer = LinearRegressionTrainer(is_classifier)
+        else:
+            raise ValueError("Unsupported Machine Learning algorithm: %s", target_algorithm)
+        return trainer
+
+    def analyzeAllGeneListCombos(self, gene_list_combos, input_folder, is_classifier):
+        inner_monte_carlo_perms = self.inputs.get(ArgumentProcessingService.INNER_MONTE_CARLO_PERMUTATIONS)
+        outer_monte_carlo_perms = self.inputs.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS)
+        if not self.inputs.get(ArgumentProcessingService.SKIP_RF):
+            rf_trainer = RandomForestTrainer(is_classifier)
+            rf_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
+            self.handleParallellization(gene_list_combos, input_folder, rf_trainer)
+        if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_SVM):
+            linear_svm_trainer = LinearSVMTrainer(is_classifier)
+            linear_svm_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms,
+                                                  len(gene_list_combos))
+            self.handleParallellization(gene_list_combos, input_folder, linear_svm_trainer)
+        if not self.inputs.get(ArgumentProcessingService.SKIP_RBF_SVM):
+            rbf_svm_trainer = RadialBasisFunctionSVMTrainer(is_classifier)
+            rbf_svm_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
+            self.handleParallellization(gene_list_combos, input_folder, rbf_svm_trainer)
+        if not self.inputs.get(ArgumentProcessingService.SKIP_ELASTIC_NET) and not is_classifier:
+            elasticnet_trainer = ElasticNetTrainer(is_classifier)
+            elasticnet_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms,
+                                                  len(gene_list_combos))
+            self.handleParallellization(gene_list_combos, input_folder, elasticnet_trainer)
+        if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_REGRESSION) and not is_classifier:
+            linear_regression_trainer = LinearRegressionTrainer(is_classifier)
+            linear_regression_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms,
+                                                         len(gene_list_combos))
+            self.handleParallellization(gene_list_combos, input_folder, linear_regression_trainer)
 
     def handleParallellization(self, gene_list_combos, input_folder, trainer):
         max_nodes = multiprocessing.cpu_count()
@@ -275,7 +329,6 @@ class MachineLearningService(object):
                 self.log.error("Error writing to file %s. %s", file_name, error)
             finally:
                 csv_file.close()
-                os.chdir(input_folder)
                 self.log.debug("Releasing current thread %s.", threading.current_thread())
                 lock.release()
 
