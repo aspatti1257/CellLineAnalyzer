@@ -67,7 +67,7 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
                 csv_file.close()
         argument_processing_service = ArgumentProcessingService(input_folder)
         arguments = argument_processing_service.handleInputFolder()
-        assert bogus_gene not in arguments.get(argument_processing_service.GENE_LISTS).get(gene_list.split(".")[0])
+        assert bogus_gene in arguments.get(argument_processing_service.GENE_LISTS).get(gene_list.split(".")[0])
 
     def testCommentsInArgumentsFileAllowed(self):
         input_folder = self.current_working_dir + "/SampleClassifierDataFolder"
@@ -87,3 +87,6 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
         assert (len(arguments.get(argument_processing_service.RESULTS)) + 1) == len(features.keys())
         assert arguments.get(argument_processing_service.IS_CLASSIFIER) == is_classifier
         assert len(features.get(argument_processing_service.FEATURE_NAMES)) < self.total_features_in_files
+        feature_names = arguments.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES)
+        for cell_line_feature_set in arguments.get(ArgumentProcessingService.FEATURES).values():
+            assert len(cell_line_feature_set) == len(feature_names)

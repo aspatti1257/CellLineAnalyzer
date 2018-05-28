@@ -27,8 +27,12 @@ class RandomizedDataGenerator(object):
                                 data_split, individual_algorithm=None, individual_hyperparams=None):
         features_per_file = SafeCastUtil.safeCast(num_features / num_feature_files, int)
         results = RandomizedDataGenerator.generateResultsCSV(is_classifier, num_cells)
-        file_names = RandomizedDataGenerator.generateFeaturesCSVs(num_feature_files, num_cells, features_per_file, results)
-        RandomizedDataGenerator.generateGeneLists(features_per_file)
+        important_features = random.sample(range(1, features_per_file + 1),
+                                           SafeCastUtil.safeCast((features_per_file / 3), int))
+
+        file_names = RandomizedDataGenerator.generateFeaturesCSVs(num_feature_files, num_cells, features_per_file,
+                                                                  results, important_features)
+        RandomizedDataGenerator.generateGeneLists(features_per_file, important_features)
         RandomizedDataGenerator.generateArgsTxt(is_classifier, monte_carlo_permutations, data_split,
                                                 individual_algorithm, file_names[0], individual_hyperparams)
         return
@@ -52,7 +56,7 @@ class RandomizedDataGenerator(object):
         return results
 
     @staticmethod
-    def generateFeaturesCSVs(num_feature_files, num_cells, features_per_file, results):
+    def generateFeaturesCSVs(num_feature_files, num_cells, features_per_file, results, important_features):
         features = []
 
         for feature in range(1, features_per_file + 1):
@@ -67,11 +71,15 @@ class RandomizedDataGenerator(object):
             file_names.append(file_name.split("/")[1].split(".csv")[0])
             with open(file_name, 'w') as feature_file:
                 writer = csv.writer(feature_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-                writer.writerow(features)
+                features_in_this_file = []
+                for i in range(0, len(features)):
+                    if not i in important_features or random.random() > 0.5:
+                        features_in_this_file.append(features[i])
+                writer.writerow(features_in_this_file)
 
                 for cell in range(0, num_cells):
                     line = []
-                    for feature in features:
+                    for feature in features_in_this_file:
                         if RandomizedDataGenerator.SIGNIFICANT_FEATURE_PREFIX in feature:
                             line += RandomizedDataGenerator.writeSignificantFeature(file_name, results[cell], feature)
                         else:
@@ -119,9 +127,7 @@ class RandomizedDataGenerator(object):
             return [SafeCastUtil.safeCast(np.random.random_sample(), str)]
 
     @staticmethod
-    def generateGeneLists(features_per_file):
-        important_features = random.sample(range(1, features_per_file + 1),
-                                           SafeCastUtil.safeCast((features_per_file / 3), int))
+    def generateGeneLists(features_per_file, important_features):
         gene_list_num = 1
         while len(important_features) > 1:
             gene_list_size = random.randint(2, len(important_features))

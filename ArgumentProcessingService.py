@@ -139,51 +139,47 @@ class ArgumentProcessingService(object):
 
     def createAndValidateFeatureMatrix(self, results_list, results_file, gene_lists, write_diagnostics):
         files = os.listdir(self.input_folder)
-        feature_matrix = {self.FEATURE_NAMES: []}
-        features_removed = []
+        incomplete_features = []
         for file in [file for file in files if self.fileIsFeatureFile(file, results_file)]:
             features_path = self.input_folder + "/" + file
-            features_removed.append([file, self.validateGeneLists(features_path, file, gene_lists)])
+            incomplete_features.append([file, self.validateGeneLists(features_path, file, gene_lists)])
         if write_diagnostics:
-            self.writeDiagnostics(features_removed)
+            self.writeDiagnostics(incomplete_features)
 
+        feature_matrix = {self.FEATURE_NAMES: []}
         for file in [file for file in files if self.fileIsFeatureFile(file, results_file)]:
             features_path = self.input_folder + "/" + file
             self.extractFeatureMatrix(feature_matrix, features_path, file, gene_lists, results_list)
         return feature_matrix
 
     def validateGeneLists(self, features_path, file, gene_lists):
-        features_removed_by_file = {}
+        features_missing_from_files = {}
         with open(features_path) as feature_file:
             try:
                 for line_index, line in enumerate(feature_file):
                     if line_index == 0:
                         feature_names = line.split(",")
-                        features_removed_by_file = self.validateAndTrimGeneList(feature_names, gene_lists, file)
+                        features_missing_from_files = self.validateAndTrimGeneList(feature_names, gene_lists, file)
                     break
             except ValueError as valueError:
                 self.log.error(valueError)
                 return None
             finally:
                 self.log.debug("Closing file %s", feature_file)
-        return features_removed_by_file
+        return features_missing_from_files
 
     def validateAndTrimGeneList(self, feature_list, gene_lists, file):
         unused_features = {}
         for key in gene_lists.keys():
             for gene in gene_lists[key]:
                 if gene not in [feature.strip() for feature in feature_list]:
-                    list_length = len(gene_lists[key])
                     index = gene_lists[key].index(gene)
-                    gene_lists[key].remove(gene)
                     if unused_features.get(key) is None:
                         unused_features[key] = [[gene, index]]
                     else:
                         unused_features[key].append([gene, (index + len(unused_features[key]))])
                     self.log.warning("Incomplete dataset: gene %s from gene list %s not found in file %s. "
-                                     "Will not process this gene in any files. "
-                                     "Old gene list size : %s. New gene list size: %s",
-                                     gene, key, file, list_length, len(gene_lists[key]))
+                                     "Will not process this gene in this file.", gene, key, file)
         return unused_features
 
     def writeDiagnostics(self, features_removed):
@@ -205,17 +201,25 @@ class ArgumentProcessingService(object):
 
     def extractFeatureMatrix(self, feature_matrix, features_path, file, gene_lists, results_list):
         self.log.info("Extracting important features for %s.", file)
+        gene_list_features = []
+        for gene_list in gene_lists.values():
+            for gene_list_feature in gene_list:
+                gene_list_features.append(gene_list_feature)
+
         with open(features_path) as feature_file:
             try:
                 important_feature_indices = []
                 for line_index, line in enumerate(feature_file):
                     if line_index == 0:
                         feature_names = line.split(",")
-                        for i in range(0, len(feature_names)):
-                            if self.feature_in_gene_list(feature_names[i], gene_lists):
-                                feature_name = self.determineFeatureName(feature_names[i], file)
-                                feature_matrix[self.FEATURE_NAMES].append(feature_name)
-                                important_feature_indices.append(i)
+                        for gene_list_feature in gene_list_features:
+                            important_index = None
+                            feature_name = self.determineFeatureName(gene_list_feature, file)
+                            for i in range(0, len(feature_names)):
+                                if feature_names[i] == gene_list_feature:
+                                    important_index = i
+                            feature_matrix[self.FEATURE_NAMES].append(feature_name)
+                            important_feature_indices.append(important_index)
                     else:
                         features = self.extractCastedFeatures(line, important_feature_indices)
                         cell_line = results_list[line_index - 1]
@@ -232,6 +236,7 @@ class ArgumentProcessingService(object):
                 self.log.error(valueError)
                 return None
             finally:
+                feature_file.close()
                 self.log.debug("Closing file %s", feature_file)
 
     def fileIsFeatureFile(self, file, results_file):
@@ -254,13 +259,16 @@ class ArgumentProcessingService(object):
 
     def extractCastedFeatures(self, line, important_feature_indices):
         important_features = []
-        feature_names = line.split(",")
-        for i in range(0, len(feature_names)):
-            if i in important_feature_indices:
-                if SafeCastUtil.safeCast(feature_names[i], float) is not None:
-                    important_features.append(SafeCastUtil.safeCast(feature_names[i].strip(), float))
+        feature_values = line.split(",")
+        for index in important_feature_indices:
+            if index is None:
+                # TODO: Verify that this is acceptable, it works for one hot encoding and should never vary in any model
+                important_features.append(0)
+            else:
+                if SafeCastUtil.safeCast(feature_values[index], float) is not None:
+                    important_features.append(SafeCastUtil.safeCast(feature_values[index].strip(), float))
                 else:
-                    important_features.append(SafeCastUtil.safeCast(feature_names[i].strip(), str))
+                    important_features.append(SafeCastUtil.safeCast(feature_values[index].strip(), str))
         return important_features
 
     def fetchOrReturnDefault(self, field, to_type, default):
