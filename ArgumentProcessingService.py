@@ -248,12 +248,6 @@ class ArgumentProcessingService(object):
                file != rf_analysis and file != rbf_svm_analysis and file != linear_svm_analysis and\
                file != elastic_net_analysis and ".csv" in file.lower()
 
-    def feature_in_gene_list(self, feature_name, gene_lists):
-        for feature_set in gene_lists.values():
-            if feature_name in feature_set:
-                return True
-        return False
-
     def determineFeatureName(self, feature_name, file):
         return SafeCastUtil.safeCast(file.split(".")[0] + "." + feature_name.strip(), str)
 

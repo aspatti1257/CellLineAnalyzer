@@ -3,6 +3,7 @@ import logging
 
 from ArgumentProcessingService import ArgumentProcessingService
 from MachineLearningService import MachineLearningService
+from HTMLWritingService import HTMLWritingService
 from Utilities.SafeCastUtil import SafeCastUtil
 from Utilities.FileConverter import FileConverter
 
@@ -48,7 +49,7 @@ def runMainCellLineAnalysis(input_folder):
     valid_inputs = handleInputFolderProcessing(input_folder)
     if valid_inputs is not None:
         performMachineLearning(valid_inputs, input_folder)
-
+        writeHTMLSummaryFile(input_folder)
 
 def recursivelyPromptUser(message, return_type):
     response = input(message)
@@ -71,7 +72,11 @@ def handleInputFolderProcessing(input_folder):
 
 def performMachineLearning(valid_inputs, input_folder):
     machine_learning_service = MachineLearningService(valid_inputs)
-    machine_learning_service.analyze(input_folder)
+    return machine_learning_service.analyze(input_folder)
+
+def writeHTMLSummaryFile(input_folder):
+    html_writing_service = HTMLWritingService(input_folder)
+    html_writing_service.writeSummaryFile()
 
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ import threading
 
 from joblib import Parallel, delayed
 
+from HTMLWritingService import HTMLWritingService
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from ArgumentProcessingService import ArgumentProcessingService
 from DataFormattingService import DataFormattingService
@@ -20,7 +21,9 @@ from Utilities.SafeCastUtil import SafeCastUtil
 
 
 class MachineLearningService(object):
+
     log = logging.getLogger(__name__)
+    logging.basicConfig()
     log.setLevel(logging.INFO)
 
     def __init__(self, data):
@@ -35,7 +38,6 @@ class MachineLearningService(object):
             self.analyzeIndividualGeneListCombo(gene_list_combos, input_folder, is_classifier)
         else:
             self.analyzeAllGeneListCombos(gene_list_combos, input_folder, is_classifier)
-        return
 
     def determineGeneListCombos(self):
         gene_lists = self.inputs.get(ArgumentProcessingService.GENE_LISTS)
@@ -203,6 +205,7 @@ class MachineLearningService(object):
         self.log.info("Average score and accuracy of all Monte Carlo runs for %s: %s, %s",
                       feature_set_as_string, average_score, average_accuracy)
         self.writeToCSVInLock(average_score, average_accuracy, feature_set_as_string, input_folder, trainer.algorithm)
+        self.saveOutputToTxtFile(scores, accuracies, feature_set_as_string, input_folder, trainer.algorithm)
 
     def generateFeatureSetString(self, feature_set):
         feature_map = {}
@@ -312,7 +315,7 @@ class MachineLearningService(object):
 
     def writeToCSVInLock(self, average_score, average_accuracy, feature_set_as_string, input_folder, ml_algorithm):
         lock = threading.Lock()
-        self.log.debug("Locking current thread %s.", threading.current_thread())
+        self.lockThreadMessage()
         lock.acquire(True)
 
         file_name = ml_algorithm + ".csv"
@@ -329,7 +332,7 @@ class MachineLearningService(object):
                 self.log.error("Error writing to file %s. %s", file_name, error)
             finally:
                 csv_file.close()
-                self.log.debug("Releasing current thread %s.", threading.current_thread())
+                self.unlockThreadMessage()
                 lock.release()
 
     @staticmethod
@@ -338,3 +341,29 @@ class MachineLearningService(object):
             return ["feature file: gene list combo", "percentage accurate predictions", "accuracy score"]
         else:
             return ["feature file: gene list combo", "R^2 score", "mean squared error"]
+
+    def saveOutputToTxtFile(self, scores, accuracies, feature_set_as_string, input_folder, algorithm):
+        lock = threading.Lock()
+        self.lockThreadMessage()
+        lock.acquire(True)
+
+        file_name = HTMLWritingService.RECORD_FILE
+        write_action = "w"
+        if file_name in os.listdir(input_folder):
+            write_action = "a"
+        with open(input_folder + "/" + file_name, write_action) as output_file:
+            try:
+                output_file.write(algorithm + " --- " + feature_set_as_string + " --- " +
+                                  SafeCastUtil.safeCast(scores, str) + " --- " + SafeCastUtil.safeCast(accuracies, str)
+                                  + "\n")
+            except ValueError as error:
+                self.log.error("Error saving output of %s analysis to memory: %s", algorithm, error)
+            finally:
+                self.unlockThreadMessage()
+                lock.release()
+
+    def lockThreadMessage(self):
+        self.log.debug("Locking current thread %s.", threading.current_thread())
+
+    def unlockThreadMessage(self):
+        self.log.debug("Releasing current thread %s.", threading.current_thread())
