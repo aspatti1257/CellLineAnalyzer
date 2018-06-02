@@ -70,7 +70,8 @@ class HTMLWritingService(object):
             try:
                 for line_index, line in enumerate(template_file):
                     if "//INSERT CHART DATA HERE" in line:
-                        new_file.append("$scope.allData = " + SafeCastUtil.safeCast(stats_overview_object, str) + ";\n")
+                        new_file.append("\t\t\t\t$scope.allData = " +
+                                        SafeCastUtil.safeCast(stats_overview_object, str) + ";\n")
                     else:
                         new_file.append(line)
             except ValueError as valueError:
