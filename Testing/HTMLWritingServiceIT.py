@@ -24,7 +24,7 @@ class HTMLWritingServiceIT(unittest.TestCase):
                 os.remove(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER + "/" + file)
 
     def testRecordFileWritten(self):
-        # self.runMLAnalysis(True)
+        # self.runMLAnalysis(False)
         input_folder = self.current_working_dir + "/SampleClassifierDataFolder"
         with open(input_folder + "/" + HTMLWritingService.RECORD_FILE) as record_file:
             try:

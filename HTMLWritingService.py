@@ -1,4 +1,5 @@
 import logging
+import os
 
 from Utilities.SafeCastUtil import SafeCastUtil
 
@@ -10,6 +11,7 @@ class HTMLWritingService(object):
     log.setLevel(logging.INFO)
 
     RECORD_FILE = "FullResultsSummary.txt"
+    SUMMARY_FILE = "SummaryReport.html"
 
     def __init__(self, input_folder):
         self.input_folder = input_folder
@@ -20,6 +22,21 @@ class HTMLWritingService(object):
         #TODO: Write out AngularJS template file with d3 charts.
 
     def createStatsOverviewFromFile(self):
+        stats_overview_object = self.generateStatsOverviewObject()
+        new_file = self.generateNewReportFile(stats_overview_object)
+
+        with open(self.input_folder + "/" + self.SUMMARY_FILE, "w") as summary_file:
+            try:
+                for line in new_file:
+                    summary_file.write(line)
+            except ValueError as valueError:
+                self.log.error(valueError)
+            finally:
+                summary_file.close()
+
+        self.log.info(new_file)
+
+    def generateStatsOverviewObject(self):
         stats_overview_object = {}
         with open(self.input_folder + "/" + self.RECORD_FILE) as record_file:
             try:
@@ -45,3 +62,19 @@ class HTMLWritingService(object):
     def translateToNumericList(self, line_split):
         return [SafeCastUtil.safeCast(val, float) for val in line_split.replace("[", "").replace("]", "").split(",")]
 
+    def generateNewReportFile(self, stats_overview_object):
+        path_of_this_file = os.path.realpath(__file__)
+        template_path = os.path.abspath(os.path.join(path_of_this_file, os.pardir)) + "/Reports/reportTemplate.html"
+        new_file = []
+        with open(template_path) as template_file:
+            try:
+                for line_index, line in enumerate(template_file):
+                    if "//INSERT CHART DATA HERE" in line:
+                        new_file.append("$scope.allData = " + SafeCastUtil.safeCast(stats_overview_object, str) + ";\n")
+                    else:
+                        new_file.append(line)
+            except ValueError as valueError:
+                self.log.error(valueError)
+            finally:
+                template_file.close()
+        return new_file
