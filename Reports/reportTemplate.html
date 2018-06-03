@@ -2,39 +2,137 @@
     <head>
         <title>CellLineAnalyzer Report Summary</title>
         <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.10/angular.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.10/lodash.core.min.js"></script>
-        <script src="https://d3js.org/d3.v5.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.10/lodash.min.js"></script>
+        <script src="https://d3js.org/d3.v5.js"></script>
         <script id="templateFillScript">
             var summaryReport = angular.module('summaryReport', []);
-
-            summaryReport.controller('summaryReportController', ['$scope', function($scope) {
+            summaryReport.controller('summaryReportController', function($scope, $timeout) {
                 var DATA_TYPE = {
                     score : 0,
                     accuracy : 1
                 }
+                var MAX_GENE_LIST_COMBOS_TO_PLOT = 25
 
                 //INSERT CHART DATA HERE
 
-                _.forEach($scope.allData, function(value, algorithm) {
-                    var scores = extactDataForAlgorithm(algorithm, DATA_TYPE.score);
-                    var accuracies = extactDataForAlgorithm(algorithm, DATA_TYPE.accuracy);
+                $scope.statsByAlgorithm = [];
+
+                var maxScore = 0;
+                var minScore = 0;
+                var maxAccuracy = 0;
+                var minAccuracy = 0;
+
+                _.forEach($scope.allData, function(data, algorithm) {
+                	$scope.statsByAlgorithm.push({
+                		algorithm: algorithm,
+                		scores: extractDataForAlgorithm(DATA_TYPE.score, data),
+                		accuracies: extractDataForAlgorithm(DATA_TYPE.accuracy, data)
+                	});
                 });
 
-                function extactDataForAlgorithm(algorithm, data_type) {
+                function extractDataForAlgorithm(dataType, data) {
+                	var graphingObject = {
+                		xValues: [],
+                		yValues: []
+                	};
 
+                	//TODO: Handle error, fences, std. dev, etc.
+                	var bars = [];
+                	_.forEach(data, function(results, geneListCombo) {
+
+                		if (dataType == DATA_TYPE.score) {
+                			maxScore = _.max([maxScore, _.max(results[dataType])]);
+                		} else if (dataType == DATA_TYPE.accuracy) {
+                			maxAccuracy = _.max([maxScore, _.max(results[dataType])]);
+                		}
+
+                		bars.push({
+                			"value": _.mean(results[dataType]),
+                			"label": geneListCombo
+                		})
+                		// graphingObject.xValues.push(geneListCombo);
+                		// graphingObject.yValues.push(_.mean(results[dataType]));
+                	});
+                	return bars;
                 }
 
-            }]);
+                $timeout(function() {
+	                _.forEach($scope.statsByAlgorithm, function(algorithmStats) {
+						createChart(_.sortBy(algorithmStats.scores, "value").reverse(), "#" + algorithmStats.algorithm + "ScoreChart")
+						createChart(_.sortBy(algorithmStats.accuracies, "value").reverse(), "#" + algorithmStats.algorithm + "AccuracyChart")
+
+	                });
+	            });
+
+	            function createChart(data, selector) {
+					var margin = {top: 40, right: 20, bottom: 30, left: 40};
+					var width = 10000 - margin.left - margin.right;
+					var height = 600 - margin.top - margin.bottom;
+
+					var x = d3.scaleBand().rangeRound([0, width], .1);
+
+					var y = d3.scaleLinear().range([height, 0]);
+
+					var xAxis = d3.axisBottom(x).tickFormat(function(dataPoint) { return dataPoint.label;} );
+					var yAxis = d3.axisLeft(y);
+
+					var chart = d3.select(selector)
+								  .attr("width", width + margin.left + margin.right)
+								  .attr("height", height + margin.top + margin.bottom)
+									  .append("g")
+								  .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+                	x.domain(data.map(function(dataPoint) {
+            			return dataPoint.label;
+					}));
+					chart.append("g").attr("class", "xAxis").attr("transform", "translate(0," + height + ")").call(xAxis);
+					chart.append("g").attr("class", "yAxis").call(yAxis).append("text").attr("y", -15).attr("dy", ".71em").style("text-anchor", "end").text("Value");
+
+					var xCounter = 0;
+					chart.selectAll(".bar").data(data).enter().append("rect")
+						 .attr("class", "bar")
+						 .attr("x", function(dataPoint) {
+						 	xCounter += 20;
+						 	return xCounter;
+						 })
+  						 .attr("width", 20)
+					     .attr("y", function(dataPoint) {
+					     	var yVal = dataPoint.value < 0 ? 1 : (dataPoint.value / maxScore) * height;
+					     	return height - yVal;
+					     })
+					     .attr("height", function(dataPoint) {
+						    	var yVal = dataPoint.value < 0 ? 1 : (dataPoint.value / maxScore) * height;
+					        return yVal;
+					     });
+	            }
+            });
+
         </script>
+        <style>
+			.axis path, .axis line {
+			  fill: none;
+			  stroke: #000;
+			  shape-rendering: crispEdges;
+			}
+
+			.bar {
+			  fill: orange;
+			}
+
+			.bar:hover {
+			  fill: orangered ;
+			}
+        </style>
     </head>
     <body ng-app="summaryReport">
         <div ng-controller="summaryReportController">
             <h1>
                 Overview Report
             </h1>
-            <div ng-repeat="(key, value) in allData">
-                <svg width="960" height="500" id="{{key}}ScoreChart"></svg>
-                <svg width="960" height="500" id="{{key}}AccuracyChart"></svg>
+            <div ng-repeat="algorithmStats in statsByAlgorithm">
+            	<h2>{{algorithmStats.algorithm}}</h2>
+                <svg width="960" height="500" id="{{algorithmStats.algorithm}}ScoreChart" class="chart"></svg>
+                <svg width="960" height="500" id="{{algorithmStats.algorithm}}AccuracyChart" class="chart"></svg>
             </div>
         </div>
     </body>
