@@ -92,7 +92,7 @@
 					chart.selectAll(".bar").data(data).enter().append("rect")
 						 .attr("class", "bar")
 						 .attr("x", function(dataPoint) {
-						 	xCounter += 20;
+						 	xCounter += 30;
 						 	return xCounter;
 						 })
   						 .attr("width", 20)
@@ -116,7 +116,7 @@
 			}
 
 			.bar {
-			  fill: orange;
+			  fill: purple;
 			}
 
 			.bar:hover {
@@ -131,7 +131,9 @@
             </h1>
             <div ng-repeat="algorithmStats in statsByAlgorithm">
             	<h2>{{algorithmStats.algorithm}}</h2>
+            	<h4>Scores</h4>
                 <svg width="960" height="500" id="{{algorithmStats.algorithm}}ScoreChart" class="chart"></svg>
+                <h4>Accuracies</h4>
                 <svg width="960" height="500" id="{{algorithmStats.algorithm}}AccuracyChart" class="chart"></svg>
             </div>
         </div>
