@@ -4,14 +4,15 @@
         <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.10/angular.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.10/lodash.min.js"></script>
         <script src="https://d3js.org/d3.v5.js"></script>
+        <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
         <script id="templateFillScript">
             var summaryReport = angular.module('summaryReport', []);
             summaryReport.controller('summaryReportController', function($scope, $timeout) {
                 var DATA_TYPE = {
                     score : 0,
                     accuracy : 1
-                }
-                var MAX_GENE_LIST_COMBOS_TO_PLOT = 25
+                };
+                var MAX_GENE_LIST_COMBOS_TO_PLOT = 25;
 
                 //INSERT CHART DATA HERE
 
@@ -31,15 +32,9 @@
                 });
 
                 function extractDataForAlgorithm(dataType, data) {
-                	var graphingObject = {
-                		xValues: [],
-                		yValues: []
-                	};
-
                 	//TODO: Handle error, fences, std. dev, etc.
                 	var bars = [];
                 	_.forEach(data, function(results, geneListCombo) {
-
                 		if (dataType == DATA_TYPE.score) {
                 			maxScore = _.max([maxScore, _.max(results[dataType])]);
                 		} else if (dataType == DATA_TYPE.accuracy) {
@@ -50,19 +45,25 @@
                 			"value": _.mean(results[dataType]),
                 			"label": geneListCombo
                 		})
-                		// graphingObject.xValues.push(geneListCombo);
-                		// graphingObject.yValues.push(_.mean(results[dataType]));
                 	});
                 	return bars;
                 }
 
                 $timeout(function() {
 	                _.forEach($scope.statsByAlgorithm, function(algorithmStats) {
-						createChart(_.sortBy(algorithmStats.scores, "value").reverse(), "#" + algorithmStats.algorithm + "ScoreChart")
-						createChart(_.sortBy(algorithmStats.accuracies, "value").reverse(), "#" + algorithmStats.algorithm + "AccuracyChart")
-
+						createChart(sortAndTrimData(algorithmStats.scores), "#" + algorithmStats.algorithm + "ScoreChart");
+						createChart(sortAndTrimData(algorithmStats.accuracies), "#" + algorithmStats.algorithm + "AccuracyChart");
 	                });
 	            });
+
+	            function sortAndTrimData(stats) {
+	            	var sortedStats = _.sortBy(stats, "value").reverse();
+	            	if (sortedStats.length > MAX_GENE_LIST_COMBOS_TO_PLOT) {
+	            		return sortedStats; //TODO: Make it so it only returns top 5, bottom 5, and random samples in between.
+	            	} else {
+	            		return sortedStats;
+	            	}
+	            }
 
 	            function createChart(data, selector) {
 					var margin = {top: 40, right: 20, bottom: 30, left: 40};
@@ -75,6 +76,8 @@
 
 					var xAxis = d3.axisBottom(x).tickFormat(function(dataPoint) { return dataPoint.label;} );
 					var yAxis = d3.axisLeft(y);
+
+					var tooltip = d3.select("body").append("div").attr("class","toolTip");
 
 					var chart = d3.select(selector)
 								  .attr("width", width + margin.left + margin.right)
@@ -103,7 +106,18 @@
 					     .attr("height", function(dataPoint) {
 						    	var yVal = dataPoint.value < 0 ? 1 : (dataPoint.value / maxScore) * height;
 					        return yVal;
-					     });
+					     })
+					     .on("mouseover", function(dataPoint) {
+					        tooltip.html("<span>Combo: " + dataPoint.label + "</span> <br>" +
+					        			 "<span>Value: " + dataPoint.value + "</span>");
+					        return tooltip.style("visibility", "visible");
+					     })
+      					 .on("mousemove", function() {
+      					    return tooltip.style("top", (d3.event.pageY - 10) + "px").style("left", (d3.event.pageX + 10) + "px");
+      					 })
+ 						 .on("mouseout", function() {
+ 						 	return tooltip.style("visibility", "hidden");
+ 						 });
 	            }
             });
 
@@ -121,6 +135,17 @@
 
 			.bar:hover {
 			  fill: orangered ;
+			}
+
+			.toolTip {
+				z-index: 10;
+				visibility: hidden;
+				background-color: white;
+				border: 2px solid black;
+				color: black;
+				padding: 5px;
+				font-family: arial;
+				position: absolute;
 			}
         </style>
     </head>
