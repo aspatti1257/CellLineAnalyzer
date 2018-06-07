@@ -39,7 +39,7 @@ class HTMLWritingServiceIT(unittest.TestCase):
         html_service.writeSummaryFile()
 
     def runMLAnalysis(self, is_classifier):
-        RandomizedDataGenerator.generateRandomizedFiles(3, 1000, 150, is_classifier, 1, .8)
+        RandomizedDataGenerator.generateRandomizedFiles(3, 1000, 150, is_classifier, 10, .8)
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         argument_processing_service = ArgumentProcessingService(input_folder)
         ml_service = MachineLearningService(argument_processing_service.handleInputFolder())

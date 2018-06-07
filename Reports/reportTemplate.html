@@ -16,7 +16,8 @@
 
                 //INSERT CHART DATA HERE
 
-                $scope.statsByAlgorithm = [];
+                $scope.barChartData = [];
+                $scope.errorChartData = [];
 
                 var maxScore = 0;
                 var minScore = 0;
@@ -24,129 +25,147 @@
                 var minAccuracy = 0;
 
                 _.forEach($scope.allData, function(data, algorithm) {
-                	$scope.statsByAlgorithm.push({
-                		algorithm: algorithm,
-                		scores: extractDataForAlgorithm(DATA_TYPE.score, data),
-                		accuracies: extractDataForAlgorithm(DATA_TYPE.accuracy, data)
-                	});
+                    $scope.barChartData.push({
+                        algorithm: algorithm,
+                        scores: extractDataForAlgorithm(DATA_TYPE.score, data),
+                        accuracies: extractDataForAlgorithm(DATA_TYPE.accuracy, data)
+                    });
+                    $scope.errorChartData.push({
+                        algorithm: algorithm,
+                        data: data
+                    })
                 });
 
                 function extractDataForAlgorithm(dataType, data) {
-                	//TODO: Handle error, fences, std. dev, etc.
-                	var bars = [];
-                	_.forEach(data, function(results, geneListCombo) {
-                		if (dataType == DATA_TYPE.score) {
-                			maxScore = _.max([maxScore, _.max(results[dataType])]);
-                		} else if (dataType == DATA_TYPE.accuracy) {
-                			maxAccuracy = _.max([maxScore, _.max(results[dataType])]);
-                		}
+                    //TODO: Handle error, fences, std. dev, etc.
+                    var bars = [];
+                    _.forEach(data, function(results, geneListCombo) {
+                        if (dataType == DATA_TYPE.score) {
+                            maxScore = _.max([maxScore, _.max(results[dataType])]);
+                        } else if (dataType == DATA_TYPE.accuracy) {
+                            maxAccuracy = _.max([maxAccuracy, _.max(results[dataType])]);
+                        }
 
-                		bars.push({
-                			"value": _.mean(results[dataType]),
-                			"label": geneListCombo
-                		})
-                	});
-                	return bars;
+                        bars.push({
+                            "value": _.mean(results[dataType]),
+                            "label": geneListCombo
+                        })
+                    });
+                    return bars;
                 }
 
                 $timeout(function() {
-	                _.forEach($scope.statsByAlgorithm, function(algorithmStats) {
-						createChart(sortAndTrimData(algorithmStats.scores), "#" + algorithmStats.algorithm + "ScoreChart");
-						createChart(sortAndTrimData(algorithmStats.accuracies), "#" + algorithmStats.algorithm + "AccuracyChart");
-	                });
-	            });
+                    _.forEach($scope.barChartData, function(algorithmStats) {
+                        var trimmedScores = sortAndTrimData(algorithmStats.scores);
+                        var trimmedAccuracies = sortAndTrimData(algorithmStats.accuracies);
+                        createBarChart(trimmedScores, "#" + algorithmStats.algorithm + "ScoreBarChart", maxScore, minScore);
+                        createBarChart(trimmedAccuracies, "#" + algorithmStats.algorithm + "AccuracyBarChart", maxAccuracy, minAccuracy);
+                    });
+                    _.forEach($scope.errorChartData, function(algorithmStats) {
+                        console.log(algorithmStats);
+                    });
+                });
 
-	            function sortAndTrimData(stats) {
-	            	var sortedStats = _.sortBy(stats, "value").reverse();
-	            	if (sortedStats.length > MAX_GENE_LIST_COMBOS_TO_PLOT) {
-	            		return sortedStats; //TODO: Make it so it only returns top 5, bottom 5, and random samples in between.
-	            	} else {
-	            		return sortedStats;
-	            	}
-	            }
+                function sortAndTrimData(stats) {
+                    var sortedStats = _.sortBy(stats, "value").reverse();
+                    if (sortedStats.length > MAX_GENE_LIST_COMBOS_TO_PLOT) {
+                        var trimmedStats = [];
+                        trimmedStats.concat(_.take(sortedStats, 5)).concat(_.takeRight(sortedStats, 5));
+                        while (trimmedStats.length < MAX_GENE_LIST_COMBOS_TO_PLOT) {
+                            trimmedStats.push(_.sample(sortedStats.slice(5, sortedStats.length - 5)))
+                        }
+                        return _.sortBy(trimmedStats, "value").reverse();
+                    } else {
+                        return sortedStats;
+                    }
+                }
 
-	            function createChart(data, selector) {
-					var margin = {top: 40, right: 20, bottom: 30, left: 40};
-					var width = 10000 - margin.left - margin.right;
-					var height = 600 - margin.top - margin.bottom;
+                function createBarChart(data, selector, max, min) {
+                    var margin = {top: 40, right: 20, bottom: 30, left: 40};
+                    var width = 10000 - margin.left - margin.right;
+                    var height = 600 - margin.top - margin.bottom;
 
-					var x = d3.scaleBand().rangeRound([0, width], .1);
+                    var x = d3.scaleBand().rangeRound([0, width], .1);
 
-					var y = d3.scaleLinear().range([height, 0]);
+                    var y = d3.scaleLinear().range([height, 0]);
 
-					var xAxis = d3.axisBottom(x).tickFormat(function(dataPoint) { return dataPoint.label;} );
-					var yAxis = d3.axisLeft(y);
+                    var xAxis = d3.axisBottom(x).tickFormat(function(dataPoint) { return dataPoint.label;} );
+                    var yAxis = d3.axisLeft(y);
 
-					var tooltip = d3.select("body").append("div").attr("class","toolTip");
+                    var tooltip = d3.select("body").append("div").attr("class","toolTip");
 
-					var chart = d3.select(selector)
-								  .attr("width", width + margin.left + margin.right)
-								  .attr("height", height + margin.top + margin.bottom)
-									  .append("g")
-								  .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+                    var chart = d3.select(selector)
+                                  .attr("width", width + margin.left + margin.right)
+                                  .attr("height", height + margin.top + margin.bottom)
+                                      .append("g")
+                                  .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-                	x.domain(data.map(function(dataPoint) {
-            			return dataPoint.label;
-					}));
-					chart.append("g").attr("class", "xAxis").attr("transform", "translate(0," + height + ")").call(xAxis);
-					chart.append("g").attr("class", "yAxis").call(yAxis).append("text").attr("y", -15).attr("dy", ".71em").style("text-anchor", "end").text("Value");
+                    x.domain(data.map(function(dataPoint) {
+                        return dataPoint.label;
+                    }));
+                    chart.append("g").attr("class", "xAxis").attr("transform", "translate(0," + height + ")").call(xAxis);
+                    chart.append("g").attr("class", "yAxis").call(yAxis).append("text").attr("y", -15).attr("dy", ".71em").style("text-anchor", "end").text("Value");
 
-					var xCounter = 0;
-					chart.selectAll(".bar").data(data).enter().append("rect")
-						 .attr("class", "bar")
-						 .attr("x", function(dataPoint) {
-						 	xCounter += 30;
-						 	return xCounter;
-						 })
-  						 .attr("width", 20)
-					     .attr("y", function(dataPoint) {
-					     	var yVal = dataPoint.value < 0 ? 1 : (dataPoint.value / maxScore) * height;
-					     	return height - yVal;
-					     })
-					     .attr("height", function(dataPoint) {
-						    	var yVal = dataPoint.value < 0 ? 1 : (dataPoint.value / maxScore) * height;
-					        return yVal;
-					     })
-					     .on("mouseover", function(dataPoint) {
-					        tooltip.html("<span>Combo: " + dataPoint.label + "</span> <br>" +
-					        			 "<span>Value: " + dataPoint.value + "</span>");
-					        return tooltip.style("visibility", "visible");
-					     })
-      					 .on("mousemove", function() {
-      					    return tooltip.style("top", (d3.event.pageY - 10) + "px").style("left", (d3.event.pageX + 10) + "px");
-      					 })
- 						 .on("mouseout", function() {
- 						 	return tooltip.style("visibility", "hidden");
- 						 });
-	            }
+                    var xCounter = 0;
+                    chart.selectAll(".bar").data(data).enter().append("rect")
+                         .attr("class", "bar")
+                         .attr("x", function(dataPoint) {
+                             xCounter += 30;
+                             return xCounter;
+                         })
+                         .attr("width", 20)
+                         .attr("y", function(dataPoint) {
+                             var yVal = dataPoint.value < 0 ? 1 : (dataPoint.value / max) * height;
+                             return height - yVal;
+                         })
+                         .attr("height", function(dataPoint) {
+                             var yVal = dataPoint.value < 0 ? 1 : (dataPoint.value / max) * height;
+                            return yVal;
+                         })
+                         .on("mouseover", function(dataPoint) {
+                            tooltip.html("<span>Combo: " + dataPoint.label + "</span> <br>" +
+                                         "<span>Value: " + dataPoint.value + "</span>");
+                            return tooltip.style("visibility", "visible");
+                         })
+                         .on("mousemove", function() {
+                            return tooltip.style("top", (d3.event.pageY - 10) + "px").style("left", (d3.event.pageX + 10) + "px");
+                         })
+                         .on("mouseout", function() {
+                            return tooltip.style("visibility", "hidden");
+                         });
+                }
+
+                function createErrorChart(data, selector, max, min) {
+                    //TODO: Handle error bar chart
+                }
             });
 
         </script>
         <style>
-			.axis path, .axis line {
-			  fill: none;
-			  stroke: #000;
-			  shape-rendering: crispEdges;
-			}
+            .axis path, .axis line {
+              fill: none;
+              stroke: #000;
+              shape-rendering: crispEdges;
+            }
 
-			.bar {
-			  fill: purple;
-			}
+            .bar {
+              fill: purple;
+            }
 
-			.bar:hover {
-			  fill: orangered ;
-			}
+            .bar:hover {
+              fill: orangered ;
+            }
 
-			.toolTip {
-				z-index: 10;
-				visibility: hidden;
-				background-color: white;
-				border: 2px solid black;
-				color: black;
-				padding: 5px;
-				font-family: arial;
-				position: absolute;
-			}
+            .toolTip {
+                z-index: 10;
+                visibility: hidden;
+                background-color: white;
+                border: 2px solid black;
+                color: black;
+                padding: 5px;
+                font-family: arial;
+                position: absolute;
+            }
         </style>
     </head>
     <body ng-app="summaryReport">
@@ -154,12 +173,19 @@
             <h1>
                 Overview Report
             </h1>
-            <div ng-repeat="algorithmStats in statsByAlgorithm">
-            	<h2>{{algorithmStats.algorithm}}</h2>
-            	<h4>Scores</h4>
-                <svg width="960" height="500" id="{{algorithmStats.algorithm}}ScoreChart" class="chart"></svg>
+            <div ng-repeat="algorithmStats in errorChartData">
+                <h2>{{algorithmStats.algorithm}}</h2>
+                <h4>Scores</h4>
+                <svg width="960" height="500" id="{{algorithmStats.algorithm}}ScoreErrorChart" class="chart"></svg>
                 <h4>Accuracies</h4>
-                <svg width="960" height="500" id="{{algorithmStats.algorithm}}AccuracyChart" class="chart"></svg>
+                <svg width="960" height="500" id="{{algorithmStats.algorithm}}AccuracyErrorChart" class="chart"></svg>
+            </div>
+            <div ng-repeat="algorithmStats in barChartData">
+                <h2>{{algorithmStats.algorithm}}</h2>
+                <h4>Scores</h4>
+                <svg width="960" height="500" id="{{algorithmStats.algorithm}}ScoreBarChart" class="chart"></svg>
+                <h4>Accuracies</h4>
+                <svg width="960" height="500" id="{{algorithmStats.algorithm}}AccuracyBarChart" class="chart"></svg>
             </div>
         </div>
     </body>
