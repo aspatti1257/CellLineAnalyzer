@@ -244,9 +244,10 @@ class ArgumentProcessingService(object):
         linear_svm_analysis = SupportedMachineLearningAlgorithms.LINEAR_SVM + ".csv"
         rbf_svm_analysis = SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM + ".csv"
         elastic_net_analysis = SupportedMachineLearningAlgorithms.ELASTIC_NET + ".csv"
+        linear_regression_analysis = SupportedMachineLearningAlgorithms.LINEAR_REGRESSION + ".csv"
         return file != results_file and file != self.ARGUMENTS_FILE and self.GENE_LISTS not in file and\
                file != rf_analysis and file != rbf_svm_analysis and file != linear_svm_analysis and\
-               file != elastic_net_analysis and ".csv" in file.lower()
+               file != elastic_net_analysis and file != linear_regression_analysis and ".csv" in file.lower()
 
     def determineFeatureName(self, feature_name, file):
         return SafeCastUtil.safeCast(file.split(".")[0] + "." + feature_name.strip(), str)
