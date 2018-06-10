@@ -7,3 +7,6 @@ inner_monte_carlo_permutations=10
 skip_rf=True
 skip_linear_svm=True #Linear SVM should also not run
 skip_elastic_net=False
+#RF and enet won't run
+ElasticNetAnalysis=False,0,0
+RandomForestAnalysis=True,5,5

@@ -5,7 +5,7 @@ import os
 
 from ArgumentProcessingService import ArgumentProcessingService
 from Utilities.RandomizedDataGenerator import RandomizedDataGenerator
-
+from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 
 class ArgumentProcessingServiceIT(unittest.TestCase):
     log = logging.getLogger(__name__)
@@ -78,12 +78,21 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
         assert arguments.get(ArgumentProcessingService.SKIP_RF)
         assert not arguments.get(ArgumentProcessingService.SKIP_ELASTIC_NET)
 
+    def testArgumentsByAlgorithm(self):
+        input_folder = self.current_working_dir + "/SampleClassifierDataFolder"
+        argument_processing_service = ArgumentProcessingService(input_folder)
+        arguments = argument_processing_service.handleInputFolder()
+        rf = SupportedMachineLearningAlgorithms.RANDOM_FOREST
+        enet = SupportedMachineLearningAlgorithms.ELASTIC_NET
+        assert arguments.get(ArgumentProcessingService.ALGORITHM_CONFIGS).get(rf) == [True, 5, 5]
+        assert arguments.get(ArgumentProcessingService.ALGORITHM_CONFIGS).get(enet) == [False, 0, 0]
+
     def processAndValidateArguments(self, input_folder, is_classifier):
         argument_processing_service = ArgumentProcessingService(input_folder)
         arguments = argument_processing_service.handleInputFolder()
         features = arguments.get(argument_processing_service.FEATURES)
         assert arguments is not None
-        assert len(arguments) == 17
+        assert len(arguments) == 18
         assert (len(arguments.get(argument_processing_service.RESULTS)) + 1) == len(features.keys())
         assert arguments.get(argument_processing_service.IS_CLASSIFIER) == is_classifier
         assert len(features.get(argument_processing_service.FEATURE_NAMES)) < self.total_features_in_files

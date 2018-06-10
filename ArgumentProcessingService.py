@@ -24,6 +24,7 @@ class ArgumentProcessingService(object):
     OUTER_MONTE_CARLO_PERMUTATIONS = "outer_monte_carlo_permutations"
     DATA_SPLIT = "data_split"
     NUM_THREADS = "num_threads"
+    ALGORITHM_CONFIGS = "algorithm_configs"
     SKIP_RF = "skip_rf"
     SKIP_LINEAR_SVM = "skip_linear_svm"
     SKIP_RBF_SVM = "skip_rbf_svm"
@@ -52,6 +53,7 @@ class ArgumentProcessingService(object):
             gene_lists = self.extractGeneList()
             write_diagnostics = self.fetchOrReturnDefault(arguments.get(self.RECORD_DIAGNOSTICS), bool, False)
             feature_map = self.createAndValidateFeatureMatrix(results_list, results_file, gene_lists, write_diagnostics)
+            algorithm_configs = self.handleAlgorithmConfigs(arguments)
             if feature_map and gene_lists and results_list:
                 return {
                     self.RESULTS: results_list,
@@ -67,6 +69,7 @@ class ArgumentProcessingService(object):
                     self.SKIP_ELASTIC_NET: self.fetchOrReturnDefault(arguments.get(self.SKIP_ELASTIC_NET), bool, False),
                     self.SKIP_LINEAR_REGRESSION: self.fetchOrReturnDefault(arguments.get(self.SKIP_LINEAR_REGRESSION),
                                                                            bool, False),
+                    self.ALGORITHM_CONFIGS: algorithm_configs,
                     self.NUM_THREADS: self.fetchOrReturnDefault(arguments.get(self.NUM_THREADS), int,
                                                                 multiprocessing.cpu_count()),
                     self.RECORD_DIAGNOSTICS: write_diagnostics,
@@ -240,14 +243,10 @@ class ArgumentProcessingService(object):
                 self.log.debug("Closing file %s", feature_file)
 
     def fileIsFeatureFile(self, file, results_file):
-        rf_analysis = SupportedMachineLearningAlgorithms.RANDOM_FOREST + ".csv"
-        linear_svm_analysis = SupportedMachineLearningAlgorithms.LINEAR_SVM + ".csv"
-        rbf_svm_analysis = SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM + ".csv"
-        elastic_net_analysis = SupportedMachineLearningAlgorithms.ELASTIC_NET + ".csv"
-        linear_regression_analysis = SupportedMachineLearningAlgorithms.LINEAR_REGRESSION + ".csv"
+        algorithm_files = [algo + ".csv" for algo in SupportedMachineLearningAlgorithms.fetchAlgorithms()]
+
         return file != results_file and file != self.ARGUMENTS_FILE and self.GENE_LISTS not in file and\
-               file != rf_analysis and file != rbf_svm_analysis and file != linear_svm_analysis and\
-               file != elastic_net_analysis and file != linear_regression_analysis and ".csv" in file.lower()
+               file not in algorithm_files and ".csv" in file.lower()
 
     def determineFeatureName(self, feature_name, file):
         return SafeCastUtil.safeCast(file.split(".")[0] + "." + feature_name.strip(), str)
@@ -265,6 +264,24 @@ class ArgumentProcessingService(object):
                 else:
                     important_features.append(SafeCastUtil.safeCast(feature_values[index].strip(), str))
         return important_features
+
+    def handleAlgorithmConfigs(self, arguments):
+        algos = SupportedMachineLearningAlgorithms.fetchAlgorithms()
+        configs = {}
+        default_inner_perms = self.fetchOrReturnDefault(arguments.get(self.INNER_MONTE_CARLO_PERMUTATIONS), int, 10)
+        default_outer_perms = self.fetchOrReturnDefault(arguments.get(self.OUTER_MONTE_CARLO_PERMUTATIONS), int, 10)
+
+        for algo in algos:
+            algo_config = arguments.get(algo)
+            if algo_config is None:
+                configs[algo] = [True, default_inner_perms, default_outer_perms]
+            else:
+                config_split = [param.strip() for param in algo_config.split(",")]
+                if len(config_split) == 3:
+                    configs[algo] = [config_split[0] == 'True',
+                                     SafeCastUtil.safeCast(config_split[1], int),
+                                     SafeCastUtil.safeCast(config_split[2], int)]
+        return configs
 
     def fetchOrReturnDefault(self, field, to_type, default):
         if field:

@@ -141,32 +141,57 @@ class MachineLearningService(object):
             raise ValueError("Unsupported Machine Learning algorithm: %s", target_algorithm)
         return trainer
 
+    def shouldTrainAlgorithm(self, algorithm):
+        return self.inputs.get(ArgumentProcessingService.ALGORITHM_CONFIGS).get(algorithm)[0]
+
     def analyzeAllGeneListCombos(self, gene_list_combos, input_folder, is_classifier):
-        inner_monte_carlo_perms = self.inputs.get(ArgumentProcessingService.INNER_MONTE_CARLO_PERMUTATIONS)
-        outer_monte_carlo_perms = self.inputs.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS)
-        if not self.inputs.get(ArgumentProcessingService.SKIP_RF):
+
+        rf = SupportedMachineLearningAlgorithms.RANDOM_FOREST
+        lin_svm = SupportedMachineLearningAlgorithms.LINEAR_SVM
+        rbf = SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM
+        enet = SupportedMachineLearningAlgorithms.ELASTIC_NET
+        lin_reg = SupportedMachineLearningAlgorithms.LINEAR_REGRESSION
+
+        if not self.inputs.get(ArgumentProcessingService.SKIP_RF) and self.shouldTrainAlgorithm(rf):
             rf_trainer = RandomForestTrainer(is_classifier)
-            rf_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
+            rf_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rf, True),
+                                          self.monteCarloPermsByAlgorithm(rf, False), len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, rf_trainer)
-        if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_SVM):
+
+        if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_SVM) and self.shouldTrainAlgorithm(lin_svm):
             linear_svm_trainer = LinearSVMTrainer(is_classifier)
-            linear_svm_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms,
+            linear_svm_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(lin_svm, True),
+                                                  self.monteCarloPermsByAlgorithm(lin_svm, False),
                                                   len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, linear_svm_trainer)
-        if not self.inputs.get(ArgumentProcessingService.SKIP_RBF_SVM):
+
+        if not self.inputs.get(ArgumentProcessingService.SKIP_RBF_SVM) and self.shouldTrainAlgorithm(rbf):
             rbf_svm_trainer = RadialBasisFunctionSVMTrainer(is_classifier)
-            rbf_svm_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms, len(gene_list_combos))
+            rbf_svm_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rbf, True),
+                                               self.monteCarloPermsByAlgorithm(rbf, False), len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, rbf_svm_trainer)
-        if not self.inputs.get(ArgumentProcessingService.SKIP_ELASTIC_NET) and not is_classifier:
+
+        if not self.inputs.get(ArgumentProcessingService.SKIP_ELASTIC_NET) and not is_classifier and\
+                self.shouldTrainAlgorithm(enet):
             elasticnet_trainer = ElasticNetTrainer(is_classifier)
-            elasticnet_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms,
+            elasticnet_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(enet, True),
+                                                  self.monteCarloPermsByAlgorithm(enet, False),
                                                   len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, elasticnet_trainer)
-        if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_REGRESSION) and not is_classifier:
+
+        if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_REGRESSION) and not is_classifier and \
+                self.shouldTrainAlgorithm(lin_reg):
             linear_regression_trainer = LinearRegressionTrainer(is_classifier)
-            linear_regression_trainer.logTrainingMessage(inner_monte_carlo_perms, outer_monte_carlo_perms,
+            linear_regression_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(lin_reg, True),
+                                                         self.monteCarloPermsByAlgorithm(lin_reg, False),
                                                          len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, linear_regression_trainer)
+
+    def monteCarloPermsByAlgorithm(self, algorithm, outer):
+        if outer:
+            return self.inputs.get(ArgumentProcessingService.ALGORITHM_CONFIGS).get(algorithm)[1]
+        else:
+            return self.inputs.get(ArgumentProcessingService.ALGORITHM_CONFIGS).get(algorithm)[2]
 
     def handleParallellization(self, gene_list_combos, input_folder, trainer):
         max_nodes = multiprocessing.cpu_count()
@@ -180,7 +205,8 @@ class MachineLearningService(object):
         scores = []
         accuracies = []
         feature_set_as_string = self.generateFeatureSetString(feature_set)
-        for i in range(1, self.inputs.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS) + 1):
+        outer_perms = self.monteCarloPermsByAlgorithm(trainer.algorithm, True)
+        for i in range(1, outer_perms + 1):
             gc.collect()
             formatted_data = self.formatData(self.inputs)
             training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set,
@@ -244,7 +270,8 @@ class MachineLearningService(object):
 
     def determineInnerHyperparameters(self, feature_set, formatted_data, trainer):
         inner_model_hyperparams = {}
-        for j in range(1, self.inputs.get(ArgumentProcessingService.INNER_MONTE_CARLO_PERMUTATIONS) + 1):
+        inner_perms = self.monteCarloPermsByAlgorithm(trainer.algorithm, False)
+        for j in range(1, inner_perms + 1):
             formatted_inputs = self.reformatInputsByTrainingMatrix(
                 formatted_data.get(DataFormattingService.TRAINING_MATRIX))
             further_formatted_data = self.formatData(formatted_inputs)
