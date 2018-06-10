@@ -7,23 +7,50 @@
         <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
         <script id="templateFillScript">
             var summaryReport = angular.module('summaryReport', []);
-            summaryReport.controller('summaryReportController', function($scope, $timeout) {
+
+            summaryReport.filter('percentage', ['$filter', function ($filter) {
+                return function (input, decimals) {
+                    return $filter('number')(input * 100, decimals) + '%';
+                };
+            }]);
+
+            summaryReport.controller('summaryReportController', function($scope, $timeout, $filter) {
                 var DATA_TYPE = {
                     score : 0,
                     accuracy : 1
                 };
                 var MAX_GENE_LIST_COMBOS_TO_PLOT = 25;
 
+                //INSERT DEFAULT MIN SCORE HERE;
+
+                $scope.topScoringComboByAlgorightm = {};
+                $scope.bestAlgorithm = {};
+
                 //INSERT CHART DATA HERE
 
-                $timeout(function() {
-                    _.forEach($scope.allData, function(data, algorithm) {
-                        createErrorChart(processErrorData(data, DATA_TYPE.score), "#" + algorithm + "ScoreErrorChart");
-                        createErrorChart(processErrorData(data, DATA_TYPE.accuracy), "#" + algorithm + "AccuracyErrorChart");
-                    });
-                });
+                $scope.score = function(stat) {
+                    return stat ? stat.mean - stat.variance : DEFAULT_MIN_SCORE;
+                };
 
-                function processErrorData(data, dataType) {
+                function init() {
+                    createAndScoreErrorCharts();
+                    determineBestAlgorithm();
+                    plotHistogramForBestAlgorithm();
+                }
+
+                function createAndScoreErrorCharts() {
+                    _.forEach($scope.allData, function(data, algorithm) {
+                        createErrorChart(processErrorData(data, DATA_TYPE.score, algorithm), "#" + algorithm + "ScoreErrorChart");
+                        createErrorChart(processErrorData(data, DATA_TYPE.accuracy, algorithm), "#" + algorithm + "AccuracyErrorChart");
+                    });
+                }
+
+                function processErrorData(data, dataType, algorithm) {
+                    var processedUntrimmedData = processUntrimmedData(data, dataType);
+                    return sortScoreAndTrimData(processedUntrimmedData, "mean", algorithm, dataType);
+                }
+
+                function processUntrimmedData(data, dataType) {
                     var allDataUntrimmed = [];
                     _.forEach(data, function(results, key) {
                         allDataUntrimmed.push({
@@ -32,29 +59,42 @@
                             "variance": getVariance(results[dataType])
                         });
                     });
-
-                    return sortAndTrimData(allDataUntrimmed, "mean");
+                    return allDataUntrimmed;
                 }
 
                 function getVariance(data) {
                     var mean = _.mean(data);
-                    return Math.sqrt(data.reduce(function (sq, n) {
-                        return sq + Math.pow(n - mean, 2);
+                    return Math.sqrt(data.reduce(function (square, value) {
+                        return square + Math.pow(value - mean, 2);
                     }, 0) / (data.length - 1));
                 }
 
-                function sortAndTrimData(stats, sortField) {
-                    var sortedStats = _.sortBy(stats, sortField).reverse();
+                function sortScoreAndTrimData(stats, sortField, algorithm, dataType) {
+                    var sortedStats = _.reverse(_.sortBy(stats, sortField));
+                    if (dataType == DATA_TYPE.score) {
+                        setHighestScoringComboForAlgo(sortedStats, algorithm);
+                    }
                     if (sortedStats.length > MAX_GENE_LIST_COMBOS_TO_PLOT) {
                         var trimmedStats = [];
                         trimmedStats.concat(_.take(sortedStats, 5)).concat(_.takeRight(sortedStats, 5));
                         while (trimmedStats.length < MAX_GENE_LIST_COMBOS_TO_PLOT) {
                             trimmedStats.push(_.sample(sortedStats.slice(5, sortedStats.length - 5)))
                         }
-                        return addXDisplacementValues(_.sortBy(trimmedStats, sortField).reverse());
+                        return addXDisplacementValues(_.reverse(_.sortBy(trimmedStats, sortField)));
                     } else {
                         return addXDisplacementValues(sortedStats);
                     }
+                }
+
+                function setHighestScoringComboForAlgo(sortedStats, algorithm) {
+                    var topScore = DEFAULT_MIN_SCORE;
+                    _.forEach(sortedStats, function(stat) {
+                        var score = $scope.score(stat)
+                        if (score > topScore) {
+                            topScore = score;
+                            $scope.topScoringComboByAlgorightm[algorithm] = stat;
+                        }
+                    });
                 }
 
                 function addXDisplacementValues(sortedStats) {
@@ -65,73 +105,80 @@
                 }
 
                 function createErrorChart(data, selector) {
-                    var margin = {top: 20, right: 20, bottom: 30, left: 40},
-                        width = 960 - margin.left - margin.right,
-                        height = 500 - margin.top - margin.bottom;
+                    var margin = {top: 20, right: 20, bottom: 30, left: 40};
+                    var width = 960 - margin.left - margin.right;
+                    var height = 500 - margin.top - margin.bottom;
 
                     var xDisplacement = 0;
-                    var xScale = d3.scaleLinear()
-                               .range([0, width])
-                               .domain([0, d3.max(data, function(dataPoint) {
+                    var xScale = d3.scaleLinear().range([0, width]).domain([0, d3.max(data, function(dataPoint) {
                                    return dataPoint.xDisplacement;
                                })]).nice();
 
-                    var yScale = d3.scaleLinear()
-                               .range([height, 0])
-                               .domain([d3.min(data, function(dataPoint) {
+                    var yScale = d3.scaleLinear().range([height, 0]).domain([d3.min(data, function(dataPoint) {
                                     return dataPoint.mean - dataPoint.variance;
                                 }), d3.max(data, function(dataPoint) {
                                     return dataPoint.mean + dataPoint.variance;
                                 })]).nice();
 
-                    var xAxis = d3.axisBottom(xScale).ticks(12),
-                        yAxis = d3.axisLeft(yScale).ticks(12 * height / width);
+                    var xAxis = d3.axisBottom(xScale).ticks(12);
+                    var yAxis = d3.axisLeft(yScale).ticks(12 * height / width);
 
-                    var line = d3.line()
-                        .x(function(dataPoint) {
+                    var line = d3.line().x(function(dataPoint) {
                             return dataPoint.xDisplacement;
-                        })
-                        .y(function(dataPoint) {
+                        }).y(function(dataPoint) {
                             return yScale(dataPoint.variance);
                         });
 
                     var svg = d3.select(selector).append("svg")
                         .attr("width", width + margin.left + margin.right)
                         .attr("height", height + margin.top + margin.bottom)
-                        .append("g")
-                        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+                        .append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
                     svg.append("g").append("rect").attr("width", width).attr("height", height).attr("class", "plot-bg");
-
-
-                    // Add Axis labels
-                    // svg.append("g").attr("class", "axis axis--x")
-                    //    .attr("transform", "translate(" + 0 + "," + height + ")")
-                    //    .call(xAxis);
-
                     svg.append("g").attr("class", "axis axis--y").call(yAxis);
 
-                    // Add Error Line
-                    svg.append("g").selectAll("line").data(data).enter()
-                      .append("line")
-                      .attr("class", "error-line")
-                      .attr("x1", function(dataPoint) {
-                        return xScale(dataPoint.xDisplacement);
-                      })
-                      .attr("y1", function(dataPoint) {
-                        return yScale(dataPoint.mean + dataPoint.variance);
-                      })
-                      .attr("x2", function(dataPoint) {
-                        return xScale(dataPoint.xDisplacement);
-                      })
-                      .attr("y2", function(dataPoint) {
-                        return yScale(dataPoint.mean - dataPoint.variance);
-                      });
-
+                    addErrorLine(svg, data, xScale, yScale);
                     addErrorCaps(svg, data, xScale, yScale, true);
                     addErrorCaps(svg, data, xScale, yScale, false);
 
-                    // Add Scatter Points
+                    addTooltipAndScatterPoints(svg, data, xScale, yScale);
+                }
+
+                function addErrorLine(svg, data, xScale, yScale) {
+                    svg.append("g").selectAll("line").data(data).enter().append("line").attr("class", "error-line")
+                       .attr("x1", function(dataPoint) {
+                           return xScale(dataPoint.xDisplacement);
+                       })
+                       .attr("y1", function(dataPoint) {
+                           return yScale(dataPoint.mean + dataPoint.variance);
+                       })
+                       .attr("x2", function(dataPoint) {
+                           return xScale(dataPoint.xDisplacement);
+                       })
+                       .attr("y2", function(dataPoint) {
+                           return yScale(dataPoint.mean - dataPoint.variance);
+                       });
+                }
+
+                function addErrorCaps(svg, data, xScale, yScale, isTop) {
+                    svg.append("g").selectAll("line").data(data).enter().append("line").attr("class", "error-cap")
+                      .attr("x1", function(dataPoint) {
+                          return xScale(dataPoint.xDisplacement) - 4;
+                      })
+                      .attr("y1", function(dataPoint) {
+                          var yVal = isTop ? dataPoint.mean + dataPoint.variance : dataPoint.mean - dataPoint.variance;
+                          return yScale(yVal);
+                      })
+                      .attr("x2", function(dataPoint) {
+                          return xScale(dataPoint.xDisplacement) + 4;
+                      })
+                      .attr("y2", function(dataPoint) {
+                          var yVal = isTop ? dataPoint.mean + dataPoint.variance : dataPoint.mean - dataPoint.variance;
+                          return yScale(yVal);
+                      });
+                }
+
+                function addTooltipAndScatterPoints(svg, data, xScale, yScale) {
                     var tooltip = d3.select("body").append("div")
                         .attr("class", "tooltip")
                         .style("visibility", "hidden");
@@ -158,31 +205,73 @@
                         });
                 }
 
-                function addErrorCaps(svg, data, xScale, yScale, isTop) {
-                    // Add Error Top Cap
-                    svg.append("g").selectAll("line")
-                        .data(data).enter()
-                      .append("line")
-                      .attr("class", "error-cap")
-                      .attr("x1", function(dataPoint) {
-                          return xScale(dataPoint.xDisplacement) - 4;
-                      })
-                      .attr("y1", function(dataPoint) {
-                          var yVal = isTop ? dataPoint.mean + dataPoint.variance : dataPoint.mean - dataPoint.variance;
-                          return yScale(yVal);
-                      })
-                      .attr("x2", function(dataPoint) {
-                          return xScale(dataPoint.xDisplacement) + 4;
-                      })
-                      .attr("y2", function(dataPoint) {
-                          var yVal = isTop ? dataPoint.mean + dataPoint.variance : dataPoint.mean - dataPoint.variance;
-                          return yScale(yVal);
-                      });
+                function determineBestAlgorithm() {
+                    _.forEach($scope.topScoringComboByAlgorightm, function(data, algorithm) {
+                        var score = $scope.score(data);
+                        if (!$scope.bestAlgorithm.score || score > $scope.bestAlgorithm.score) {
+                            $scope.bestAlgorithm["score"] = score;
+                            $scope.bestAlgorithm["label"] = algorithm;
+                        }
+                    });
                 }
+
+                function plotHistogramForBestAlgorithm() {
+                    var bestAlgorithmStats = $scope.allData[$scope.bestAlgorithm.label];
+                    var processedUntrimmedData = processUntrimmedData(bestAlgorithmStats, DATA_TYPE.score);
+                    var scores = [];
+                    _.forEach(processedUntrimmedData, function(stat) {
+                        scores.push($scope.score(stat));
+                    });
+                    createHistogram(_.sortBy(scores));
+                }
+
+                function createHistogram(data) {
+                    var width = 960;
+                    var height = 500;
+                    var margin = {top: 20, right: 20, bottom: 30, left: 40};
+                    var x = d3.scaleLinear()
+                        .domain(d3.extent(data)).nice()
+                        .range([margin.left, width - margin.right]);
+                    var bins = d3.histogram().domain(x.domain()).thresholds(x.ticks(40))(data);
+
+                    var y = d3.scaleLinear()
+                        .domain([0, d3.max(bins, d => d.length)]).nice()
+                        .range([height - margin.bottom, margin.top]);
+
+                    var svg = d3.select("#OverviewScoreForBestAlgorithm").append("svg").attr("class", ".plot-bg")
+                                .attr("width", width + margin.left + margin.right)
+                                .attr("height", height + margin.top + margin.bottom).append("g")
+                                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+                    svg.selectAll("rect").data(bins).enter().append("rect")
+                       .attr("class", "bar").attr("x", 1)
+                       .attr("transform", function(d) {
+                           return "translate(" + x(d.x0) + "," + y(d.length) + ")";
+                       }).attr("width", function(d) {
+                           var width = x(d.x1) - x(d.x0) -1;
+                           return width > 0 ? width: 0;
+                       }).attr("height", function(d) {
+                           return height - y(d.length);
+                       });
+
+                    // add the x Axis
+                    svg.append("g").attr("transform", "translate(0," + height + ")").call(d3.axisBottom(x));
+
+                    // add the y Axis
+                    svg.append("g").call(d3.axisLeft(y));
+                }
+
+                $timeout(function() {
+                    init();
+                });
             });
 
         </script>
         <style>
+            body {
+                font-family: Arial;
+            }
+
             circle {
                 fill: #ff6600;
             }
@@ -222,6 +311,10 @@
             .plot-bg {
                fill: #fff0e6;
             }
+
+            rect.bar {
+                fill: #ff6600;
+            }
         </style>
     </head>
     <body ng-app="summaryReport">
@@ -229,9 +322,25 @@
             <h1>
                 Overview Report
             </h1>
+            <div>
+                <h3>Overall Summary</h3>
+                <div>
+                    <p>Best performing algorithm: {{bestAlgorithm.label}}</p>
+                    <p>With top combo score of: {{bestAlgorithm.score  | percentage:2}}</p>
+                </div>
+                <div>
+                    <h4>Mean score - Variance distribution for {{bestAlgorithm.label}}</h4>
+                    <svg width="1000" height="550" id="OverviewScoreForBestAlgorithm" class="chart"></svg>
+                </div>
+            </div>
+
             <div ng-repeat="(key, value) in allData">
                 <h2>{{key}}</h2>
                 <h4>Scores</h4>
+                <div>
+                    <p>Top scoring combo: {{topScoringComboByAlgorightm[key].label}}</p>
+                    <p>With score of: {{score(topScoringComboByAlgorightm[key]) | percentage:2}}</p>
+                </div>
                 <svg width="960" height="500" id="{{key}}ScoreErrorChart" class="chart"></svg>
                 <h4>Accuracies</h4>
                 <svg width="960" height="500" id="{{key}}AccuracyErrorChart" class="chart"></svg>

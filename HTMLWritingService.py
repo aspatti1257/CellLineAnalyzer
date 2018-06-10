@@ -2,7 +2,7 @@ import logging
 import os
 
 from Utilities.SafeCastUtil import SafeCastUtil
-
+from Trainers.AbstractModelTrainer import AbstractModelTrainer
 
 class HTMLWritingService(object):
 
@@ -17,9 +17,7 @@ class HTMLWritingService(object):
         self.input_folder = input_folder
 
     def writeSummaryFile(self):
-        stats_overview_object = self.createStatsOverviewFromFile()
-        self.log.debug(stats_overview_object)
-        #TODO: Write out AngularJS template file with d3 charts.
+        self.createStatsOverviewFromFile()
 
     def createStatsOverviewFromFile(self):
         stats_overview_object = self.generateStatsOverviewObject()
@@ -69,7 +67,10 @@ class HTMLWritingService(object):
         with open(template_path) as template_file:
             try:
                 for line_index, line in enumerate(template_file):
-                    if "//INSERT CHART DATA HERE" in line:
+                    if "//INSERT DEFAULT MIN SCORE HERE" in line:
+                        new_file.append("\t\t\t\tvar DEFAULT_MIN_SCORE = " +
+                                        SafeCastUtil.safeCast(AbstractModelTrainer.DEFAULT_MIN_SCORE, str) + ";\n")
+                    elif "//INSERT CHART DATA HERE" in line:
                         new_file.append("\t\t\t\t$scope.allData = " +
                                         SafeCastUtil.safeCast(stats_overview_object, str) + ";\n")
                     else:
