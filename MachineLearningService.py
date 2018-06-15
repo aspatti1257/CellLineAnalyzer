@@ -387,6 +387,7 @@ class MachineLearningService(object):
             except ValueError as error:
                 self.log.error("Error saving output of %s analysis to memory: %s", algorithm, error)
             finally:
+                output_file.close()
                 self.unlockThreadMessage()
                 lock.release()
 

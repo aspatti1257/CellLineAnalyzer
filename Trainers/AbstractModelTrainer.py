@@ -1,4 +1,6 @@
 import logging
+import threading
+
 import numpy
 import os
 
@@ -119,19 +121,22 @@ class AbstractModelTrainer(ABC):
         for i in range(0, len(hyperparam_keys)):
             hyperparam_set = self.hyperparameters[hyperparam_keys[i]]
             if best_hyperparams[i] >= hyperparam_set[len(hyperparam_set) - 1]:
-                message = "Best hyperparam for " + self.algorithm + "on upper threshold of provided hyperparam " \
+                message = "Best hyperparam for " + self.algorithm + " on upper threshold of provided hyperparam " \
                           "set: " + hyperparam_keys[i] + " = " + SafeCastUtil.safeCast(best_hyperparams[i], str) + "\n"
                 self.log.info(message)
                 if record_diagnostics:
                     self.writeToDiagnosticsFile(input_folder, message)
             elif best_hyperparams[i] <= hyperparam_set[0]:
-                message = "Best hyperparam for " + self.algorithm + "on lower threshold of provided hyperparam " \
+                message = "Best hyperparam for " + self.algorithm + " on lower threshold of provided hyperparam " \
                           "set: " + hyperparam_keys[i] + " = " + SafeCastUtil.safeCast(best_hyperparams[i], str) + "\n"
                 self.log.info(message)
                 if record_diagnostics:
                     self.writeToDiagnosticsFile(input_folder, message)
 
     def writeToDiagnosticsFile(self, input_folder, message):
+        lock = threading.Lock()
+        lock.acquire(True)
+
         write_action = "w"
         file_name = "Diagnostics.txt"
         if file_name in os.listdir(input_folder):
@@ -143,3 +148,5 @@ class AbstractModelTrainer(ABC):
                 self.log.error("Error writing to file %s. %s", diagnostics_file, error)
             finally:
                 diagnostics_file.close()
+                # TODO: Lock thread message here too. Extract to logging utility or something.
+                lock.release()
