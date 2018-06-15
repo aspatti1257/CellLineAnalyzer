@@ -181,7 +181,8 @@ class MachineLearningService(object):
 
         if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_REGRESSION) and not is_classifier and \
                 self.shouldTrainAlgorithm(lin_reg):
-            linear_regression_trainer = LinearRegressionTrainer(is_classifier)
+            record_diagnostics = self.inputs.get(ArgumentProcessingService.RECORD_DIAGNOSTICS)
+            linear_regression_trainer = LinearRegressionTrainer(is_classifier, record_diagnostics, input_folder)
             linear_regression_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(lin_reg, True),
                                                          self.monteCarloPermsByAlgorithm(lin_reg, False),
                                                          len(gene_list_combos))
