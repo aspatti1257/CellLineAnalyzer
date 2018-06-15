@@ -133,10 +133,10 @@ class AbstractModelTrainer(ABC):
 
     def writeToDiagnosticsFile(self, input_folder, message):
         write_action = "w"
-        file_name = input_folder + "/Diagnostics.txt"
+        file_name = "Diagnostics.txt"
         if file_name in os.listdir(input_folder):
             write_action = "a"
-        with open(file_name, write_action) as diagnostics_file:
+        with open(input_folder + "/" + file_name, write_action) as diagnostics_file:
             try:
                 diagnostics_file.write(message)
             except ValueError as error:
