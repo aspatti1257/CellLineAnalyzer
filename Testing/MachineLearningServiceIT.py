@@ -54,7 +54,7 @@ class MachineLearningServiceIT(unittest.TestCase):
         self.evaluateMachineLearningModel(ElasticNetTrainer(False))
 
     def testLinearRegressor(self):
-        self.evaluateMachineLearningModel(LinearRegressionTrainer(False))
+        self.evaluateMachineLearningModel(LinearRegressionTrainer(False, False, None))
 
     def evaluateMachineLearningModel(self, trainer):
         ml_service = MachineLearningService(self.formatRandomizedData(trainer.is_classifier))

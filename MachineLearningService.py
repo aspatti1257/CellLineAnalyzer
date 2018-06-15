@@ -136,7 +136,7 @@ class MachineLearningService(object):
         elif target_algorithm == SupportedMachineLearningAlgorithms.ELASTIC_NET and not is_classifier:
             trainer = ElasticNetTrainer(is_classifier)
         elif target_algorithm == SupportedMachineLearningAlgorithms.LINEAR_REGRESSION and not is_classifier:
-            trainer = LinearRegressionTrainer(is_classifier)
+            trainer = LinearRegressionTrainer(is_classifier, False, None)
         else:
             raise ValueError("Unsupported Machine Learning algorithm: %s", target_algorithm)
         return trainer

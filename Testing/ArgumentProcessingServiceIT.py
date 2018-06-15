@@ -7,6 +7,7 @@ from ArgumentProcessingService import ArgumentProcessingService
 from Utilities.RandomizedDataGenerator import RandomizedDataGenerator
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 
+
 class ArgumentProcessingServiceIT(unittest.TestCase):
     log = logging.getLogger(__name__)
     log.setLevel(logging.INFO)
