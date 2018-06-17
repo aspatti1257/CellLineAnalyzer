@@ -100,15 +100,46 @@ ones that aren't are marked with a star (*).
 `num_threads`* : Optional integer representing the number of threads to use for multi-processing operations. Defaults to
                  the number of CPUs on your computer. Cannot exceed this value.
 
-`skip_rf`* : Optionally skip Random Forest analysis. Defaults to False.
+`skip_rf`* : <b>DEPRECATED</b> Optionally skip Random Forest analysis. Defaults to False.
 
-`skip_linear_svm`* : Optionally skip Linear Support Vector Machine analysis. Defaults to False.
+`skip_linear_svm`* : <b>DEPRECATED</b> Optionally skip Linear Support Vector Machine analysis. Defaults to False.
 
-`skip_rbf_svm`* : Optionally skip Radial Basis Function Support Vector Machine analysis. Defaults to False.
+`skip_rbf_svm`* : <b>DEPRECATED</b> Optionally skip Radial Basis Function Support Vector Machine analysis. Defaults
+                  to False.
 
-`skip_elastic_net`* : Optionally skip Elastic Net analysis. Defaults to False. Only applies for regressors.
+`skip_elastic_net`* : <b>DEPRECATED</b> Optionally skip Elastic Net analysis. Defaults to False. Only applies for
+                      regressors.
 
-`skip_linear_regression`*: Optionally skip Linear Regression analysis. Defaults to False. Only applies for regressors.
+`skip_linear_regression`*: <b>DEPRECATED</b>  Optionally skip Linear Regression analysis. Defaults to False. Only
+                            applies for regressors.
+
+`RandomForestAnalysis`*: The configuration for the Random Forest analysis. Accepts three parameters: True or False,
+                         for whether the analysis should run at all. The number of outer monte carlo loops, and the
+                         number of inner monte carlo loops. If not specified, defaults to True and the inner/outer
+                         monte carlo param values set by other arguments in this file.
+
+`LinearSVMAnalysis`: The configuration for the Linear SVM analysis. Accepts three parameters: True or False,
+                     for whether the analysis should run at all. The number of outer monte carlo loops, and the
+                     number of inner monte carlo loops. If not specified, defaults to True and the inner/outer
+                     monte carlo param values set by other arguments in this file.
+
+`RadialBasisFunctionSVMAnalysis`: The configuration for the Radial Basis Function SVM analysis. Accepts three
+                                  parameters: True or False, for whether the analysis should run at all. The number of
+                                  outer monte carlo loops, and the number of inner monte carlo loops. If not specified,
+                                  defaults to True and the inner/outer monte carlo param values set by other arguments
+                                  in this file.
+
+`ElasticNetAnalysis`: The configuration for the ElasticNet analysis. Accepts three
+                      parameters: True or False, for whether the analysis should run at all. The number of
+                      outer monte carlo loops, and the number of inner monte carlo loops. If not specified,
+                      defaults to True and the inner/outer monte carlo param values set by other arguments
+                      in this file.
+
+`LinearRegressionAnalysis`: The configuration for the Linear Regression analysis. Accepts three
+                            parameters: True or False, for whether the analysis should run at all. The number of
+                            outer monte carlo loops, and the number of inner monte carlo loops. If not specified,
+                            defaults to True and the inner/outer monte carlo param values set by other arguments
+                            in this file.
 
 `record_diagnostics`*: Optionally print out a diagnostics file which tells you which genes (and their indices) from
                        your gene_lists are missing in which feature files. Also, logs when optimal hyperparameter for a
@@ -143,7 +174,7 @@ is_classifier=1
 inner_monte_carlo_permutations=5
 outer_monte_carlo_permutations=20
 data_split=0.8
-skip_rf=True
+RandomForestAnalysis=True,10,5
 ```
 
 ### Example of a completed argument.txt with proper syntax for individual ML algorithm training:
