@@ -21,9 +21,12 @@
                 };
                 var MAX_GENE_LIST_COMBOS_TO_PLOT = 25;
 
+                var COLOR_PALETTE = ["#69D2E7", "#A7DBD8", "#E0E4CC", "#F38630", "FA6900"]
+
                 //INSERT DEFAULT MIN SCORE HERE;
 
                 $scope.topScoringComboByAlgorightm = {};
+                $scope.scoresByAlgorithm = {};
                 $scope.bestAlgorithm = {};
 
                 //INSERT CHART DATA HERE
@@ -35,6 +38,7 @@
                 function init() {
                     createAndScoreErrorCharts();
                     determineBestAlgorithm();
+                    createPieDonutCharts();
                     plotHistogramForBestAlgorithm();
                 }
 
@@ -89,10 +93,15 @@
                 function setHighestScoringComboForAlgo(sortedStats, algorithm) {
                     var topScore = DEFAULT_MIN_SCORE;
                     _.forEach(sortedStats, function(stat) {
-                        var score = $scope.score(stat)
+                        var score = $scope.score(stat);
                         if (score > topScore) {
                             topScore = score;
                             $scope.topScoringComboByAlgorightm[algorithm] = stat;
+                        }
+                        if (!$scope.scoresByAlgorithm[algorithm]) {
+                            $scope.scoresByAlgorithm[algorithm] = [[stat.label, score]];
+                        } else {
+                            $scope.scoresByAlgorithm[algorithm].push([stat.label, score]);
                         }
                     });
                 }
@@ -215,6 +224,108 @@
                     });
                 }
 
+                function createPieDonutCharts() {
+                    _.forEach($scope.allData, function(data, algorithm) {
+                        var filesAndGeneListArray = formatDataForPieDonutChart(algorithm);
+                        createPieDonutChart(algorithm, filesAndGeneListArray);
+                    });
+                }
+
+                function formatDataForPieDonutChart(algorithm) {
+                    var filesAndGeneListArray = [];
+                    _.forEach($scope.scoresByAlgorithm[algorithm], function(statAndScore) {
+                        var splitBySpace = statAndScore[0].split(" ");
+                        _.forEach(splitBySpace, function(combo) {
+                            var splitByColon = combo.split(":");
+                            var isInFilesAndGeneListArray = false;
+                            _.forEach(filesAndGeneListArray, function(fileAndGeneListCombo) {
+                                if (fileAndGeneListCombo.featureFile == splitByColon[0] &&
+                                    fileAndGeneListCombo.geneList == splitByColon[1]) {
+                                    fileAndGeneListCombo.score += statAndScore[1];
+                                    isInFilesAndGeneListArray = true;
+                                }
+                            });
+                            if (!isInFilesAndGeneListArray) {
+                                filesAndGeneListArray.push({
+                                    "featureFile": splitByColon[0], "geneList": splitByColon[1], "score": statAndScore[1]
+                                });
+                            }
+                        });
+                    });
+                    return filesAndGeneListArray;
+                }
+
+                function createPieDonutChart(algorithm, filesAndGeneListArray) {
+                    var width = 960, height = 500, radius = Math.min(width, height) / 2;
+
+                    var color = d3.scaleOrdinal().range(COLOR_PALETTE).domain(_.uniq(_.map(filesAndGeneListArray, "geneList")));
+
+                    var arc = d3.arc().outerRadius(radius - 10).innerRadius(radius - 70);
+                    var pie = d3.pie().sort(null).value(function(dataPoint) {
+                                  return dataPoint.score;
+                              });
+
+                    var svg = d3.select("#" + algorithm + "DonutChart").append("svg").attr("width", width).attr("height", height)
+                                .append("g").attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+                    filesAndGeneListArray.sort(function(a, b) {
+                        order = _.invert(_.toPlainObject(_.uniq(_.map(filesAndGeneListArray, "geneList"))));
+                        return d3.ascending(+order[a.geneList], +order[b.geneList]);
+                    });
+
+                    nested = d3.nest().key(function(dataPoint) {
+                                    return dataPoint.geneList;
+                                }).rollup(function(dataPoint) {
+                                    return d3.sum(dataPoint, function(dataPoint) {
+                                        return dataPoint.score;
+                                    })
+                                }).entries(filesAndGeneListArray);
+
+                    nested.forEach(function(dataPoint) {
+                        dataPoint.geneList = dataPoint.key;
+                        dataPoint.score = dataPoint.value;
+                        delete dataPoint["key"];
+                        delete dataPoint["value"];
+                    });
+
+                    var arcs = svg.selectAll(".arc").data(pie(filesAndGeneListArray)).enter().append("g").attr("class", "arc");
+
+                    arcs.append("path").attr("d", arc).style("fill", function(dataPoint) {
+                        return color(dataPoint.data.featureFile);
+                    });
+
+                    arcs.append("text").attr("transform", function(dataPoint) {
+                        return "translate(" + arc.centroid(dataPoint) + ")";
+                    }).attr("dy", ".35em").text(function(dataPoint) {
+                        return dataPoint.data.featureFile;
+                    });
+
+                    var wedge = d3.arc().outerRadius(radius - 70).innerRadius(0);
+                    var labelWedge = d3.arc().outerRadius(radius - 110).innerRadius(radius - 110);
+                    var wedges = svg.selectAll(".wedge").data(pie(filesAndGeneListArray)).enter().append("g").attr("class", "wedge");
+
+                    wedges.append("path").attr("d", wedge).style("fill", function(dataPoint) {
+                        return color(dataPoint.data.geneList);
+                    });
+
+                    var geneListsUsed = [];
+                    var indexOfWedgeLabel = 0;
+                    var numFeatureFiles = _.uniq(_.map(filesAndGeneListArray, "featureFile")).length
+                    wedges.append("text").attr("transform", function(dataPoint) {
+                        return "translate(" + labelWedge.centroid(dataPoint) + ")";
+                    }).attr("dy", ".35em").text(function(dataPoint) {
+                        var label = dataPoint.data.geneList;
+                        var shouldPlaceLabel = (indexOfWedgeLabel === parseInt(numFeatureFiles / 2) && !_.includes(geneListsUsed, label));
+                        indexOfWedgeLabel = indexOfWedgeLabel === numFeatureFiles - 1 ? 0 : indexOfWedgeLabel + 1;
+                        if (!shouldPlaceLabel) {
+                            return "";
+                        } else {
+                            geneListsUsed.push(label);
+                            return label;
+                        }
+                    });
+                }
+
                 function plotHistogramForBestAlgorithm() {
                     var bestAlgorithmStats = $scope.allData[$scope.bestAlgorithm.label];
                     var processedUntrimmedData = processUntrimmedData(bestAlgorithmStats, DATA_TYPE.score);
@@ -273,16 +384,16 @@
             }
 
             circle {
-                fill: #ff6600;
+                fill: #FA6900;
             }
 
             .error-line {
-                stroke: #b30059;
+                stroke: #69D2E7;
                 stroke-dasharray: 2,2;
             }
 
             .error-cap {
-                stroke: #b30059;
+                stroke: #69D2E7;
                 stroke-width: 2px;
                 stroke-type: solid;
             }
@@ -292,7 +403,7 @@
                 height: auto;
                 width: auto;
                 padding: 15px;
-                background: #660033;
+                background: #A7DBD8;
                 color: white;
                 font-family: Monospace, Serif;
             }
@@ -305,15 +416,24 @@
                 margin-top: -10px;
                 border-width: 10px;
                 border-style: solid;
-                border-color: transparent #660033 transparent transparent;
+                border-color: transparent #A7DBD8 transparent transparent;
             }
 
             .plot-bg {
-               fill: #fff0e6;
+               fill: #FFFFFF;
             }
 
             rect.bar {
-                fill: #ff6600;
+                fill: #FA6900;
+            }
+
+            .arc text, .wedge text {
+              font: 10px sans-serif;
+              text-anchor: middle;
+            }
+
+            .arc path{
+              stroke: #FFFFFF;
             }
         </style>
     </head>
@@ -344,6 +464,9 @@
                 <svg width="960" height="500" id="{{key}}ScoreErrorChart" class="chart"></svg>
                 <h4>Accuracies</h4>
                 <svg width="960" height="500" id="{{key}}AccuracyErrorChart" class="chart"></svg>
+
+                <h4>Breakdown of Significance for Gene Lists and Feature Files</h4>
+                <svg width="960" height="500" id="{{key}}DonutChart" class="chart"></svg>
             </div>
         </div>
     </body>
