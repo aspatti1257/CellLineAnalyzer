@@ -14,6 +14,16 @@
                 };
             }]);
 
+            summaryReport.filter('splitCamelCaseSVMFriendly', ['$filter', function ($filter) {
+                return function (input) {
+                    if (typeof input !== "string") {
+                      return input;
+                    }
+                    var svmFriendlyInput = input.replace(/SVM/g, "SupportVectorMachine");
+                    return svmFriendlyInput.split(/(?=[A-Z])/).join(' ');
+                  };
+            }]);
+
             summaryReport.controller('summaryReportController', function($scope, $timeout, $filter) {
                 var DATA_TYPE = {
                     score : 0,
@@ -30,6 +40,10 @@
                 $scope.bestAlgorithm = {};
 
                 //INSERT CHART DATA HERE
+
+                $scope.showAlgorithm = function(key) {
+                    $scope.selectedAlgorithm = $scope.selectedAlgorithm === key ? "" : key;
+                };
 
                 $scope.score = function(stat) {
                     return stat ? stat.mean - stat.variance : DEFAULT_MIN_SCORE;
@@ -188,9 +202,7 @@
                 }
 
                 function addTooltipAndScatterPoints(svg, data, xScale, yScale) {
-                    var tooltip = d3.select("body").append("div")
-                        .attr("class", "tooltip")
-                        .style("visibility", "hidden");
+                    var tooltip = d3.select("body").append("div").attr("class", "tooltip").style("visibility", "hidden");
 
                     svg.append("g").attr("class", "scatter")
                         .selectAll("circle")
@@ -204,7 +216,7 @@
                         })
                         .attr("r", 4)
                         .on("mouseover", function(dataPoint){
-                            var innerHTML = "<div>Label:" + dataPoint.label + "</div>" +
+                            var innerHTML = "<div>Combo:" + dataPoint.label + "</div>" +
                                             "<div>Mean and Variance: " +  dataPoint.mean.toFixed(3) + " &plusmn; " + dataPoint.variance.toFixed(3) + "</div>";
                             return tooltip.html(innerHTML).style("visibility", "visible")
                                           .style("top", (event.pageY - 17) + "px").style("left",(event.pageX + 25) + "px");
@@ -324,6 +336,35 @@
                             return label;
                         }
                     });
+
+                    var tooltip = d3.select("body").append("div").attr("class", "tooltip").style("visibility", "hidden");
+                    bindTooltipToPieDonutChart(wedges, tooltip, filesAndGeneListArray, "geneList");
+                    bindTooltipToPieDonutChart(arcs, tooltip, filesAndGeneListArray, "featureFile");
+                }
+
+                function bindTooltipToPieDonutChart(component, tooltip, filesAndGeneListArray, attribute) {
+                    var attributeByPercentage = generatePercentageByScoresForPieDonutTooltip(filesAndGeneListArray, attribute);
+                    component.on("mouseover", function(dataPoint) {
+                        var attributeName = attributeByPercentage.attributeName;
+                        var attribute = dataPoint.data[attributeName];
+                        var innerHTML = "<div>Label:" + attribute + "</div>" +
+                                        "<div>Percentage: " + $filter("percentage")(attributeByPercentage[attribute], 2) + "</div>";
+                        return tooltip.html(innerHTML).style("visibility", "visible")
+                                      .style("top", (event.pageY - 17) + "px").style("left",(event.pageX + 25) + "px");
+                    }).on("mouseout", function(){
+                        return tooltip.style("visibility", "hidden");
+                    });
+                }
+
+                function generatePercentageByScoresForPieDonutTooltip(filesAndGeneListArray, attribute) {
+                    var percentageByScores = {"attributeName" : attribute};
+                    var sumOfAllScores = _.sum(_.map(filesAndGeneListArray, "score"));
+                    _.forEach(filesAndGeneListArray, function(entry) {
+                        var fractionalScore = (entry.score / sumOfAllScores);
+                        percentageByScores[entry[attribute]] = percentageByScores[entry[attribute]] ?
+                                                               (percentageByScores[entry[attribute]] + fractionalScore) : fractionalScore;
+                    });
+                    return percentageByScores;
                 }
 
                 function plotHistogramForBestAlgorithm() {
@@ -356,13 +397,13 @@
 
                     svg.selectAll("rect").data(bins).enter().append("rect")
                        .attr("class", "bar").attr("x", 1)
-                       .attr("transform", function(d) {
-                           return "translate(" + x(d.x0) + "," + y(d.length) + ")";
-                       }).attr("width", function(d) {
-                           var width = x(d.x1) - x(d.x0) -1;
+                       .attr("transform", function(dataPoint) {
+                           return "translate(" + x(dataPoint.x0) + "," + y(dataPoint.length) + ")";
+                       }).attr("width", function(dataPoint) {
+                           var width = x(dataPoint.x1) - x(dataPoint.x0) -1;
                            return width > 0 ? width: 0;
-                       }).attr("height", function(d) {
-                           return height - y(d.length);
+                       }).attr("height", function(dataPoint) {
+                           return height - y(dataPoint.length);
                        });
 
                     // add the x Axis
@@ -383,17 +424,51 @@
                 font-family: Arial;
             }
 
+            #titleHeader {
+                padding: 15px;
+            }
+
+            #overallSummary,.algorithmSummary {
+                background-color: #E4E4E4;
+                padding: 10px;
+                width: 1000px;
+                border-radius: 5px;
+                margin-top: 10px;
+            }
+
+            #menuBlock {
+                padding: 10px;
+                width: 1000px;
+                background-color: #E4E4E4;
+                height: 150px;
+                border-radius: 5px;
+                margin-top: 10px;
+            }
+
+            .menuOption {
+                width: 19%;
+            }
+
+            .algoButton {
+                color: #00779E;
+                cursor: pointer;
+            }
+
+            h2,h3,h4 {
+                text-align: center;
+            }
+
             circle {
                 fill: #FA6900;
             }
 
             .error-line {
-                stroke: #69D2E7;
+                stroke: #000000;
                 stroke-dasharray: 2,2;
             }
 
             .error-cap {
-                stroke: #69D2E7;
+                stroke: #000000;
                 stroke-width: 2px;
                 stroke-type: solid;
             }
@@ -403,7 +478,7 @@
                 height: auto;
                 width: auto;
                 padding: 15px;
-                background: #A7DBD8;
+                background: #000000;
                 color: white;
                 font-family: Monospace, Serif;
             }
@@ -416,11 +491,11 @@
                 margin-top: -10px;
                 border-width: 10px;
                 border-style: solid;
-                border-color: transparent #A7DBD8 transparent transparent;
+                border-color: transparent #000000 transparent transparent;
             }
 
             .plot-bg {
-               fill: #FFFFFF;
+               fill: #E4E4E4;
             }
 
             rect.bar {
@@ -428,39 +503,50 @@
             }
 
             .arc text, .wedge text {
-              font: 10px sans-serif;
-              text-anchor: middle;
+                font: 10px sans-serif;
+                text-anchor: middle;
             }
 
             .arc path{
-              stroke: #FFFFFF;
+                stroke: #FFFFFF;
             }
         </style>
     </head>
     <body ng-app="summaryReport">
         <div ng-controller="summaryReportController">
-            <h1>
-                Overview Report
+            <h1 id="titleHeader">
+                Cell Line Analyzer Overview Report
             </h1>
-            <div>
-                <h3>Overall Summary</h3>
+            <div id="overallSummary">
+                <h2>Overall Summary</h2>
                 <div>
-                    <p>Best performing algorithm: {{bestAlgorithm.label}}</p>
+                    <p>Best performing algorithm: {{bestAlgorithm.label | splitCamelCaseSVMFriendly}}</p>
                     <p>With top combo score of: {{bestAlgorithm.score  | percentage:2}}</p>
                 </div>
                 <div>
-                    <h4>Mean score - Variance distribution for {{bestAlgorithm.label}}</h4>
+                    <h4>Mean score - Variance distribution for {{bestAlgorithm.label | splitCamelCaseSVMFriendly}}</h4>
                     <svg width="1000" height="550" id="OverviewScoreForBestAlgorithm" class="chart"></svg>
                 </div>
             </div>
 
-            <div ng-repeat="(key, value) in allData">
-                <h2>{{key}}</h2>
-                <h4>Scores</h4>
+            <div id="menuBlock">
+                <h4>Select an Algorithm</h4>
+                <table>
+                    <tr>
+                        <td ng-click="showAlgorithm(key)" ng-repeat="(key, value) in allData" class="menuOption">
+                            <p class="algoButton">{{key | splitCamelCaseSVMFriendly}}</p>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div ng-repeat="(key, value) in allData" class="algorithmSummary" ng-show="selectedAlgorithm === key">
+                <h2>{{key | splitCamelCaseSVMFriendly}}</h2>
                 <div>
-                    <p>Top scoring combo: {{topScoringComboByAlgorightm[key].label}}</p>
-                    <p>With score of: {{score(topScoringComboByAlgorightm[key]) | percentage:2}}</p>
+                    <p><b>Top scoring combo</b>: {{topScoringComboByAlgorightm[key].label | splitCamelCaseSVMFriendly}}</p>
+                    <p><b>With score of</b>: {{score(topScoringComboByAlgorightm[key]) | percentage:2}}</p>
                 </div>
+                <h4>Scores</h4>
                 <svg width="960" height="500" id="{{key}}ScoreErrorChart" class="chart"></svg>
                 <h4>Accuracies</h4>
                 <svg width="960" height="500" id="{{key}}AccuracyErrorChart" class="chart"></svg>
