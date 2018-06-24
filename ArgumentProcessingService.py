@@ -143,12 +143,16 @@ class ArgumentProcessingService(object):
     def createAndValidateFeatureMatrix(self, results_list, results_file, gene_lists, write_diagnostics):
         files = os.listdir(self.input_folder)
         incomplete_features = []
+        null_features = []
         for file in [file for file in files if self.fileIsFeatureFile(file, results_file)]:
             features_path = self.input_folder + "/" + file
             validated_features, num_features = self.validateGeneLists(features_path, file, gene_lists)
             incomplete_features.append([file, validated_features, num_features])
+
+            null_count, feature_length = self.counting_nulls(features_path)
+            null_features.append([file, null_count, feature_length])
         if write_diagnostics:
-            self.writeDiagnostics(incomplete_features)
+            self.writeDiagnostics(incomplete_features, null_features)
 
         feature_matrix = {self.FEATURE_NAMES: []}
         for file in [file for file in files if self.fileIsFeatureFile(file, results_file)]:
@@ -189,7 +193,7 @@ class ArgumentProcessingService(object):
                                      "Will not process this gene in this file.", gene, key, file)
         return unused_features
 
-    def writeDiagnostics(self, features_removed):
+    def writeDiagnostics(self, features_removed, null_features_sets):
         with open(self.input_folder + "/Diagnostics.txt", "w") as diagnostics_file:
             try:
                 diagnostics_file.write("### Diagnostics ###\n")
@@ -204,11 +208,32 @@ class ArgumentProcessingService(object):
                         for gene in feature_file[1][gene_list]:
                             diagnostics_file.write("\t\t" + gene[0] + " at index "
                                                    + SafeCastUtil.safeCast(gene[1], str) + "\n")
+                for null_features in null_features_sets:
+                    null_percentage = round((null_features[1] / null_features[2]) * 100, 2)
+                    diagnostics_file.write("There are " +  SafeCastUtil.safeCast(null_features[1], str) + "(" +
+                                           SafeCastUtil.safeCast(null_percentage,str) + "%) " +
+                                           "null values in " + null_features[0] + ".\n")
                 diagnostics_file.write("\n\n######################\n\n")
             except ValueError as error:
                 self.log.error("Error writing to file %s. %s", diagnostics_file, error)
             finally:
                 diagnostics_file.close()
+
+    def counting_nulls(self, feature_file):
+        null_count = 0
+        feature_length = 0
+        with open(feature_file) as feature_file:
+            try:
+                for line_index, line in enumerate(feature_file):
+                    if line_index == 0:
+                        feature_names = line.split(",")
+                        null_count = feature_names.count('null')
+                        feature_length = len(feature_names)
+            except ValueError as error:
+                self.log.error("Error writing to file %s. %s", feature_file, error)
+            finally:
+                feature_file.close()
+        return null_count, feature_length
 
     def extractFeatureMatrix(self, feature_matrix, features_path, file, gene_lists, results_list):
         self.log.info("Extracting important features for %s.", file)
