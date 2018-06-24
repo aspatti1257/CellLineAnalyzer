@@ -145,7 +145,8 @@ class ArgumentProcessingService(object):
         incomplete_features = []
         for file in [file for file in files if self.fileIsFeatureFile(file, results_file)]:
             features_path = self.input_folder + "/" + file
-            incomplete_features.append([file, self.validateGeneLists(features_path, file, gene_lists)])
+            validated_features, num_features = self.validateGeneLists(features_path, file, gene_lists)
+            incomplete_features.append([file, validated_features, num_features])
         if write_diagnostics:
             self.writeDiagnostics(incomplete_features)
 
@@ -157,19 +158,22 @@ class ArgumentProcessingService(object):
 
     def validateGeneLists(self, features_path, file, gene_lists):
         features_missing_from_files = {}
+        num_features = 0
         with open(features_path) as feature_file:
             try:
                 for line_index, line in enumerate(feature_file):
                     if line_index == 0:
                         feature_names = line.split(",")
+                        num_features = len(feature_names)
                         features_missing_from_files = self.validateAndTrimGeneList(feature_names, gene_lists, file)
                     break
             except ValueError as valueError:
                 self.log.error(valueError)
-                return None
+                return features_missing_from_files
             finally:
                 self.log.debug("Closing file %s", feature_file)
-        return features_missing_from_files
+                feature_file.close()
+        return features_missing_from_files, num_features
 
     def validateAndTrimGeneList(self, feature_list, gene_lists, file):
         unused_features = {}
@@ -190,9 +194,13 @@ class ArgumentProcessingService(object):
             try:
                 diagnostics_file.write("### Diagnostics ###\n")
                 for feature_file in features_removed:
-                    diagnostics_file.write("\nFeatures from gene lists not available in " + feature_file[0] + ":\n")
+                    diagnostics_file.write("\nFeatures from gene list(s) not available in " + feature_file[0] + ":\n")
                     for gene_list in feature_file[1].keys():
-                        diagnostics_file.write("\tFeatures needed from gene list " + gene_list + ":\n")
+                        num_genes_missing = len(feature_file[1][gene_list])
+                        percent_genes_missing = round((num_genes_missing / feature_file[2]) * 100, 2)
+                        diagnostics_file.write("\t" + SafeCastUtil.safeCast(num_genes_missing, str) + " (" +
+                                                      SafeCastUtil.safeCast(percent_genes_missing, str) + " %" + ")"
+                                                    " features not present in " + gene_list + ".csv:\n")
                         for gene in feature_file[1][gene_list]:
                             diagnostics_file.write("\t\t" + gene[0] + " at index "
                                                    + SafeCastUtil.safeCast(gene[1], str) + "\n")
