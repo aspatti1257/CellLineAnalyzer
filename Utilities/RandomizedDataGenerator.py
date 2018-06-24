@@ -41,7 +41,7 @@ class RandomizedDataGenerator(object):
     def generateResultsCSV(is_classifier, num_cells):
         results = []
         with open(RandomizedDataGenerator.GENERATED_DATA_FOLDER + "/" + ArgumentProcessingService.RESULTS + ".csv",
-                  'w') as results_file:
+                  'w', newline='') as results_file:
             writer = csv.writer(results_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
             writer.writerow(["cell_line_name"] + ["result"])
             for cell in range(0, num_cells):
@@ -69,7 +69,7 @@ class RandomizedDataGenerator(object):
         for file_num in range(1, num_feature_files + 1):
             file_name = RandomizedDataGenerator.determineFileName(file_num)
             file_names.append(file_name.split("/")[1].split(".csv")[0])
-            with open(file_name, 'w') as feature_file:
+            with open(file_name, 'w', newline='') as feature_file:
                 writer = csv.writer(feature_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                 features_in_this_file = []
                 for i in range(0, len(features)):
