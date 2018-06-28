@@ -264,6 +264,14 @@
                             }
                         });
                     });
+                    return correctForNegativeScores(filesAndGeneListArray);
+                }
+
+                function correctForNegativeScores(filesAndGeneListArray) {
+                    var minAbsScore = Math.abs(_.min(_.map(filesAndGeneListArray, "score")));
+                    _.forEach(filesAndGeneListArray, function(fileAndGeneList) {
+                        fileAndGeneList.score = fileAndGeneList.score + minAbsScore;
+                    });
                     return filesAndGeneListArray;
                 }
 
