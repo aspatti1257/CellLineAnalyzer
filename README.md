@@ -22,6 +22,9 @@ either be passed as a parameter on the command line, or entered at the prompt af
 .CSV files called RandomForestAnalysis.csv, LinearSVMAnalysis.csv, RadialBasisFunctionSVMAnalysis.csv,
 ElasticNetAnalysis.csv, and/or LinearRegressionAnalysis.csv depending on which machine learning modules you opt to use.
 
+This program will also generate an HTML document summarizing the how well each analysis performed and giving an overview
+of the data submitted.
+
 Also part of this program, is the option to generate a series of .CSVs from MATLAB files. Making the main input to this
 program easier to generate.
 
@@ -31,7 +34,8 @@ Running the Cell Line Analyzer API involves three steps: <br />
 2.) The Arguments File <br />
 3.) Running the Code <br />
 4.) File Conversion <br />
-5.) Troubleshooting <br />
+5.) Summary Report <br />
+6.) Troubleshooting <br />
 
 # 1.) Dataset Formatting
 ### Dataset Formatting for the feature files:
@@ -246,7 +250,22 @@ python __main__.py /PATH/TO/.MAT_FILE
 It will automatically distinguish the input. If it's a folder, it will attempt to run a cell line analysis, and if it's
 a .mat file, it will attempt to convert it to a series of .CSVs.
 
-# 5.) Troubleshooting
+# 5.) Summary Report
+Once the analysis has finished, a summary report will be generated in the input folder. This report has several
+components:
+- An bar chart showing the score breakdown for the best performing algorithm. The score is determined by the average
+score (R^2 for regressors or accuracy for classifiers) for all outer monte carlo runs - the standard deviation for all
+of those runs. The best performing algorithm is selected by picking the one with the highest scoring gene list, feature
+file combo.
+- For each algorithm, the following three plots:
+    - A histogram of the scores (mean R^2 or accuracy) for the top 5, bottom 5, and a randomly selected set
+      of 15 gene list and feature file combos. Shown with averages and error bars.
+    - A histogram of the accuracies, for the same 25 combos. Also shown with averages and error bars.
+    - A pie chart of how well each gene list performs, surrounded by a donut chart of how well each feature file
+      performs all relative to each other.
+
+
+# 6.) Troubleshooting
 
 - This program requires python 3.6. You can check your version of python by running typing `python --version` in the
 command line. If it's 3.6.x, please upgrade.
