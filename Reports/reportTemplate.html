@@ -276,7 +276,7 @@
                 }
 
                 function createPieDonutChart(algorithm, filesAndGeneListArray) {
-                    var width = 960, height = 500, radius = Math.min(width, height) / 2;
+                    var width = 960, height = 550, radius = 250;
 
                     var color = d3.scaleOrdinal().range(COLOR_PALETTE).domain(_.uniq(_.map(filesAndGeneListArray, "geneList")));
 
@@ -315,8 +315,10 @@
                     });
 
                     arcs.append("text").attr("transform", function(dataPoint) {
-                        return "translate(" + arc.centroid(dataPoint) + ")";
-                    }).attr("dy", ".35em").text(function(dataPoint) {
+                        translation = []
+                        _.forEach(arc.centroid(dataPoint), function(offset) { translation.push(_.multiply(offset, 1.2))});
+                        return "translate(" + translation + ")";
+                    }).attr("class", "textLabel").attr("dy", ".35em").html(function(dataPoint) {
                         return dataPoint.data.featureFile;
                     });
 
@@ -332,8 +334,10 @@
                     var indexOfWedgeLabel = 0;
                     var numFeatureFiles = _.uniq(_.map(filesAndGeneListArray, "featureFile")).length
                     wedges.append("text").attr("transform", function(dataPoint) {
-                        return "translate(" + labelWedge.centroid(dataPoint) + ")";
-                    }).attr("dy", ".35em").text(function(dataPoint) {
+                        var translation = []
+                        _.forEach(labelWedge.centroid(dataPoint), function(offset) { translation.push(_.multiply(offset, 1.01))});
+                        return "translate(" + translation + ")";
+                    }).attr("class", "textLabel").attr("dy", ".35em").html(function(dataPoint) {
                         var label = dataPoint.data.geneList;
                         var shouldPlaceLabel = (indexOfWedgeLabel === parseInt(numFeatureFiles / 2) && !_.includes(geneListsUsed, label));
                         indexOfWedgeLabel = indexOfWedgeLabel === numFeatureFiles - 1 ? 0 : indexOfWedgeLabel + 1;
@@ -355,7 +359,7 @@
                     component.on("mouseover", function(dataPoint) {
                         var attributeName = attributeByPercentage.attributeName;
                         var attribute = dataPoint.data[attributeName];
-                        var innerHTML = "<div>Label:" + attribute + "</div>" +
+                        var innerHTML = "<div>Label: " + attribute + "</div>" +
                                         "<div>Percentage: " + $filter("percentage")(attributeByPercentage[attribute], 2) + "</div>";
                         return tooltip.html(innerHTML).style("visibility", "visible")
                                       .style("top", (event.pageY - 17) + "px").style("left",(event.pageX + 25) + "px");
@@ -518,6 +522,10 @@
             .arc path{
                 stroke: #FFFFFF;
             }
+
+            .textLabel {
+            	z-index: 10;
+            }
         </style>
     </head>
     <body ng-app="summaryReport">
@@ -560,7 +568,7 @@
                 <svg width="960" height="500" id="{{key}}AccuracyErrorChart" class="chart"></svg>
 
                 <h4>Breakdown of Significance for Gene Lists and Feature Files</h4>
-                <svg width="960" height="500" id="{{key}}DonutChart" class="chart"></svg>
+                <svg width="960" height="550" id="{{key}}DonutChart" class="chart"></svg>
             </div>
         </div>
     </body>
