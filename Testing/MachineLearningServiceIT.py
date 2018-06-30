@@ -58,7 +58,7 @@ class MachineLearningServiceIT(unittest.TestCase):
 
     def evaluateMachineLearningModel(self, trainer):
         ml_service = MachineLearningService(self.formatRandomizedData(trainer.is_classifier))
-        ml_service.log.setLevel(logging.DEBUG)
+        ml_service.log.setLevel(logging.INFO)
         num_gene_list_combos = 8
         gene_list_combos_shortened = ml_service.determineGeneListCombos()[0:num_gene_list_combos]
         target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
@@ -110,12 +110,14 @@ class MachineLearningServiceIT(unittest.TestCase):
                 with open(target_dir + "/" + diagnostics_file) as open_file:
                     try:
                         for line_index, line in enumerate(open_file):
-                            assert trainer.algorithm in line
-                            assert "upper" in line or "lower" in line
+                            if "Best Hyperparam" in line:
+                                assert trainer.algorithm in line
+                                assert "upper" in line or "lower" in line
                     except ValueError as valueError:
                         self.log.error(valueError)
                     finally:
                         self.log.debug("Closing file %s", open_file)
+                        open_file.close()
 
     def testIndividualRandomForestRegressor(self):
         self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.RANDOM_FOREST,

@@ -123,13 +123,13 @@ class AbstractModelTrainer(ABC):
             if best_hyperparams[i] >= hyperparam_set[len(hyperparam_set) - 1]:
                 message = "Best hyperparam for " + self.algorithm + " on upper threshold of provided hyperparam " \
                           "set: " + hyperparam_keys[i] + " = " + SafeCastUtil.safeCast(best_hyperparams[i], str) + "\n"
-                self.log.info(message)
+                self.log.debug(message)
                 if record_diagnostics:
                     self.writeToDiagnosticsFile(input_folder, message)
             elif best_hyperparams[i] <= hyperparam_set[0]:
                 message = "Best hyperparam for " + self.algorithm + " on lower threshold of provided hyperparam " \
                           "set: " + hyperparam_keys[i] + " = " + SafeCastUtil.safeCast(best_hyperparams[i], str) + "\n"
-                self.log.info(message)
+                self.log.debug(message)
                 if record_diagnostics:
                     self.writeToDiagnosticsFile(input_folder, message)
 

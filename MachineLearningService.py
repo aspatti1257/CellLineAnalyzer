@@ -119,9 +119,10 @@ class MachineLearningService(object):
                     model_score = trainer.fetchPredictionsAndScore(model, testing_matrix, results)
                     score = model_score[0]
                     accuracy = model_score[1]
-                    self.log.info("Final score and accuracy of individual analysis for feature gene combo %s "
+                    self.log.debug("Final score and accuracy of individual analysis for feature gene combo %s "
                                   "using algorithm %s: %s, %s", target_combo, target_algorithm, score, accuracy)
-                    self.writeToCSVInLock(score, accuracy, target_combo, input_folder, target_algorithm)
+                    self.writeToCSVInLock(score, accuracy, target_combo, input_folder, target_algorithm,
+                                          len(gene_list_combos))
                 return
         self.log.info("Gene list feature file %s combo not found in current dataset.", target_combo)
         return
@@ -199,10 +200,11 @@ class MachineLearningService(object):
         requested_threads = self.inputs.get(ArgumentProcessingService.NUM_THREADS)
         nodes_to_use = numpy.amin([requested_threads, max_nodes])
 
-        Parallel(n_jobs=nodes_to_use)(delayed(self.runMonteCarloSelection)(feature_set, trainer, input_folder)
+        Parallel(n_jobs=nodes_to_use)(delayed(self.runMonteCarloSelection)(feature_set, trainer, input_folder,
+                                                                           len(gene_list_combos))
                                       for feature_set in gene_list_combos)
 
-    def runMonteCarloSelection(self, feature_set, trainer, input_folder):
+    def runMonteCarloSelection(self, feature_set, trainer, input_folder, num_combos):
         scores = []
         accuracies = []
         feature_set_as_string = self.generateFeatureSetString(feature_set)
@@ -215,7 +217,7 @@ class MachineLearningService(object):
             testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set,
                                                          formatted_data)
 
-            self.log.info("Computing outer Monte Carlo Permutation %s for %s.", i, feature_set_as_string)
+            self.log.debug("Computing outer Monte Carlo Permutation %s for %s.", i, feature_set_as_string)
 
             optimal_hyperparams = self.determineOptimalHyperparameters(feature_set, formatted_data, trainer)
             record_diagnostics = self.inputs.get(ArgumentProcessingService.RECORD_DIAGNOSTICS)
@@ -229,9 +231,10 @@ class MachineLearningService(object):
 
         average_score = numpy.mean(scores)
         average_accuracy = numpy.mean(accuracies)
-        self.log.info("Average score and accuracy of all Monte Carlo runs for %s: %s, %s",
+        self.log.debug("Average score and accuracy of all Monte Carlo runs for %s: %s, %s",
                       feature_set_as_string, average_score, average_accuracy)
-        self.writeToCSVInLock(average_score, average_accuracy, feature_set_as_string, input_folder, trainer.algorithm)
+        self.writeToCSVInLock(average_score, average_accuracy, feature_set_as_string, input_folder, trainer.algorithm,
+                              num_combos)
         self.saveOutputToTxtFile(scores, accuracies, feature_set_as_string, input_folder, trainer.algorithm)
 
     def generateFeatureSetString(self, feature_set):
@@ -341,10 +344,11 @@ class MachineLearningService(object):
             trimmed_matrix[cell_line] = new_cell_line_features
         return trimmed_matrix
 
-    def writeToCSVInLock(self, average_score, average_accuracy, feature_set_as_string, input_folder, ml_algorithm):
+    def writeToCSVInLock(self, average_score, average_accuracy, feature_set_as_string, input_folder, ml_algorithm,
+                         num_combos):
         lock = threading.Lock()
-        self.lockThreadMessage()
         lock.acquire(True)
+        self.lockThreadMessage()
 
         file_name = ml_algorithm + ".csv"
         write_action = "w"
@@ -360,8 +364,21 @@ class MachineLearningService(object):
                 self.log.error("Error writing to file %s. %s", file_name, error)
             finally:
                 csv_file.close()
-                self.unlockThreadMessage()
-                lock.release()
+
+        total_lines = 0
+        with open(input_folder + "/" + file_name) as csv_file:
+            try:
+                reader = csv.reader(csv_file)
+                total_lines += (len(SafeCastUtil.safeCast(reader, list)) - 1)
+            except ValueError as error:
+                self.log.error("Error reading lines from file %s. %s", file_name, error)
+            finally:
+                csv_file.close()
+                self.logPercentDone(total_lines, num_combos, ml_algorithm)
+
+        self.unlockThreadMessage()
+        lock.release()
+
 
     @staticmethod
     def getCSVFileHeader(is_classifier):
@@ -369,6 +386,20 @@ class MachineLearningService(object):
             return ["feature file: gene list combo", "percentage accurate predictions", "accuracy score"]
         else:
             return ["feature file: gene list combo", "R^2 score", "mean squared error"]
+
+    def logPercentDone(self, total_lines, num_combos, ml_algorithm):
+        percent_done = numpy.round((total_lines / num_combos) * 100, 1)
+        percentage_bar = "["
+        for i in range(0, 100):
+            if i < percent_done:
+                percentage_bar += "="
+            elif i >= percent_done:
+                if i > 0 and (i - 1) < percent_done:
+                    percentage_bar += ">"
+                else:
+                    percentage_bar += " "
+        percentage_bar += "]"
+        self.log.info("Total progress for %s: %s%% done: %s", ml_algorithm, percent_done, percentage_bar)
 
     def saveOutputToTxtFile(self, scores, accuracies, feature_set_as_string, input_folder, algorithm):
         lock = threading.Lock()
