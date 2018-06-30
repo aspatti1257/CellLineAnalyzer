@@ -121,10 +121,9 @@
                 }
 
                 function addXDisplacementValues(sortedStats) {
-                    for (var i = 0; i < sortedStats.length; i++) {
-                        sortedStats[i].xDisplacement = (i + 1);
-                    }
-                    return sortedStats;
+                	return _.zipWith(sortedStats, _.range(1, sortedStats.length + 1), function(sortedStat, value) {
+					    return _.defaults({ xDisplacement: value }, sortedStat);
+					});
                 }
 
                 function createErrorChart(data, selector) {
