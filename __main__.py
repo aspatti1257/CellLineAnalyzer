@@ -41,8 +41,8 @@ def promptUserForInput():
         input_folder = recursivelyPromptUser("Enter path of input folder:\n", str)
         runMainCellLineAnalysis(input_folder)
     elif option_as_int == 1:
-        matlab_file = recursivelyPromptUser("Enter path of .mat file:\n", str)
-        FileConverter.convertMatLabToCSV(matlab_file)
+        matlab_files_directory = recursivelyPromptUser("Enter folder path of the matlab files:\n", str)
+        FileConverter.convertMatLabToCSV(matlab_files_directory)
 
 
 def runMainCellLineAnalysis(input_folder):
