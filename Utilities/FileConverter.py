@@ -133,6 +133,5 @@ class FileConverter(object):
 
             log.info("The matlab file for %s has been successfully converted into csv files ready to be used for the CLA software!" % input_file.replace("gexmutcnum.mat", ""))
 
-    log = logging.getLogger(__name__)
-    log.info("All matlab files have been processed!")
+        log.info("All matlab files have been processed!")
 
