@@ -1,5 +1,6 @@
 import sys
 import logging
+import os
 
 from ArgumentProcessingService import ArgumentProcessingService
 from MachineLearningService import MachineLearningService
@@ -18,12 +19,11 @@ def main():
         promptUserForInput()
     elif len(arguments) == 1:
         first_argument = arguments[0]
-        if first_argument.lower().endswith(".mat"):
+        if argumentFolderContainsMATLABFiles(first_argument):
             FileConverter.convertMatLabToCSV(first_argument)
         else:
             runMainCellLineAnalysis(first_argument)
     return
-
 
 def promptUserForInput():
     simulation_to_run = input("-------Main Menu-------\n"
@@ -44,6 +44,9 @@ def promptUserForInput():
         matlab_files_directory = recursivelyPromptUser("Enter folder path of the matlab files:\n", str)
         FileConverter.convertMatLabToCSV(matlab_files_directory)
 
+
+def argumentFolderContainsMATLABFiles(arg):
+    return len([file for file in os.listdir(arg) if ".mat" in file]) > 0
 
 def runMainCellLineAnalysis(input_folder):
     valid_inputs = handleInputFolderProcessing(input_folder)

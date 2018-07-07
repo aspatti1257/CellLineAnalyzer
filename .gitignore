@@ -107,3 +107,11 @@ ENV/
 
 # mypy
 .mypy_cache/
+/.idea/CellLineAnalyzer.iml
+/.idea/misc.xml
+Testing/SampleMatlabDataFolder/gexmutSepantroniumbromide_0.csv
+Testing/SampleMatlabDataFolder/gexmutSepantroniumbromide_1.csv
+Testing/SampleMatlabDataFolder/gexmutSepantroniumbromide_2.csv
+Testing/SampleMatlabDataFolder/gexmutSepantroniumbromide_3.csv
+Testing/SampleMatlabDataFolder/gexmutSepantroniumbromide_4.csv
+Testing/SampleMatlabDataFolder/gexmutSepantroniumbromide_5.csv

@@ -21,9 +21,9 @@ class FileConverterIT(unittest.TestCase):
                 os.remove(self.input_folder + "/" + file)
 
     def testMatlabFileConversionProperlyFormatsMatrices(self):
-        FileConverter.convertMatLabToCSV(self.input_folder + "/gexmutSepantroniumbromide.mat")
+        FileConverter.convertMatLabToCSV(self.input_folder)
         for generated_csv in [file for file in os.listdir(self.input_folder) if "convertedFile_" in file]:
-            with open(self.input_folder + "/"  + generated_csv) as csv:
+            with open(self.input_folder + "/" + generated_csv) as csv:
                 try:
                     for line in csv:
                         assert "['" not in line
