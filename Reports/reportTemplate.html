@@ -46,7 +46,7 @@
                 };
 
                 $scope.score = function(stat) {
-                    return stat ? stat.mean - stat.variance : DEFAULT_MIN_SCORE;
+                    return stat ? stat.mean - stat.standardDeviation : DEFAULT_MIN_SCORE;
                 };
 
                 function init() {
@@ -65,7 +65,7 @@
 
                 function processErrorData(data, dataType, algorithm) {
                     var processedUntrimmedData = processUntrimmedData(data, dataType);
-                    return sortScoreAndTrimData(processedUntrimmedData, "mean", algorithm, dataType);
+                    return sortScoreAndTrimData(processedUntrimmedData, algorithm, dataType);
                 }
 
                 function processUntrimmedData(data, dataType) {
@@ -74,34 +74,39 @@
                         allDataUntrimmed.push({
                             "label": key,
                             "mean": _.mean(results[dataType]),
-                            "variance": getVariance(results[dataType])
+                            "standardDeviation": getStandardDeviation(results[dataType])
                         });
                     });
                     return allDataUntrimmed;
                 }
 
-                function getVariance(data) {
+                function getStandardDeviation(data) {
                     var mean = _.mean(data);
                     return Math.sqrt(data.reduce(function (square, value) {
                         return square + Math.pow(value - mean, 2);
                     }, 0) / (data.length - 1)) || 0;
                 }
 
-                function sortScoreAndTrimData(stats, sortField, algorithm, dataType) {
-                    var sortedStats = _.reverse(_.sortBy(stats, sortField));
+                function sortScoreAndTrimData(stats, algorithm, dataType) {
+                    var sortedStats = sortStats(stats);
                     if (dataType == DATA_TYPE.score) {
                         setHighestScoringComboForAlgo(sortedStats, algorithm);
                     }
                     if (sortedStats.length > MAX_GENE_LIST_COMBOS_TO_PLOT) {
-                        var trimmedStats = [];
-                        trimmedStats.concat(_.take(sortedStats, 5)).concat(_.takeRight(sortedStats, 5));
+                        var trimmedStats = _.take(sortedStats, 5).concat(_.takeRight(sortedStats, 5));
                         while (trimmedStats.length < MAX_GENE_LIST_COMBOS_TO_PLOT) {
                             trimmedStats.push(_.sample(sortedStats.slice(5, sortedStats.length - 5)))
                         }
-                        return addXDisplacementValues(_.reverse(_.sortBy(trimmedStats, sortField)));
+                        return addXDisplacementValues(sortStats(trimmedStats));
                     } else {
                         return addXDisplacementValues(sortedStats);
                     }
+                }
+
+                function sortStats(stats) {
+                    return _.reverse(_.sortBy(stats, function(stat) {
+                        return $scope.score(stat);
+                    }));
                 }
 
                 function setHighestScoringComboForAlgo(sortedStats, algorithm) {
@@ -121,9 +126,9 @@
                 }
 
                 function addXDisplacementValues(sortedStats) {
-                	return _.zipWith(sortedStats, _.range(1, sortedStats.length + 1), function(sortedStat, value) {
-					    return _.defaults({ xDisplacement: value }, sortedStat);
-					});
+                    return _.zipWith(sortedStats, _.range(1, sortedStats.length + 1), function(sortedStat, value) {
+                        return _.defaults({ xDisplacement: value }, sortedStat);
+                    });
                 }
 
                 function createErrorChart(data, selector) {
@@ -137,9 +142,9 @@
                                })]).nice();
 
                     var yScale = d3.scaleLinear().range([height, 0]).domain([d3.min(data, function(dataPoint) {
-                                    return dataPoint.mean - dataPoint.variance;
+                                    return dataPoint.mean - dataPoint.standardDeviation;
                                 }), d3.max(data, function(dataPoint) {
-                                    return dataPoint.mean + dataPoint.variance;
+                                    return dataPoint.mean + dataPoint.standardDeviation;
                                 })]).nice();
 
                     var xAxis = d3.axisBottom(xScale).ticks(12);
@@ -148,7 +153,7 @@
                     var line = d3.line().x(function(dataPoint) {
                             return dataPoint.xDisplacement;
                         }).y(function(dataPoint) {
-                            return yScale(dataPoint.variance);
+                            return yScale(dataPoint.standardDeviation);
                         });
 
                     var svg = d3.select(selector).append("svg")
@@ -172,13 +177,13 @@
                            return xScale(dataPoint.xDisplacement);
                        })
                        .attr("y1", function(dataPoint) {
-                           return yScale(dataPoint.mean + dataPoint.variance);
+                           return yScale(dataPoint.mean + dataPoint.standardDeviation);
                        })
                        .attr("x2", function(dataPoint) {
                            return xScale(dataPoint.xDisplacement);
                        })
                        .attr("y2", function(dataPoint) {
-                           return yScale(dataPoint.mean - dataPoint.variance);
+                           return yScale(dataPoint.mean - dataPoint.standardDeviation);
                        });
                 }
 
@@ -188,14 +193,14 @@
                           return xScale(dataPoint.xDisplacement) - 4;
                       })
                       .attr("y1", function(dataPoint) {
-                          var yVal = isTop ? dataPoint.mean + dataPoint.variance : dataPoint.mean - dataPoint.variance;
+                          var yVal = isTop ? dataPoint.mean + dataPoint.standardDeviation : dataPoint.mean - dataPoint.standardDeviation;
                           return yScale(yVal);
                       })
                       .attr("x2", function(dataPoint) {
                           return xScale(dataPoint.xDisplacement) + 4;
                       })
                       .attr("y2", function(dataPoint) {
-                          var yVal = isTop ? dataPoint.mean + dataPoint.variance : dataPoint.mean - dataPoint.variance;
+                          var yVal = isTop ? dataPoint.mean + dataPoint.standardDeviation : dataPoint.mean - dataPoint.standardDeviation;
                           return yScale(yVal);
                       });
                 }
@@ -216,7 +221,10 @@
                         .attr("r", 4)
                         .on("mouseover", function(dataPoint){
                             var innerHTML = "<div>Combo:" + dataPoint.label + "</div>" +
-                                            "<div>Mean and Variance: " +  dataPoint.mean.toFixed(3) + " &plusmn; " + dataPoint.variance.toFixed(3) + "</div>";
+                                            "<div>Mean and Standard Deviation: " +
+                                                dataPoint.mean.toFixed(3) + " &plusmn; " +
+                                                dataPoint.standardDeviation.toFixed(3) +
+                                            "</div>";
                             return tooltip.html(innerHTML).style("visibility", "visible")
                                           .style("top", (event.pageY - 17) + "px").style("left",(event.pageX + 25) + "px");
                         })
@@ -539,7 +547,7 @@
                     <p>With top combo score of: {{bestAlgorithm.score  | percentage:2}}</p>
                 </div>
                 <div>
-                    <h4>Mean score - Variance distribution for {{bestAlgorithm.label | splitCamelCaseSVMFriendly}}</h4>
+                    <h4>Mean score - Standard Deviation distribution for {{bestAlgorithm.label | splitCamelCaseSVMFriendly}}</h4>
                     <svg width="1000" height="550" id="OverviewScoreForBestAlgorithm" class="chart"></svg>
                 </div>
             </div>
