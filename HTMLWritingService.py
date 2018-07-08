@@ -4,6 +4,7 @@ import os
 from Utilities.SafeCastUtil import SafeCastUtil
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
 
+
 class HTMLWritingService(object):
 
     log = logging.getLogger(__name__)

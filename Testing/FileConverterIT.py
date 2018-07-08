@@ -12,18 +12,20 @@ class FileConverterIT(unittest.TestCase):
     def setUp(self):
         current_working_dir = os.getcwd()  # Should be this package.
         self.input_folder = current_working_dir + "/SampleMatlabDataFolder"
+        self.createdFolder = self.input_folder + "/Trametinib_analysis"
 
     def tearDown(self):
         if self.input_folder != "/":
-            for file in os.listdir(self.input_folder):
+            for file in os.listdir(self.createdFolder):
                 if file == "__init__.py" or ".mat" in file:
                     continue
-                os.remove(self.input_folder + "/" + file)
+                os.remove(self.createdFolder + "/" + file)
+            os.removedirs(self.createdFolder)
 
     def testMatlabFileConversionProperlyFormatsMatrices(self):
         FileConverter.convertMatLabToCSV(self.input_folder)
-        for generated_csv in [file for file in os.listdir(self.input_folder) if "convertedFile_" in file]:
-            with open(self.input_folder + "/" + generated_csv) as csv:
+        for generated_csv in [file for file in os.listdir(self.createdFolder) if ".csv" in file]:
+            with open(self.createdFolder + "/" + generated_csv) as csv:
                 try:
                     for line in csv:
                         assert "['" not in line
