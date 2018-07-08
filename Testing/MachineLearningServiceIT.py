@@ -7,6 +7,7 @@ from Trainers.RandomForestTrainer import RandomForestTrainer
 from Trainers.LinearSVMTrainer import LinearSVMTrainer
 from Trainers.RadialBasisFunctionSVMTrainer import RadialBasisFunctionSVMTrainer
 from Trainers.LinearRegressionTrainer import LinearRegressionTrainer
+from Trainers.RandomPartitionLinearRegressionTrainer import RandomPartitionLinearRegressionTrainer
 
 from ArgumentProcessingService import ArgumentProcessingService
 from MachineLearningService import MachineLearningService
@@ -55,6 +56,10 @@ class MachineLearningServiceIT(unittest.TestCase):
 
     def testLinearRegressor(self):
         self.evaluateMachineLearningModel(LinearRegressionTrainer(False, False, None))
+
+    def testRandomPartitionLinearRegressionRegressor(self):
+        #TODO: self.evaluateMachineLearningModel(RandomPartitionLinearRegressionTrainer(False))
+        assert True
 
     def evaluateMachineLearningModel(self, trainer):
         ml_service = MachineLearningService(self.formatRandomizedData(trainer.is_classifier))
@@ -150,6 +155,12 @@ class MachineLearningServiceIT(unittest.TestCase):
     def testIndividualLinearRegressor(self):
         self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.LINEAR_REGRESSION,
                                                             None, False)
+
+    def testIndividualRandomPartitionLinearRegressor(self):
+        # TODO:
+        # self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.LINEAR_REGRESSION,
+        #  None, False)
+        assert True
 
     def evaluateMachineLearningModelForIndividualCombo(self, algorithm, hyperparams, is_classifier):
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER

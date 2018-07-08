@@ -7,6 +7,7 @@ class SupportedMachineLearningAlgorithms:
     RADIAL_BASIS_FUNCTION_SVM = "RadialBasisFunctionSVMAnalysis"
     ELASTIC_NET = "ElasticNetAnalysis"
     LINEAR_REGRESSION = "LinearRegressionAnalysis"
+    RANDOM_PARTITION_LINEAR_REGRESSION = "RandomPartitionLinearRegression"
 
     @staticmethod
     def fetchAlgorithms():

@@ -17,6 +17,7 @@ from Trainers.LinearSVMTrainer import LinearSVMTrainer
 from Trainers.RadialBasisFunctionSVMTrainer import RadialBasisFunctionSVMTrainer
 from Trainers.ElasticNetTrainer import ElasticNetTrainer
 from Trainers.LinearRegressionTrainer import LinearRegressionTrainer
+from Trainers.RandomPartitionLinearRegressionTrainer import RandomPartitionLinearRegressionTrainer
 from Utilities.SafeCastUtil import SafeCastUtil
 
 
@@ -138,6 +139,9 @@ class MachineLearningService(object):
             trainer = ElasticNetTrainer(is_classifier)
         elif target_algorithm == SupportedMachineLearningAlgorithms.LINEAR_REGRESSION and not is_classifier:
             trainer = LinearRegressionTrainer(is_classifier, False, None)
+        # elif target_algorithm == SupportedMachineLearningAlgorithms.RANDOM_PARTITION_LINEAR_REGRESSION \
+        #         and not is_classifier:
+        #     trainer = RandomPartitionLinearRegressionTrainer(is_classifier, False, None)
         else:
             raise ValueError("Unsupported Machine Learning algorithm: %s", target_algorithm)
         return trainer
@@ -152,6 +156,7 @@ class MachineLearningService(object):
         rbf = SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM
         enet = SupportedMachineLearningAlgorithms.ELASTIC_NET
         lin_reg = SupportedMachineLearningAlgorithms.LINEAR_REGRESSION
+        rplr = SupportedMachineLearningAlgorithms.RANDOM_PARTITION_LINEAR_REGRESSION
 
         if not self.inputs.get(ArgumentProcessingService.SKIP_RF) and self.shouldTrainAlgorithm(rf):
             rf_trainer = RandomForestTrainer(is_classifier)
@@ -188,6 +193,13 @@ class MachineLearningService(object):
                                                          self.monteCarloPermsByAlgorithm(lin_reg, False),
                                                          len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, linear_regression_trainer)
+        #
+        # if self.shouldTrainAlgorithm(rplr) and not is_classifier:
+        #     rplr_trainer = RandomPartitionLinearRegressionTrainer(is_classifier)
+        #     rplr_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rplr, True),
+        #                                     self.monteCarloPermsByAlgorithm(rplr, False),
+        #                                     len(gene_list_combos))
+        #     self.handleParallellization(gene_list_combos, input_folder, rplr_trainer)
 
     def monteCarloPermsByAlgorithm(self, algorithm, outer):
         if outer:
@@ -232,7 +244,7 @@ class MachineLearningService(object):
         average_score = numpy.mean(scores)
         average_accuracy = numpy.mean(accuracies)
         self.log.debug("Average score and accuracy of all Monte Carlo runs for %s: %s, %s",
-                      feature_set_as_string, average_score, average_accuracy)
+                       feature_set_as_string, average_score, average_accuracy)
         self.writeToCSVInLock(average_score, average_accuracy, feature_set_as_string, input_folder, trainer.algorithm,
                               num_combos)
         self.saveOutputToTxtFile(scores, accuracies, feature_set_as_string, input_folder, trainer.algorithm)
