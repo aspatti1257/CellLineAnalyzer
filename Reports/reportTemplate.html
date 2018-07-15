@@ -414,15 +414,22 @@
                                 .attr("height", height + margin.top + margin.bottom).append("g")
                                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+                    var tooltip = d3.select("body").append("div").attr("class", "tooltip").style("visibility", "hidden");
                     svg.selectAll("rect").data(bins).enter().append("rect")
                        .attr("class", "bar").attr("x", 1)
                        .attr("transform", function(dataPoint) {
                            return "translate(" + x(dataPoint.x0) + "," + y(dataPoint.length) + ")";
                        }).attr("width", function(dataPoint) {
-                           var width = x(dataPoint.x1) - x(dataPoint.x0) -1;
+                           var width = x(dataPoint.x1) - x(dataPoint.x0) - 1;
                            return width > 0 ? width: 0;
                        }).attr("height", function(dataPoint) {
                            return height - y(dataPoint.length);
+                       }).on('mouseover', function(dataPoint) {
+                            var innerHTML = dataPoint.length + " combos with score between " + dataPoint.x0 + " and " + dataPoint.x1 + "."
+                            return tooltip.html(innerHTML).style("visibility", "visible")
+                                          .style("top", (event.pageY - 17) + "px").style("left",(event.pageX + 25) + "px");
+                       }).on('mouseout', function(dataPoint) {
+                            return tooltip.style("visibility", "hidden");
                        });
 
                     // add the x Axis
@@ -443,6 +450,10 @@
                 font-family: Arial;
             }
 
+            .centered {
+                text-align: center;
+            }
+
             #titleHeader {
                 padding: 15px;
             }
@@ -450,14 +461,14 @@
             #overallSummary,.algorithmSummary {
                 background-color: #E4E4E4;
                 padding: 10px;
-                width: 1000px;
+                width: 100%;
                 border-radius: 5px;
                 margin-top: 10px;
             }
 
             #menuBlock {
                 padding: 10px;
-                width: 1000px;
+                width: 100%;
                 background-color: #E4E4E4;
                 height: 150px;
                 border-radius: 5px;
@@ -531,7 +542,7 @@
             }
 
             .textLabel {
-            	z-index: 10;
+                z-index: 10;
             }
         </style>
     </head>
@@ -546,7 +557,7 @@
                     <p>Best performing algorithm: {{bestAlgorithm.label | splitCamelCaseSVMFriendly}}</p>
                     <p>With top combo score of: {{bestAlgorithm.score  | percentage:2}}</p>
                 </div>
-                <div>
+                <div class="centered">
                     <h4>Mean score - Standard Deviation distribution for {{bestAlgorithm.label | splitCamelCaseSVMFriendly}}</h4>
                     <svg width="1000" height="550" id="OverviewScoreForBestAlgorithm" class="chart"></svg>
                 </div>
@@ -570,12 +581,17 @@
                     <p><b>With score of</b>: {{score(topScoringComboByAlgorightm[key]) | percentage:2}}</p>
                 </div>
                 <h4>Scores</h4>
-                <svg width="960" height="500" id="{{key}}ScoreErrorChart" class="chart"></svg>
+                <div class="centered">
+                    <svg width="960" height="500" id="{{key}}ScoreErrorChart" class="chart"></svg>
+                </div>
                 <h4>Accuracies</h4>
-                <svg width="960" height="500" id="{{key}}AccuracyErrorChart" class="chart"></svg>
-
+                <div class="centered">
+                    <svg width="960" height="500" id="{{key}}AccuracyErrorChart" class="chart"></svg>
+                </div>
                 <h4>Breakdown of Significance for Gene Lists and Feature Files</h4>
-                <svg width="960" height="550" id="{{key}}DonutChart" class="chart"></svg>
+                <div class="centered">
+                    <svg width="960" height="550" id="{{key}}DonutChart" class="chart"></svg>
+                </div>
             </div>
         </div>
     </body>
