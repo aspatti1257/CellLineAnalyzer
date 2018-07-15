@@ -10,15 +10,21 @@ from Utilities.SafeCastUtil import SafeCastUtil
 class FileConverter(object):
 
     VARIABLE_MATCHES = {
-            "genesCNHugo": "gmcCN",
-            "genesExpHugo": "gmcGE",
-            "genesMutHugo": "gmcMUT",
+        "genesCNHugo": "gmcCN",
+        "genesExpHugo": "gmcGE",
+        "genesMutHugo": "gmcMUT",
+        "genesCNEnsembl": "gmcCN", #TODO: These Ensemble features seem like they should be removed.
+        "genesExpEnsembl": "gmcGE",
+        "genesMutEnsembl": "gmcMUT"
     }
 
     FILE_NAMES = {
         "genesCNHugo": "cnum_hgnc",
         "genesExpHugo": "gex_hgnc",
         "genesMutHugo": "mut_hgnc",
+        "genesCNEnsembl": "cnum_ensg", #TODO: These Ensemble features seem like they should be removed.
+        "genesExpEnsembl": "gex_ensg",
+        "genesMutEnsembl": "mut_ensg"
     }
 
     ID_FIELD = "gmcCellLineCosmicIDs"
