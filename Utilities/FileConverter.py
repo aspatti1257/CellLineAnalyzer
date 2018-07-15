@@ -1,8 +1,6 @@
 import scipy.io
-import numpy as np
 import logging
 import csv
-import pandas as pd
 import glob
 import os
 
@@ -11,127 +9,72 @@ from Utilities.SafeCastUtil import SafeCastUtil
 
 class FileConverter(object):
 
+    VARIABLE_MATCHES = {
+            "genesCNHugo": "gmcCN",
+            "genesExpHugo": "gmcGE",
+            "genesMutHugo": "gmcMUT",
+    }
+
+    FILE_NAMES = {
+        "genesCNHugo": "cnum_hgnc",
+        "genesExpHugo": "gex_hgnc",
+        "genesMutHugo": "mut_hgnc",
+    }
+
+    ID_FIELD = "gmcCellLineCosmicIDs"
+    RESULTS_FIELD = "gmcAUC"
+
     @staticmethod
     def convertMatLabToCSV(matlab_files_directory):
-        os.chdir(matlab_files_directory)
+
         log = logging.getLogger(__name__)
         logging.basicConfig()
         log.setLevel(logging.INFO)
+
+        os.chdir(matlab_files_directory)
         matlab_files = glob.glob("*.mat")
 
         for input_file in matlab_files:
+            drug_name = input_file.split("gexmutcnum.mat")[0].strip()
+            new_directory = matlab_files_directory + "/" + drug_name + "_analysis"
             matlab_file = scipy.io.loadmat(input_file)
-            ctr = 0
-            for key in matlab_file:
-                if "__" not in key and "readme" not in key:
-                    savename = input_file.replace(".mat", "") + "_" + str(ctr) + ".csv"
-                    np.savetxt(savename, matlab_file[key], fmt='%s', delimiter=',')
-                    with open(savename, "r") as source:
-                        data = source.read()
-                        replace = {"['": "", "']": ""}
-                        for x, y in replace.items():
-                            data = data.replace(x, y)
-                        with open(savename, "w") as savename_write:
-                            savename_write.write(data)
-                            savename_write.close()
-                    ctr += 1
 
-            # second step: transpose _6 csv file and remove first row (empty row after transpose)
+            os.mkdir(new_directory)
 
-            read_csv = pd.read_csv(input_file.replace(".mat", "") + "_6.csv", nrows=1)
-            transpose = np.transpose(read_csv)
+            format_id_string = lambda array: SafeCastUtil.safeCast(array[0], str)
+            for key in SafeCastUtil.safeCast(FileConverter.VARIABLE_MATCHES.keys(), list):
+                header = [format_id_string(feature_name) for feature_name in matlab_file.get(key)[0]]
+                cell_line_data = FileConverter.formatCellLineData(
+                                    matlab_file.get(FileConverter.VARIABLE_MATCHES.get(key)), key)
+                file_name = new_directory + "/" + drug_name + "_" + FileConverter.FILE_NAMES[key] + ".csv"
+                FileConverter.writeCSV(cell_line_data, header, file_name, log)
 
-            df = pd.DataFrame(transpose)
-            df.to_csv(input_file.replace(".mat", "") + "_6.csv")
+            cell_line_ids = [format_id_string(cell_id) for cell_id in matlab_file.get(FileConverter.ID_FIELD)]
+            results = matlab_file.get(FileConverter.RESULTS_FIELD)
+            zipped_results = SafeCastUtil.safeCast(zip(cell_line_ids, results[0]), list)
+            results_file = new_directory + "/" + drug_name + "_results.csv"
 
-            with open(input_file.replace(".mat", "") + "_6.csv", "rb") as infile:
-                data_in = infile.readlines()
-                with open(input_file.replace(".mat", "") + "_6.csv", "wb") as outfile:
-                    outfile.writelines(data_in[1:])
+            FileConverter.writeCSV(zipped_results, ["cell_line", "result"], results_file, log)
+            log.info("The MATLAB file for %s has been successfully converted into csv files ready to be used"
+                     " with the CLA software!", drug_name)
 
-            # third step: merge the transposed file with the list of cell lines (with headers)
+        log.info("All MATLAB files have been processed!")
 
-            csv_8 = pd.read_csv(input_file.replace(".mat", "") + "_8.csv")
-            csv_6_transpose = pd.read_csv(input_file.replace(".mat", "") + "_6.csv")
-            merge = pd.concat([csv_8, csv_6_transpose], axis=1)
-            merge.to_csv(input_file.replace("gexmutcnum.mat", "") + "_results.csv", index=False)
+    @staticmethod
+    def formatCellLineData(data, key):
+        if "Mut" not in key and "CN" not in key:
+            return data
+        return [["'" + SafeCastUtil.safeCast(value, str) + "'" for value in row] for row in data]
 
-            with open(input_file.replace("gexmutcnum.mat", "") + "_results.csv", "r+") as header_to_results:
-                old = header_to_results.read()
-                header_to_results.seek(0)  # rewind
-                header_to_results.write("cell_line, result" + "\n" + old)
-
-            # fourth step: convert categorical data in _7 and _10 csv file into strings
-
-            def categoriser(a):
-                with open(input_file.replace(".mat", "") + a, "r") as f:
-                    reader_f = csv.reader(f)
-                    liste = list(reader_f)
-
-                new_list = []
-                for row in liste:
-                    new_list.append([str("'" + val + "'") for val in row])
-
-                with open(input_file.replace(".mat", "") + a, "w") as file:
-                    writer = csv.writer(file)
-                    writer.writerows(new_list)
-
-            categoriser("_7.csv")
-            categoriser("_10.csv")
-
-            # fifth step: merge all the other files
-
-            def merger(a, b, c):
-                with open(input_file.replace(".mat", "") + a, "r") as a1:
-                    reader_a = csv.reader(a1)
-                    a_list = list(reader_a)
-
-                with open(input_file.replace(".mat", "") + b, "r") as b1:
-                    reader_b = csv.reader(b1)
-                    b_list = list(reader_b)
-
-                merged = a_list + b_list
-
-                with open(input_file.replace("gexmutcnum.mat", "") + c, "w") as merged_output:
-                    writer = csv.writer(merged_output)
-                    writer.writerows(merged)
-
-            merger("_0.csv", "_7.csv", "_cnum_ensg.csv")
-            merger("_1.csv", "_7.csv", "_cnum_hgnc.csv")
-            merger("_2.csv", "_9.csv", "_gex_ensg.csv")
-            merger("_3.csv", "_9.csv", "_gex_hgnc.csv")
-            merger("_4.csv", "_10.csv", "_mut_ensg.csv")
-            merger("_5.csv", "_10.csv", "_mut_hgnc.csv")
-
-            # sixth step: create new directory for the analysis data
-
-            new_folder = os.mkdir(input_file.replace("gexmutcnum.mat", "") + "_analysis")
-            new_folder
-
-            def directoriser(a):
-                path = input_file.replace("gexmutcnum.mat", "") + "_analysis/" + input_file.replace("gexmutcnum.mat", "") + a
-                new_directory = ("%s" % path)
-                os.rename(input_file.replace("gexmutcnum.mat", "") + a, new_directory)
-
-            directoriser("_cnum_ensg.csv")
-            directoriser("_cnum_hgnc.csv")
-            directoriser("_gex_ensg.csv")
-            directoriser("_gex_hgnc.csv")
-            directoriser("_mut_ensg.csv")
-            directoriser("_mut_hgnc.csv")
-            directoriser("_results.csv")
-
-            # seventh step: delete the original csv files that have been converted from the inital matlab file
-
-            def csv_eliminator(a):
-                os.remove(input_file.replace(".mat", "") + a)
-
-            for i in range(0, 11):
-                csv_eliminator("_%s.csv" % i)
-
-            # eighth step: finished
-
-            log.info("The matlab file for %s has been successfully converted into csv files ready to be used for the CLA software!" % input_file.replace("gexmutcnum.mat", ""))
-
-        log.info("All matlab files have been processed!")
-
+    @staticmethod
+    def writeCSV(data, first_line, file_name, log):
+        with open(file_name, "w") as csv_file:
+            try:
+                writer = csv.writer(csv_file)
+                writer.writerow(first_line)
+                for cell_line in data:
+                    writer.writerow(SafeCastUtil.safeCast(cell_line, list))
+            except ValueError as error:
+                log.error("Error writing to file %s. %s", file_name, error)
+            finally:
+                csv_file.close()
