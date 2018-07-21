@@ -76,7 +76,7 @@ class FileConverter(object):
     def writeCSV(data, first_line, file_name, log):
         with open(file_name, "w") as csv_file:
             try:
-                writer = csv.writer(csv_file)
+                writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                 writer.writerow(first_line)
                 for cell_line in data:
                     writer.writerow(SafeCastUtil.safeCast(cell_line, list))
