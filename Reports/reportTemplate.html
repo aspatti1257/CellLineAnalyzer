@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
     <head>
         <title>CellLineAnalyzer Report Summary</title>
@@ -31,7 +32,7 @@
                 };
                 var MAX_GENE_LIST_COMBOS_TO_PLOT = 25;
 
-                var COLOR_PALETTE = ["#69D2E7", "#A7DBD8", "#E0E4CC", "#F38630", "FA6900"]
+                var COLOR_PALETTE = ["#69D2E7", "#A7DBD8", "#E0E4CC", "#F38630", "#FA6900"]
 
                 //INSERT DEFAULT MIN SCORE HERE;
 
@@ -82,7 +83,7 @@
 
                 function getStandardDeviation(data) {
                     var mean = _.mean(data);
-                    return Math.sqrt(data.reduce(function (square, value) {
+                    return Math.sqrt(data.reduce(function(square, value) {
                         return square + Math.pow(value - mean, 2);
                     }, 0) / (data.length - 1)) || 0;
                 }
@@ -283,7 +284,7 @@
                 }
 
                 function createPieDonutChart(algorithm, filesAndGeneListArray) {
-                    var width = 960, height = 550, radius = 250;
+                    var width = 900, height = 900, radius = 450;
 
                     var color = d3.scaleOrdinal().range(COLOR_PALETTE).domain(_.uniq(_.map(filesAndGeneListArray, "geneList")));
 
@@ -291,22 +292,23 @@
                     var pie = d3.pie().sort(null).value(function(dataPoint) {
                                   return dataPoint.score;
                               });
-
-                    var svg = d3.select("#" + algorithm + "DonutChart").append("svg").attr("width", width).attr("height", height)
+                    var selector = "#" + algorithm + "DonutChart";
+                    var svg = d3.select(selector).append("svg").attr("width", width).attr("height", height)
+                                .attr("margin-left", "auto").attr("margin-right", "auto").attr("display", "block")
                                 .append("g").attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 
                     filesAndGeneListArray.sort(function(a, b) {
-                        order = _.invert(_.toPlainObject(_.uniq(_.map(filesAndGeneListArray, "geneList"))));
+                        var order = _.invert(_.toPlainObject(_.uniq(_.map(filesAndGeneListArray, "geneList"))));
                         return d3.ascending(+order[a.geneList], +order[b.geneList]);
                     });
 
-                    nested = d3.nest().key(function(dataPoint) {
-                                    return dataPoint.geneList;
-                                }).rollup(function(dataPoint) {
-                                    return d3.sum(dataPoint, function(dataPoint) {
-                                        return dataPoint.score;
-                                    })
-                                }).entries(filesAndGeneListArray);
+                    var nested = d3.nest().key(function(dataPoint) {
+                        return dataPoint.geneList;
+                    }).rollup(function(dataPoint) {
+                        return d3.sum(dataPoint, function(dataPoint) {
+                            return dataPoint.score;
+                        })
+                    }).entries(filesAndGeneListArray);
 
                     nested.forEach(function(dataPoint) {
                         dataPoint.geneList = dataPoint.key;
@@ -321,15 +323,7 @@
                         return color(dataPoint.data.featureFile);
                     });
 
-                    arcs.append("text").attr("transform", function(dataPoint) {
-                        translation = []
-                        _.forEach(arc.centroid(dataPoint), function(offset) { translation.push(_.multiply(offset, 1.2))});
-                        return "translate(" + translation + ")";
-                    }).attr("class", "textLabel").attr("dy", ".35em").html(function(dataPoint) {
-                        return dataPoint.data.featureFile;
-                    });
-
-                    var wedge = d3.arc().outerRadius(radius - 70).innerRadius(0);
+                    var wedge = d3.arc().outerRadius(radius - 70).innerRadius(radius - 140);
                     var labelWedge = d3.arc().outerRadius(radius - 110).innerRadius(radius - 110);
                     var wedges = svg.selectAll(".wedge").data(pie(filesAndGeneListArray)).enter().append("g").attr("class", "wedge");
 
@@ -337,26 +331,8 @@
                         return color(dataPoint.data.geneList);
                     });
 
-                    var geneListsUsed = [];
-                    var indexOfWedgeLabel = 0;
-                    var numFeatureFiles = _.uniq(_.map(filesAndGeneListArray, "featureFile")).length
-                    wedges.append("text").attr("transform", function(dataPoint) {
-                        var translation = []
-                        _.forEach(labelWedge.centroid(dataPoint), function(offset) { translation.push(_.multiply(offset, 1.01))});
-                        return "translate(" + translation + ")";
-                    }).attr("class", "textLabel").attr("dy", ".35em").html(function(dataPoint) {
-                        var label = dataPoint.data.geneList;
-                        var shouldPlaceLabel = (indexOfWedgeLabel === parseInt(numFeatureFiles / 2) && !_.includes(geneListsUsed, label));
-                        indexOfWedgeLabel = indexOfWedgeLabel === numFeatureFiles - 1 ? 0 : indexOfWedgeLabel + 1;
-                        if (!shouldPlaceLabel) {
-                            return "";
-                        } else {
-                            geneListsUsed.push(label);
-                            return label;
-                        }
-                    });
-
-                    var tooltip = d3.select("body").append("div").attr("class", "tooltip").style("visibility", "hidden");
+                    var tooltip = d3.select(selector).append("g").attr("class", "tooltip")
+                                    .attr("transform", "translate(" + [(radius / 2), radius] + ")");
                     bindTooltipToPieDonutChart(wedges, tooltip, filesAndGeneListArray, "geneList");
                     bindTooltipToPieDonutChart(arcs, tooltip, filesAndGeneListArray, "featureFile");
                 }
@@ -366,12 +342,17 @@
                     component.on("mouseover", function(dataPoint) {
                         var attributeName = attributeByPercentage.attributeName;
                         var attribute = dataPoint.data[attributeName];
-                        var innerHTML = "<div>Label: " + attribute + "</div>" +
-                                        "<div>Percentage: " + $filter("percentage")(attributeByPercentage[attribute], 2) + "</div>";
-                        return tooltip.html(innerHTML).style("visibility", "visible")
-                                      .style("top", (event.pageY - 17) + "px").style("left",(event.pageX + 25) + "px");
-                    }).on("mouseout", function(){
-                        return tooltip.style("visibility", "hidden");
+                        var labelText = "Label: " + attribute;
+                        if (attributeName === "featureFile") {
+                            labelText += " (with: " + dataPoint.data.geneList + ")"
+                        }
+                        var innerHTML = "<text>" + labelText + "</text>" +
+                                        "<text transform='translate(0, 20)'>Percentage accuracy of " +
+                                             $filter("lowercase")($filter("splitCamelCaseSVMFriendly")(attributeName)) + ": " +
+                                             $filter("percentage")(attributeByPercentage[attribute], 2) + "</text>";
+                        return tooltip.html(innerHTML);
+                    }).on("mouseout", function() {
+                        return tooltip.html("");
                     });
                 }
 
@@ -406,8 +387,8 @@
                     var bins = d3.histogram().domain(x.domain()).thresholds(x.ticks(40))(data);
 
                     var y = d3.scaleLinear()
-                        .domain([0, d3.max(bins, d => d.length)]).nice()
-                        .range([height - margin.bottom, margin.top]);
+                              .domain([0, d3.max(bins, d => d.length)]).nice()
+                              .range([height - margin.bottom, margin.top]);
 
                     var svg = d3.select("#OverviewScoreForBestAlgorithm").append("svg").attr("class", ".plot-bg")
                                 .attr("width", width + margin.left + margin.right)
@@ -456,6 +437,7 @@
 
             #titleHeader {
                 padding: 15px;
+                text-align: center;
             }
 
             #overallSummary,.algorithmSummary {
@@ -477,6 +459,7 @@
 
             .menuOption {
                 width: 19%;
+                text-align: center;
             }
 
             .algoButton {
@@ -590,7 +573,7 @@
                 </div>
                 <h4>Breakdown of Significance for Gene Lists and Feature Files</h4>
                 <div class="centered">
-                    <svg width="960" height="550" id="{{key}}DonutChart" class="chart"></svg>
+                    <svg width="960" height="960" id="{{key}}DonutChart" class="chart"></svg>
                 </div>
             </div>
         </div>
