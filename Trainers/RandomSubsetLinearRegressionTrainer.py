@@ -2,17 +2,22 @@ from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithm
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
 
 
-class RandomPartitionLinearRegressionTrainer(AbstractModelTrainer):
+class RandomSubsetLinearRegressionTrainer(AbstractModelTrainer):
 
-    def __init__(self, is_classifier):
-        super().__init__(SupportedMachineLearningAlgorithms.RANDOM_PARTITION_LINEAR_REGRESSION,
+    def __init__(self, is_classifier, binary_categorical_matrix):
+        #TODO: Do we actually need to pass this in here?
+        self.binary_categorical_matrix = binary_categorical_matrix
+        super().__init__(SupportedMachineLearningAlgorithms.RANDOM_SUBSET_LINEAR_REGRESSION,
                          self.initializeHyperParameters(), is_classifier)
 
     def supportsHyperparams(self):
-        return False  # This may not necessarily be true. There may be some hyperparams.
+        return True
 
     def initializeHyperParameters(self):
-        return {"bogus": [False]}
+        return {
+            "upper_bound": [500, 300, 100],
+            "lower_bound": [10, 30, 50]
+        }
 
     def hyperparameterize(self, training_matrix, testing_matrix, results):
         return super().loopThroughHyperparams(self.initializeHyperParameters(), training_matrix,

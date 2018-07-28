@@ -17,7 +17,7 @@ from Trainers.LinearSVMTrainer import LinearSVMTrainer
 from Trainers.RadialBasisFunctionSVMTrainer import RadialBasisFunctionSVMTrainer
 from Trainers.ElasticNetTrainer import ElasticNetTrainer
 from Trainers.LinearRegressionTrainer import LinearRegressionTrainer
-from Trainers.RandomPartitionLinearRegressionTrainer import RandomPartitionLinearRegressionTrainer
+from Trainers.RandomSubsetLinearRegressionTrainer import RandomSubsetLinearRegressionTrainer
 from Utilities.SafeCastUtil import SafeCastUtil
 
 
@@ -156,7 +156,7 @@ class MachineLearningService(object):
         rbf = SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM
         enet = SupportedMachineLearningAlgorithms.ELASTIC_NET
         lin_reg = SupportedMachineLearningAlgorithms.LINEAR_REGRESSION
-        rplr = SupportedMachineLearningAlgorithms.RANDOM_PARTITION_LINEAR_REGRESSION
+        rslr = SupportedMachineLearningAlgorithms.RANDOM_SUBSET_LINEAR_REGRESSION
 
         if not self.inputs.get(ArgumentProcessingService.SKIP_RF) and self.shouldTrainAlgorithm(rf):
             rf_trainer = RandomForestTrainer(is_classifier)
@@ -193,11 +193,11 @@ class MachineLearningService(object):
                                                          self.monteCarloPermsByAlgorithm(lin_reg, False),
                                                          len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, linear_regression_trainer)
-        #
-        # if self.shouldTrainAlgorithm(rplr) and not is_classifier:
-        #     rplr_trainer = RandomPartitionLinearRegressionTrainer(is_classifier)
-        #     rplr_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rplr, True),
-        #                                     self.monteCarloPermsByAlgorithm(rplr, False),
+
+        # if self.shouldTrainAlgorithm(rslr) and not is_classifier:
+        #     rplr_trainer = RandomSubsetLinearRegressionTrainer(is_classifier, None) #TODO: Fetch binary categorical matrix
+        #     rplr_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rslr, True),
+        #                                     self.monteCarloPermsByAlgorithm(rslr, False),
         #                                     len(gene_list_combos))
         #     self.handleParallellization(gene_list_combos, input_folder, rplr_trainer)
 
