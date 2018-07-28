@@ -31,6 +31,7 @@ class ArgumentProcessingService(object):
     SKIP_ELASTIC_NET = "skip_elastic_net"
     SKIP_LINEAR_REGRESSION = "skip_linear_regression"
     RECORD_DIAGNOSTICS = "record_diagnostics"
+    BINARY_CATEGORICAL_MATRIX = "binary_categorical_matrix"
 
     INDIVIDUAL_TRAIN_ALGORITHM = "individual_train_algorithm"
     INDIVIDUAL_TRAIN_HYPERPARAMS = "individual_train_hyperparams"
@@ -48,39 +49,44 @@ class ArgumentProcessingService(object):
         arguments = self.fetchArguments(self.input_folder + "/" + self.ARGUMENTS_FILE)
         results_file = arguments.get(self.RESULTS)
         is_classifier = SafeCastUtil.safeCast(arguments.get(self.IS_CLASSIFIER), int) == 1
-        if is_classifier is not None and results_file is not None:
-            results_list = self.validateAndExtractResults(results_file, is_classifier)
-            gene_lists = self.extractGeneList()
-            write_diagnostics = self.fetchOrReturnDefault(arguments.get(self.RECORD_DIAGNOSTICS), bool, False)
-            feature_map = self.createAndValidateFeatureMatrix(results_list, results_file, gene_lists, write_diagnostics)
-            algorithm_configs = self.handleAlgorithmConfigs(arguments)
-            if feature_map and gene_lists and results_list:
-                return {
-                    self.RESULTS: results_list,
-                    self.IS_CLASSIFIER: is_classifier,
-                    self.FEATURES: feature_map,
-                    self.GENE_LISTS: gene_lists,
-                    self.INNER_MONTE_CARLO_PERMUTATIONS: self.fetchOrReturnDefault(arguments.get(self.INNER_MONTE_CARLO_PERMUTATIONS), int, 10),
-                    self.OUTER_MONTE_CARLO_PERMUTATIONS: self.fetchOrReturnDefault(arguments.get(self.OUTER_MONTE_CARLO_PERMUTATIONS), int, 10),
-                    self.DATA_SPLIT: self.fetchOrReturnDefault(arguments.get(self.DATA_SPLIT), float, 0.8),
-                    self.SKIP_RF: self.fetchOrReturnDefault(arguments.get(self.SKIP_RF), bool, False),
-                    self.SKIP_LINEAR_SVM: self.fetchOrReturnDefault(arguments.get(self.SKIP_LINEAR_SVM), bool, False),
-                    self.SKIP_RBF_SVM: self.fetchOrReturnDefault(arguments.get(self.SKIP_RBF_SVM), bool, False),
-                    self.SKIP_ELASTIC_NET: self.fetchOrReturnDefault(arguments.get(self.SKIP_ELASTIC_NET), bool, False),
-                    self.SKIP_LINEAR_REGRESSION: self.fetchOrReturnDefault(arguments.get(self.SKIP_LINEAR_REGRESSION),
-                                                                           bool, False),
-                    self.ALGORITHM_CONFIGS: algorithm_configs,
-                    self.NUM_THREADS: self.fetchOrReturnDefault(arguments.get(self.NUM_THREADS), int,
-                                                                multiprocessing.cpu_count()),
-                    self.RECORD_DIAGNOSTICS: write_diagnostics,
-                    self.INDIVIDUAL_TRAIN_ALGORITHM: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_ALGORITHM), str, None),
-                    self.INDIVIDUAL_TRAIN_HYPERPARAMS: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_HYPERPARAMS), str, ""),
-                    self.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO), str, None)
-                }
-            else:
-                return None
-        else:
+        if is_classifier is None or results_file is None:
             return None
+        results_list = self.validateAndExtractResults(results_file, is_classifier)
+        gene_lists = self.extractGeneList()
+
+
+        write_diagnostics = self.fetchOrReturnDefault(arguments.get(self.RECORD_DIAGNOSTICS), bool, False)
+        feature_files = [file for file in os.listdir(self.input_folder) if self.fileIsFeatureFile(file, results_file)]
+        feature_map = self.createAndValidateFeatureMatrix(results_list, gene_lists, write_diagnostics, feature_files)
+        binary_matrix_file = [arguments.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)]
+        binary_cat_matrix = self.createAndValidateFeatureMatrix(results_list, gene_lists, False, binary_matrix_file)
+
+        algorithm_configs = self.handleAlgorithmConfigs(arguments)
+        if not feature_map or not gene_lists or not results_list:
+            return None
+        return {
+            self.RESULTS: results_list,
+            self.IS_CLASSIFIER: is_classifier,
+            self.FEATURES: feature_map,
+            self.GENE_LISTS: gene_lists,
+            self.INNER_MONTE_CARLO_PERMUTATIONS: self.fetchOrReturnDefault(arguments.get(self.INNER_MONTE_CARLO_PERMUTATIONS), int, 10),
+            self.OUTER_MONTE_CARLO_PERMUTATIONS: self.fetchOrReturnDefault(arguments.get(self.OUTER_MONTE_CARLO_PERMUTATIONS), int, 10),
+            self.DATA_SPLIT: self.fetchOrReturnDefault(arguments.get(self.DATA_SPLIT), float, 0.8),
+            self.SKIP_RF: self.fetchOrReturnDefault(arguments.get(self.SKIP_RF), bool, False),
+            self.SKIP_LINEAR_SVM: self.fetchOrReturnDefault(arguments.get(self.SKIP_LINEAR_SVM), bool, False),
+            self.SKIP_RBF_SVM: self.fetchOrReturnDefault(arguments.get(self.SKIP_RBF_SVM), bool, False),
+            self.SKIP_ELASTIC_NET: self.fetchOrReturnDefault(arguments.get(self.SKIP_ELASTIC_NET), bool, False),
+            self.SKIP_LINEAR_REGRESSION: self.fetchOrReturnDefault(arguments.get(self.SKIP_LINEAR_REGRESSION),
+                                                                   bool, False),
+            self.ALGORITHM_CONFIGS: algorithm_configs,
+            self.NUM_THREADS: self.fetchOrReturnDefault(arguments.get(self.NUM_THREADS), int,
+                                                        multiprocessing.cpu_count()),
+            self.RECORD_DIAGNOSTICS: write_diagnostics,
+            self.INDIVIDUAL_TRAIN_ALGORITHM: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_ALGORITHM), str, None),
+            self.INDIVIDUAL_TRAIN_HYPERPARAMS: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_HYPERPARAMS), str, ""),
+            self.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO), str, None),
+            self.BINARY_CATEGORICAL_MATRIX: binary_cat_matrix
+        }
 
     def validateDirectoryContents(self, directory_contents):
         return self.ARGUMENTS_FILE in directory_contents
@@ -140,11 +146,10 @@ class ArgumentProcessingService(object):
 
         return gene_lists
 
-    def createAndValidateFeatureMatrix(self, results_list, results_file, gene_lists, write_diagnostics):
-        files = os.listdir(self.input_folder)
+    def createAndValidateFeatureMatrix(self, results_list, gene_lists, write_diagnostics, feature_files):
         incomplete_features = []
         null_features = []
-        for file in [file for file in files if self.fileIsFeatureFile(file, results_file)]:
+        for file in feature_files:
             features_path = self.input_folder + "/" + file
             validated_features, num_features = self.validateGeneLists(features_path, file, gene_lists)
             incomplete_features.append([file, validated_features, num_features])
@@ -155,7 +160,7 @@ class ArgumentProcessingService(object):
             self.writeDiagnostics(incomplete_features, null_features)
 
         feature_matrix = {self.FEATURE_NAMES: []}
-        for file in [file for file in files if self.fileIsFeatureFile(file, results_file)]:
+        for file in feature_files:
             features_path = self.input_folder + "/" + file
             self.extractFeatureMatrix(feature_matrix, features_path, file, gene_lists, results_list)
         return feature_matrix
@@ -252,7 +257,7 @@ class ArgumentProcessingService(object):
                             important_index = None
                             feature_name = self.determineFeatureName(gene_list_feature, file)
                             for i in range(0, len(feature_names)):
-                                if feature_names[i] == gene_list_feature:
+                                if feature_names[i].strip() == gene_list_feature.strip():
                                     important_index = i
                             feature_matrix[self.FEATURE_NAMES].append(feature_name)
                             important_feature_indices.append(important_index)

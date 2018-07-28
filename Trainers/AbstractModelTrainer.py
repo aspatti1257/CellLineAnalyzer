@@ -83,7 +83,8 @@ class AbstractModelTrainer(ABC):
 
             if current_perm[target_index] < len(hyperparams[hyperparam_keys[target_index]]) - 1:
                 current_perm[target_index] += 1
-                while len(current_perm) > target_index + 1 and current_perm[target_index + 1] < len(hyperparams[hyperparam_keys[target_index]]):
+                while len(current_perm) > target_index + 1 and current_perm[target_index + 1] <\
+                        len(hyperparams[hyperparam_keys[target_index]]):
                     target_index += 1
             else:
                 target_index -= 1

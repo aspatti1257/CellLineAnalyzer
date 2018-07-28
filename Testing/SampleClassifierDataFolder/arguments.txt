@@ -10,3 +10,4 @@ skip_elastic_net=False
 #RF and enet won't run
 ElasticNetAnalysis=False,0,0
 RandomForestAnalysis=True,5,5
+binary_categorical_matrix=categorical.csv

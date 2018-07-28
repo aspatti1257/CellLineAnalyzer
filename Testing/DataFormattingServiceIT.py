@@ -42,11 +42,11 @@ class DataFormattingServiceIT(unittest.TestCase):
         return X_test, X_train, y_test, y_train
 
     def testFormattingDataRandomizesMatrices(self):
-        original_outputs = self.data_formatting_service.formatData()
+        original_outputs = self.data_formatting_service.formatData(True)
         self.validateOutput(original_outputs)
 
         self.instantiateDataFormattingService(self.current_working_dir + "/SampleClassifierDataFolder")
-        new_outputs = self.data_formatting_service.formatData()
+        new_outputs = self.data_formatting_service.formatData(True)
         self.validateOutput(new_outputs)
 
         original_trained_cells = SafeCastUtil.safeCast(original_outputs.get(DataFormattingService.TRAINING_MATRIX).keys(), list)
@@ -67,7 +67,7 @@ class DataFormattingServiceIT(unittest.TestCase):
         argument_processing_service = ArgumentProcessingService(input_folder)
         arguments = argument_processing_service.handleInputFolder()
         data_formatting_service = DataFormattingService(arguments)
-        return data_formatting_service.formatData()
+        return data_formatting_service.formatData(True)
 
     @staticmethod
     def validateOutput(output):
@@ -118,7 +118,7 @@ class DataFormattingServiceIT(unittest.TestCase):
         feature_one_orig = list(x_vals.get("feature_one"))
         feature_two_orig = list(x_vals.get("feature_two"))
         feature_three_orig = list(x_vals.get("feature_three"))
-        scaled_test = self.data_formatting_service.scaleFeatures(x_vals)
+        scaled_test = self.data_formatting_service.maybeScaleFeatures(x_vals, True)
         assert scaled_test
         scaled_test_vals_as_list = SafeCastUtil.safeCast(scaled_test.values(), list)
         self.assertFeaturesScaled(feature_one_orig, scaled_test_vals_as_list, 0)

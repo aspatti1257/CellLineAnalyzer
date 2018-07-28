@@ -19,7 +19,7 @@ class RandomizedDataGenerator(object):
     INTEGER_SUFFIX = "int"
     FLOAT_SUFFIX = "float"
 
-    PCT_CATEGORICAL = .3
+    PCT_CATEGORICAL = .1
 
 
     @staticmethod
@@ -91,7 +91,7 @@ class RandomizedDataGenerator(object):
     def determineFileName(file_num):
         file_name = RandomizedDataGenerator.GENERATED_DATA_FOLDER + "/features_" + SafeCastUtil.safeCast(file_num, str)
         rand = np.random.random_sample()
-        if rand < RandomizedDataGenerator.PCT_CATEGORICAL:
+        if rand < RandomizedDataGenerator.PCT_CATEGORICAL or file_num == 1:  # always have at least one categorical file
             file_name += RandomizedDataGenerator.CATEGORICAL_SUFFIX + ".csv"
         elif RandomizedDataGenerator.PCT_CATEGORICAL <= rand < \
                 (RandomizedDataGenerator.PCT_CATEGORICAL + (1 - RandomizedDataGenerator.PCT_CATEGORICAL) / 2):
@@ -164,7 +164,8 @@ class RandomizedDataGenerator(object):
                         'inner_monte_carlo_permutations=' + SafeCastUtil.safeCast(monte_carlo_permutations, str) + '\n'
                         'outer_monte_carlo_permutations=' + SafeCastUtil.safeCast(monte_carlo_permutations, str) + '\n'
                         'data_split=' + SafeCastUtil.safeCast(data_split, str) + '\n'
-                        'record_diagnostics=True\n')
+                        'record_diagnostics=True\n' +
+                        'binary_categorical_matrix=features_1cat.csv\n')
         if individual_algorithm is not None and important_features is not None:
             args_file.write('individual_train_algorithm=' + individual_algorithm + '\n'
                             'individual_train_combo=' + important_features + ":" +

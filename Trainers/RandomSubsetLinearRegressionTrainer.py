@@ -5,8 +5,8 @@ from Trainers.AbstractModelTrainer import AbstractModelTrainer
 class RandomSubsetLinearRegressionTrainer(AbstractModelTrainer):
 
     def __init__(self, is_classifier, binary_categorical_matrix):
-        #TODO: Do we actually need to pass this in here?
         self.binary_categorical_matrix = binary_categorical_matrix
+        self.current_feature_set = []
         super().__init__(SupportedMachineLearningAlgorithms.RANDOM_SUBSET_LINEAR_REGRESSION,
                          self.initializeHyperParameters(), is_classifier)
 
@@ -28,7 +28,7 @@ class RandomSubsetLinearRegressionTrainer(AbstractModelTrainer):
         return None
 
     def setModelDataDictionary(self, model_data, hyperparam_set, current_model_score):
-        model_data[None, None] = current_model_score
+        model_data[hyperparam_set[0], hyperparam_set[1]] = current_model_score
 
     def logOptimalHyperParams(self, hyperparams, feature_set_as_string):
         pass  # No hyperparams for this model

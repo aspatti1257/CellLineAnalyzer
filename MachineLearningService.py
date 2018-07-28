@@ -110,7 +110,7 @@ class MachineLearningService(object):
                 trainer = self.createTrainerFromTargetAlgorithm(is_classifier, target_algorithm)
                 for permutation in range(0, self.inputs.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS)):
                     results = self.inputs.get(ArgumentProcessingService.RESULTS)
-                    formatted_data = self.formatData(self.inputs)
+                    formatted_data = self.formatData(self.inputs, trainer.algorithm)
                     training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
                                                                   gene_list_combo, formatted_data)
                     testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, gene_list_combo,
@@ -194,12 +194,13 @@ class MachineLearningService(object):
                                                          len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, linear_regression_trainer)
 
-        # if self.shouldTrainAlgorithm(rslr) and not is_classifier:
-        #     rplr_trainer = RandomSubsetLinearRegressionTrainer(is_classifier, None) #TODO: Fetch binary categorical matrix
-        #     rplr_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rslr, True),
-        #                                     self.monteCarloPermsByAlgorithm(rslr, False),
-        #                                     len(gene_list_combos))
-        #     self.handleParallellization(gene_list_combos, input_folder, rplr_trainer)
+        binary_cat_matrix = self.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
+        if self.shouldTrainAlgorithm(rslr) and not is_classifier and binary_cat_matrix is not None:
+            rslr_trainer = RandomSubsetLinearRegressionTrainer(is_classifier, binary_cat_matrix)
+            rslr_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rslr, True),
+                                            self.monteCarloPermsByAlgorithm(rslr, False),
+                                            len(gene_list_combos))
+            self.handleParallellization(gene_list_combos, input_folder, rslr_trainer)
 
     def monteCarloPermsByAlgorithm(self, algorithm, outer):
         if outer:
@@ -217,13 +218,14 @@ class MachineLearningService(object):
                                       for feature_set in gene_list_combos)
 
     def runMonteCarloSelection(self, feature_set, trainer, input_folder, num_combos):
+        self.setVariablesOnTrainerInSpecialCases(feature_set, trainer)
         scores = []
         accuracies = []
         feature_set_as_string = self.generateFeatureSetString(feature_set)
         outer_perms = self.monteCarloPermsByAlgorithm(trainer.algorithm, True)
         for i in range(1, outer_perms + 1):
             gc.collect()
-            formatted_data = self.formatData(self.inputs)
+            formatted_data = self.formatData(self.inputs, trainer.algorithm)
             training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set,
                                                           formatted_data)
             testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set,
@@ -248,6 +250,10 @@ class MachineLearningService(object):
         self.writeToCSVInLock(average_score, average_accuracy, feature_set_as_string, input_folder, trainer.algorithm,
                               num_combos)
         self.saveOutputToTxtFile(scores, accuracies, feature_set_as_string, input_folder, trainer.algorithm)
+
+    def setVariablesOnTrainerInSpecialCases(self, feature_set, trainer):
+        if trainer.algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_LINEAR_REGRESSION:
+            trainer.current_feature_set = feature_set
 
     def generateFeatureSetString(self, feature_set):
         feature_map = {}
@@ -290,7 +296,7 @@ class MachineLearningService(object):
         for j in range(1, inner_perms + 1):
             formatted_inputs = self.reformatInputsByTrainingMatrix(
                 formatted_data.get(DataFormattingService.TRAINING_MATRIX))
-            further_formatted_data = self.formatData(formatted_inputs)
+            further_formatted_data = self.formatData(formatted_inputs, trainer.algorithm)
             inner_validation_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set,
                                                                   further_formatted_data)
             inner_train_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set,
@@ -304,9 +310,9 @@ class MachineLearningService(object):
                     inner_model_hyperparams[data] = [model_data[data]]
         return inner_model_hyperparams
 
-    def formatData(self, inputs):
+    def formatData(self, inputs, algorithm):
         data_formatting_service = DataFormattingService(inputs)
-        return data_formatting_service.formatData()
+        return data_formatting_service.formatData(algorithm != SupportedMachineLearningAlgorithms.RANDOM_SUBSET_LINEAR_REGRESSION)
 
     def reformatInputsByTrainingMatrix(self, training_matrix):
         new_inputs = {ArgumentProcessingService.FEATURES: {}, ArgumentProcessingService.RESULTS: []}
