@@ -108,6 +108,18 @@ class DataFormattingServiceIT(unittest.TestCase):
         categorical_onehot = data_formatting_service.oneHot(categorical_pd)
         assert (np.shape(categorical_onehot))[1] == 2
 
+    def testFeatureOrderIsPreserved(self):
+        original_input = self.data_formatting_service.inputs.get(ArgumentProcessingService.FEATURES)
+        formatted_output = self.data_formatting_service.formatData(False, False)
+        self.validateMatrixOrderHasNotChanged(formatted_output, original_input, DataFormattingService.TESTING_MATRIX)
+        self.validateMatrixOrderHasNotChanged(formatted_output, original_input, DataFormattingService.TRAINING_MATRIX)
+
+    def validateMatrixOrderHasNotChanged(self, formatted_output, original_input, matrix):
+        for cell_line in formatted_output.get(matrix).keys():
+            formatted_features = formatted_output.get(matrix).get(cell_line)
+            original_features = original_input.get(cell_line)
+            assert original_features == formatted_features
+
     def testFeatureScaling(self):
         x_test, x_train, y_test, y_train = self.fetchTrainAndTestData()
 

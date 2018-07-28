@@ -21,10 +21,13 @@ class DataFormattingService(object):
     def __init__(self, inputs):
         self.inputs = inputs
 
-    def formatData(self, should_scale):
+    def formatData(self, should_scale, should_one_hot_encode=True):
         features_df = pd.DataFrame.from_dict(self.inputs[ArgumentProcessingService.FEATURES], orient='index')
         features_df = features_df.drop(ArgumentProcessingService.FEATURE_NAMES)
-        features_oh_df = self.oneHot(features_df)
+        if should_one_hot_encode:
+            features_oh_df = self.oneHot(features_df)
+        else:
+            features_oh_df = features_df
 
         x_train, x_test, y_train, y_test = self.testTrainSplit(features_oh_df,
                                                                self.inputs[ArgumentProcessingService.RESULTS],
