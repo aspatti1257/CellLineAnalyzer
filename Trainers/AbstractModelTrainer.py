@@ -5,6 +5,8 @@ import numpy
 import os
 
 from abc import ABC, abstractmethod
+
+from ArgumentProcessingService import ArgumentProcessingService
 from Utilities.SafeCastUtil import SafeCastUtil
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import accuracy_score
@@ -109,6 +111,8 @@ class AbstractModelTrainer(ABC):
         features = []
         relevant_results = []
         for cell in matrix.keys():
+            if cell == ArgumentProcessingService.FEATURE_NAMES:
+                continue
             features.append(matrix[cell])
             for result in results:
                 if result[0] == cell:

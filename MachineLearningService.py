@@ -345,15 +345,19 @@ class MachineLearningService(object):
 
     def trimMatrixByFeatureSet(self, matrix_type, gene_lists, formatted_inputs):
         full_matrix = formatted_inputs.get(matrix_type)
-        feature_names = self.inputs.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES)
+        trimmed_matrix = {
+            ArgumentProcessingService.FEATURE_NAMES: []
+        }
+
         important_indices = []
+        feature_names = self.inputs.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES)
         for i in range(0, len(feature_names)):
             for gene_list in gene_lists:
                 for gene in gene_list:
                     if gene == feature_names[i]:
                         important_indices.append(i)
+                        trimmed_matrix[ArgumentProcessingService.FEATURE_NAMES].append(gene)
 
-        trimmed_matrix = {}
         for cell_line in full_matrix.keys():
             new_cell_line_features = []
             for j in range(0, len(full_matrix[cell_line])):
