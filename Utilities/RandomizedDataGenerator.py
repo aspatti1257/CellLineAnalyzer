@@ -15,11 +15,12 @@ class RandomizedDataGenerator(object):
 
     SIGNIFICANT_GENE_LIST = "significant_gene_list"
 
-    CATEGORICAL_SUFFIX = "cat"
+    BINARY_CATEGORICAL_SUFFIX = "bin_cat"
+    CATEGORICAL_SUFFIX = "multi_cat"
     INTEGER_SUFFIX = "int"
     FLOAT_SUFFIX = "float"
 
-    PCT_CATEGORICAL = .1
+    PCT_CATEGORICAL = .3
 
 
     @staticmethod
@@ -91,7 +92,9 @@ class RandomizedDataGenerator(object):
     def determineFileName(file_num):
         file_name = RandomizedDataGenerator.GENERATED_DATA_FOLDER + "/features_" + SafeCastUtil.safeCast(file_num, str)
         rand = np.random.random_sample()
-        if rand < RandomizedDataGenerator.PCT_CATEGORICAL or file_num == 1:  # always have at least one categorical file
+        if file_num == 1:
+            file_name += RandomizedDataGenerator.BINARY_CATEGORICAL_SUFFIX + ".csv"
+        elif rand < RandomizedDataGenerator.PCT_CATEGORICAL:  # always have at least one categorical file
             file_name += RandomizedDataGenerator.CATEGORICAL_SUFFIX + ".csv"
         elif RandomizedDataGenerator.PCT_CATEGORICAL <= rand < \
                 (RandomizedDataGenerator.PCT_CATEGORICAL + (1 - RandomizedDataGenerator.PCT_CATEGORICAL) / 2):
@@ -104,7 +107,12 @@ class RandomizedDataGenerator(object):
     def writeSignificantFeature(file_name, result, feature):
         feature_num = SafeCastUtil.safeCast(feature.split(RandomizedDataGenerator.SIGNIFICANT_FEATURE_PREFIX)[1], int)
         is_exponential = feature_num % 2 == 0
-        if RandomizedDataGenerator.CATEGORICAL_SUFFIX in file_name:
+        if RandomizedDataGenerator.BINARY_CATEGORICAL_SUFFIX in file_name:
+            if result < 0.5:
+                return [0]
+            else:
+                return [1]
+        elif RandomizedDataGenerator.CATEGORICAL_SUFFIX in file_name:
             if result < 0.5:
                 return [np.random.choice(["a", "b"])]
             return [np.random.choice(["c", "d"])]
@@ -119,6 +127,8 @@ class RandomizedDataGenerator(object):
 
     @staticmethod
     def writeRandomFeature(file_name):
+        if RandomizedDataGenerator.BINARY_CATEGORICAL_SUFFIX in file_name:
+            return [SafeCastUtil.safeCast(np.random.choice([0, 1]), int)]
         if RandomizedDataGenerator.CATEGORICAL_SUFFIX in file_name:
             return [SafeCastUtil.safeCast(np.random.choice(["a", "b", "c", "d", "e"]), str)]
         elif RandomizedDataGenerator.INTEGER_SUFFIX in file_name:
@@ -165,7 +175,7 @@ class RandomizedDataGenerator(object):
                         'outer_monte_carlo_permutations=' + SafeCastUtil.safeCast(monte_carlo_permutations, str) + '\n'
                         'data_split=' + SafeCastUtil.safeCast(data_split, str) + '\n'
                         'record_diagnostics=True\n' +
-                        'binary_categorical_matrix=features_1cat.csv\n')
+                        'binary_categorical_matrix=features_1' + RandomizedDataGenerator.BINARY_CATEGORICAL_SUFFIX + '.csv\n')
         if individual_algorithm is not None and important_features is not None:
             args_file.write('individual_train_algorithm=' + individual_algorithm + '\n'
                             'individual_train_combo=' + important_features + ":" +
