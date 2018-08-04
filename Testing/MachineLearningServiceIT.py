@@ -6,7 +6,8 @@ from Trainers.ElasticNetTrainer import ElasticNetTrainer
 from Trainers.RandomForestTrainer import RandomForestTrainer
 from Trainers.LinearSVMTrainer import LinearSVMTrainer
 from Trainers.RadialBasisFunctionSVMTrainer import RadialBasisFunctionSVMTrainer
-from Trainers.LinearRegressionTrainer import LinearRegressionTrainer
+from Trainers.RidgeRegressionTrainer import RidgeRegressionTrainer
+from Trainers.LassoRegressionTrainer import LassoRegressionTrainer
 from Trainers.RandomSubsetLinearRegressionTrainer import RandomSubsetLinearRegressionTrainer
 
 from ArgumentProcessingService import ArgumentProcessingService
@@ -54,8 +55,11 @@ class MachineLearningServiceIT(unittest.TestCase):
     def testElasticNetRegressor(self):
         self.evaluateMachineLearningModel(ElasticNetTrainer(False))
 
-    def testLinearRegressor(self):
-        self.evaluateMachineLearningModel(LinearRegressionTrainer(False, False, None))
+    def testRidgeRegressor(self):
+        self.evaluateMachineLearningModel(RidgeRegressionTrainer(False))
+
+    def testLassoRegressor(self):
+        self.evaluateMachineLearningModel(LassoRegressionTrainer(False))
 
     def testRandomSubsetLinearRegressor(self):  # TODO: DRY this up and get it passing!
         ml_service = MachineLearningService(self.formatRandomizedData(False))
@@ -161,13 +165,17 @@ class MachineLearningServiceIT(unittest.TestCase):
         self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.ELASTIC_NET, "0.1,0.1",
                                                             False)
 
-    def testIndividualLinearRegressor(self):
-        self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.LINEAR_REGRESSION,
+    def testIndividualRidgeRegressor(self):
+        self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.RIDGE_REGRESSION,
+                                                            None, False)
+
+    def testIndividualLassoRegressor(self):
+        self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.LASSO_REGRESSION,
                                                             None, False)
 
     def testIndividualRandomPartitionLinearRegressor(self):
         # TODO:
-        # self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.LINEAR_REGRESSION,
+        # self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.RIDGE_REGRESSION,
         #  None, False)
         assert True
 

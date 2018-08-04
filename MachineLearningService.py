@@ -16,7 +16,8 @@ from Trainers.RandomForestTrainer import RandomForestTrainer
 from Trainers.LinearSVMTrainer import LinearSVMTrainer
 from Trainers.RadialBasisFunctionSVMTrainer import RadialBasisFunctionSVMTrainer
 from Trainers.ElasticNetTrainer import ElasticNetTrainer
-from Trainers.LinearRegressionTrainer import LinearRegressionTrainer
+from Trainers.RidgeRegressionTrainer import RidgeRegressionTrainer
+from Trainers.LassoRegressionTrainer import LassoRegressionTrainer
 from Trainers.RandomSubsetLinearRegressionTrainer import RandomSubsetLinearRegressionTrainer
 from Utilities.SafeCastUtil import SafeCastUtil
 
@@ -137,8 +138,10 @@ class MachineLearningService(object):
             trainer = RadialBasisFunctionSVMTrainer(is_classifier)
         elif target_algorithm == SupportedMachineLearningAlgorithms.ELASTIC_NET and not is_classifier:
             trainer = ElasticNetTrainer(is_classifier)
-        elif target_algorithm == SupportedMachineLearningAlgorithms.LINEAR_REGRESSION and not is_classifier:
-            trainer = LinearRegressionTrainer(is_classifier, False, None)
+        elif target_algorithm == SupportedMachineLearningAlgorithms.RIDGE_REGRESSION and not is_classifier:
+            trainer = RidgeRegressionTrainer(is_classifier)
+        elif target_algorithm == SupportedMachineLearningAlgorithms.LASSO_REGRESSION and not is_classifier:
+            trainer = LassoRegressionTrainer(is_classifier)
         # elif target_algorithm == SupportedMachineLearningAlgorithms.RANDOM_PARTITION_LINEAR_REGRESSION \
         #         and not is_classifier:
         #     trainer = RandomPartitionLinearRegressionTrainer(is_classifier, False, None)
@@ -155,7 +158,8 @@ class MachineLearningService(object):
         lin_svm = SupportedMachineLearningAlgorithms.LINEAR_SVM
         rbf = SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM
         enet = SupportedMachineLearningAlgorithms.ELASTIC_NET
-        lin_reg = SupportedMachineLearningAlgorithms.LINEAR_REGRESSION
+        rig_reg = SupportedMachineLearningAlgorithms.RIDGE_REGRESSION
+        las_reg = SupportedMachineLearningAlgorithms.LASSO_REGRESSION
         rslr = SupportedMachineLearningAlgorithms.RANDOM_SUBSET_LINEAR_REGRESSION
 
         if not self.inputs.get(ArgumentProcessingService.SKIP_RF) and self.shouldTrainAlgorithm(rf):
@@ -185,14 +189,23 @@ class MachineLearningService(object):
                                                   len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, elasticnet_trainer)
 
-        if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_REGRESSION) and not is_classifier and \
-                self.shouldTrainAlgorithm(lin_reg):
+        if not self.inputs.get(ArgumentProcessingService.SKIP_RIDGE_REGRESSION) and not is_classifier and \
+                self.shouldTrainAlgorithm(rig_reg):
             record_diagnostics = self.inputs.get(ArgumentProcessingService.RECORD_DIAGNOSTICS)
-            linear_regression_trainer = LinearRegressionTrainer(is_classifier, record_diagnostics, input_folder)
-            linear_regression_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(lin_reg, True),
-                                                         self.monteCarloPermsByAlgorithm(lin_reg, False),
+            ridge_regression_trainer = RidgeRegressionTrainer(is_classifier)
+            ridge_regression_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rig_reg, True),
+                                                         self.monteCarloPermsByAlgorithm(rig_reg, False),
                                                          len(gene_list_combos))
-            self.handleParallellization(gene_list_combos, input_folder, linear_regression_trainer)
+            self.handleParallellization(gene_list_combos, input_folder, ridge_regression_trainer)
+
+        if not self.inputs.get(ArgumentProcessingService.SKIP_LASSO_REGRESSION) and not is_classifier and \
+                self.shouldTrainAlgorithm(las_reg):
+            record_diagnostics = self.inputs.get(ArgumentProcessingService.RECORD_DIAGNOSTICS)
+            lasso_regression_trainer = LassoRegressionTrainer(is_classifier)
+            lasso_regression_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rig_reg, True),
+                                                         self.monteCarloPermsByAlgorithm(rig_reg, False),
+                                                         len(gene_list_combos))
+            self.handleParallellization(gene_list_combos, input_folder, lasso_regression_trainer)
 
         binary_cat_matrix = self.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
         if self.shouldTrainAlgorithm(rslr) and not is_classifier and binary_cat_matrix is not None:
@@ -376,7 +389,7 @@ class MachineLearningService(object):
         write_action = "w"
         if file_name in os.listdir(input_folder):
             write_action = "a"
-        with open(input_folder + "/" + file_name, write_action) as csv_file:
+        with open(input_folder + "/" + file_name, write_action, newline='') as csv_file:
             try:
                 writer = csv.writer(csv_file)
                 if write_action == "w":

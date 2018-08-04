@@ -29,7 +29,8 @@ class ArgumentProcessingService(object):
     SKIP_LINEAR_SVM = "skip_linear_svm"
     SKIP_RBF_SVM = "skip_rbf_svm"
     SKIP_ELASTIC_NET = "skip_elastic_net"
-    SKIP_LINEAR_REGRESSION = "skip_linear_regression"
+    SKIP_RIDGE_REGRESSION = "skip_ridge_regression"
+    SKIP_LASSO_REGRESSION = "skip_lasso_regression"
     RECORD_DIAGNOSTICS = "record_diagnostics"
     BINARY_CATEGORICAL_MATRIX = "binary_categorical_matrix"
 
@@ -76,8 +77,10 @@ class ArgumentProcessingService(object):
             self.SKIP_LINEAR_SVM: self.fetchOrReturnDefault(arguments.get(self.SKIP_LINEAR_SVM), bool, False),
             self.SKIP_RBF_SVM: self.fetchOrReturnDefault(arguments.get(self.SKIP_RBF_SVM), bool, False),
             self.SKIP_ELASTIC_NET: self.fetchOrReturnDefault(arguments.get(self.SKIP_ELASTIC_NET), bool, False),
-            self.SKIP_LINEAR_REGRESSION: self.fetchOrReturnDefault(arguments.get(self.SKIP_LINEAR_REGRESSION),
-                                                                   bool, False),
+            self.SKIP_RIDGE_REGRESSION: self.fetchOrReturnDefault(arguments.get(self.SKIP_RIDGE_REGRESSION),
+                                                                  bool, False),
+            self.SKIP_LASSO_REGRESSION: self.fetchOrReturnDefault(arguments.get(self.SKIP_LASSO_REGRESSION),
+                                                                  bool, False),
             self.ALGORITHM_CONFIGS: algorithm_configs,
             self.NUM_THREADS: self.fetchOrReturnDefault(arguments.get(self.NUM_THREADS), int,
                                                         multiprocessing.cpu_count()),

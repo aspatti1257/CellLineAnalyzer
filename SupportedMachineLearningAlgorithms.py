@@ -6,7 +6,8 @@ class SupportedMachineLearningAlgorithms:
     LINEAR_SVM = "LinearSVMAnalysis"
     RADIAL_BASIS_FUNCTION_SVM = "RadialBasisFunctionSVMAnalysis"
     ELASTIC_NET = "ElasticNetAnalysis"
-    LINEAR_REGRESSION = "LinearRegressionAnalysis"
+    RIDGE_REGRESSION = "RidgeRegressionAnalysis"
+    LASSO_REGRESSION = "LassoRegressionAnalysis"
     RANDOM_SUBSET_LINEAR_REGRESSION = "RandomSubsetLinearRegression"
 
     @staticmethod
