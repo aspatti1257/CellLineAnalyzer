@@ -58,8 +58,8 @@ class MachineLearningServiceIT(unittest.TestCase):
     def testRidgeRegressor(self):
         self.evaluateMachineLearningModel(RidgeRegressionTrainer(False))
 
-    # def testLassoRegressor(self):  #TODO: Get LASSO into a well performing state.
-    #     self.evaluateMachineLearningModel(LassoRegressionTrainer(False))
+    def testLassoRegressor(self):
+        self.evaluateMachineLearningModel(LassoRegressionTrainer(False))
 
     def testRandomSubsetLinearRegressor(self):  # TODO: DRY this up and get it passing!
         ml_service = MachineLearningService(self.formatRandomizedData(False))
@@ -169,9 +169,9 @@ class MachineLearningServiceIT(unittest.TestCase):
         self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.RIDGE_REGRESSION,
                                                             None, False)
 
-    # def testIndividualLassoRegressor(self): #TODO: Get LASSO into a well performing state.
-    #     self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.LASSO_REGRESSION,
-    #                                                         None, False)
+    def testIndividualLassoRegressor(self):
+        self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.LASSO_REGRESSION,
+                                                             None, False)
 
     def testIndividualRandomPartitionLinearRegressor(self):
         # TODO:
