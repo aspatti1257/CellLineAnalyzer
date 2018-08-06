@@ -17,12 +17,11 @@ def main():
     arguments = sys.argv[1:]
     if len(arguments) == 0:
         promptUserForInput()
-    elif len(arguments) == 1:
-        first_argument = arguments[0]
-        if argumentFolderContainsMATLABFiles(first_argument):
-            FileConverter.convertMatLabToCSV(first_argument)
-        else:
-            runMainCellLineAnalysis(first_argument)
+    elif len(arguments) == 2:
+        if arguments[0] == 0:
+            FileConverter.convertMatLabToCSV(arguments[1])
+        elif arguments[0] == 1:
+            runMainCellLineAnalysis(arguments[1])
     return
 
 def promptUserForInput():
@@ -43,10 +42,6 @@ def promptUserForInput():
     elif option_as_int == 1:
         matlab_files_directory = recursivelyPromptUser("Enter folder path of the matlab files:\n", str)
         FileConverter.convertMatLabToCSV(matlab_files_directory)
-
-
-def argumentFolderContainsMATLABFiles(arg):
-    return len([file for file in os.listdir(arg) if ".mat" in file]) > 0
 
 def runMainCellLineAnalysis(input_folder):
     valid_inputs = handleInputFolderProcessing(input_folder)
