@@ -15,13 +15,15 @@ log.setLevel(logging.INFO)
 
 def main():
     arguments = sys.argv[1:]
+    directory = arguments[1]
     if len(arguments) == 0:
         promptUserForInput()
-    elif len(arguments) == 2:
-        if arguments[0] == 0:
-            FileConverter.convertMatLabToCSV(arguments[1])
-        elif arguments[0] == 1:
-            runMainCellLineAnalysis(arguments[1])
+    elif (len(arguments) == 2) and (arguments[0] == '0'):
+        runMainCellLineAnalysis(directory)
+    elif (len(arguments) == 2) and (arguments[0] == '1'):
+        FileConverter.convertMatLabToCSV(directory)
+    else:
+        log.error("Exiting program, invalid data sent in target folder.")
     return
 
 def promptUserForInput():

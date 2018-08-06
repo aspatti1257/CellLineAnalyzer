@@ -59,8 +59,8 @@ class ArgumentProcessingService(object):
         write_diagnostics = self.fetchOrReturnDefault(arguments.get(self.RECORD_DIAGNOSTICS), bool, False)
         feature_files = [file for file in os.listdir(self.input_folder) if self.fileIsFeatureFile(file, results_file)]
         feature_map = self.createAndValidateFeatureMatrix(results_list, gene_lists, write_diagnostics, feature_files)
-        binary_matrix_file = [arguments.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)]
-        binary_cat_matrix = self.createAndValidateFeatureMatrix(results_list, gene_lists, False, binary_matrix_file)
+        #binary_matrix_file = [arguments.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)]
+        #binary_cat_matrix = self.createAndValidateFeatureMatrix(results_list, gene_lists, False, binary_matrix_file)
 
         algorithm_configs = self.handleAlgorithmConfigs(arguments)
         if not feature_map or not gene_lists or not results_list:
@@ -88,7 +88,7 @@ class ArgumentProcessingService(object):
             self.INDIVIDUAL_TRAIN_ALGORITHM: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_ALGORITHM), str, None),
             self.INDIVIDUAL_TRAIN_HYPERPARAMS: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_HYPERPARAMS), str, ""),
             self.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO), str, None),
-            self.BINARY_CATEGORICAL_MATRIX: binary_cat_matrix
+            #self.BINARY_CATEGORICAL_MATRIX: binary_cat_matrix
         }
 
     def validateDirectoryContents(self, directory_contents):

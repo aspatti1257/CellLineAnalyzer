@@ -20,7 +20,7 @@ of the results file, which machine learning models to create, etc.
 All of these files should be in the same folder. This program will accept one argument, a path to that folder (it can
 either be passed as a parameter on the command line, or entered at the prompt after running it). The outputs will be
 .CSV files called RandomForestAnalysis.csv, LinearSVMAnalysis.csv, RadialBasisFunctionSVMAnalysis.csv,
-ElasticNetAnalysis.csv, and/or LinearRegressionAnalysis.csv depending on which machine learning modules you opt to use.
+ElasticNetAnalysis.csv, RidgeRegressionAnalysis.csv or/and LassoRegressionAnalysis depending on which machine learning modules you opt to use.
 
 This program will also generate an HTML document summarizing the how well each analysis performed and giving an overview
 of the data submitted.
@@ -72,12 +72,12 @@ cell_line1,0.32
 
 ### Dataset Formatting for the gene list files:
 Also in the path should be .CSV files marked with the substring "gene_list" in the title, e.g. gene_list1.csv,
-gene_list2.csv, gene_list_tissue_enseble, etc.
+gene_list2.csv, etc. Please be aware of the gene names (to be of the same type as in the data, standard is the HUGO notation).
 
 The format of each of these "gene list" files should be a simple list of genes found as features in the other feature
 files, such as: <br />
 ```
-WNT, ERK, p53, beta-catenin
+PTEN, BRAF, TP53
 ```
 across the first row of a csv.
 
@@ -114,7 +114,10 @@ ones that aren't are marked with a star (*).
 `skip_elastic_net`* : <b>DEPRECATED</b> Optionally skip Elastic Net analysis. Defaults to False. Only applies for
                       regressors.
 
-`skip_linear_regression`*: <b>DEPRECATED</b>  Optionally skip Linear Regression analysis. Defaults to False. Only
+`skip_ridge_regression`*: <b>DEPRECATED</b>  Optionally skip Ridge Regression analysis. Defaults to False. Only
+                            applies for regressors.
+
+`skip_lasso_regression`*: <b>DEPRECATED</b>  Optionally skip Lasso Regression analysis. Defaults to False. Only
                             applies for regressors.
 
 `RandomForestAnalysis`*: The configuration for the Random Forest analysis. Accepts three parameters: True or False,
@@ -139,7 +142,13 @@ ones that aren't are marked with a star (*).
                       defaults to True and the inner/outer monte carlo param values set by other arguments
                       in this file.
 
-`LinearRegressionAnalysis`: The configuration for the Linear Regression analysis. Accepts three
+`RidgeRegressionAnalysis`: The configuration for the Ridge Regression analysis. Accepts three
+                            parameters: True or False, for whether the analysis should run at all. The number of
+                            outer monte carlo loops, and the number of inner monte carlo loops. If not specified,
+                            defaults to True and the inner/outer monte carlo param values set by other arguments
+                            in this file.
+
+`LassoRegressionAnalysis`: The configuration for the Lasso Regression analysis. Accepts three
                             parameters: True or False, for whether the analysis should run at all. The number of
                             outer monte carlo loops, and the number of inner monte carlo loops. If not specified,
                             defaults to True and the inner/outer monte carlo param values set by other arguments
@@ -156,12 +165,12 @@ ones that aren't are marked with a star (*).
                                     "LinearSVMAnalysis"
                                     "RadialBasisFunctionSVMAnalysis"
                                     "ElasticNetAnalysis"
-                                    "LinearRegressionAnalysis"
+                                    "RidgeRegressionAnalysis"
+                                    LassoRegressionAnalysis"
 
 `individual_train_hyperparams`*: Optionally train only the specified ML algorithm with these hyperparams and a specified
                                  gene list feature combo. Values should be a comma separated list with no quotes or
-                                 spaces. Not required for algorithms that don't use hyperparameters (e.g. linear
-                                 regression).
+                                 spaces.
 
 `individual_train_combo`*: Optionally train only on the specified ML algorithm with this gene list feature combo and the
                            specified hyperparameters. Should be formatted as FEATURE_FILE_NAME:GENE_LIST_FILE_NAME
@@ -226,7 +235,7 @@ which the program is called.
 Alternatively, you can input the path of your target folder as an argument to the program:
 
 ```
-python __main__.py /PATH/TO/DATA_FOLDER
+python __main__.py 0 /PATH/TO/DATA_FOLDER
 ```
 
 # 4.) File Conversion
@@ -245,7 +254,7 @@ Enter `1` to convert the file and type in the path of the .mat file.
 Alternatively, you can input the path of your .mat file as an argument to the program:
 
 ```
-python __main__.py /PATH/TO/.MAT_FILE
+python __main__.py 1 /PATH/TO/.MAT_FILE
 ```
 It will automatically distinguish the input. If it's a folder, it will attempt to run a cell line analysis, and if it's
 a .mat file, it will attempt to convert it to a series of .CSVs.
@@ -286,4 +295,5 @@ Powershell to install both python and pip.
 
 # Authorship
 
-Cell Line Analyzer was created by Andrew Patti and Christine Zhang under supervision of David Craft, MGH/HMS. 2018.
+Cell Line Analyzer was created by Andrew Patti, Georgios Patoulidis and Christine Zhang under supervision of David Craft,
+Massachusetts General Hospital - Harvard Medical School. 2018.
