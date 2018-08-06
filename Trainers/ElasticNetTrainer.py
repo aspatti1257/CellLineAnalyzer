@@ -14,8 +14,8 @@ class ElasticNetTrainer(AbstractModelTrainer):
 
     def initializeHyperParameters(self):
         return {
-            "alpha": [0.01, 0.1, 0.5, 1],
-            "l_one_ratio": [0.1, 0.9]
+            "alpha": [0.001, 0.01, 0.1, 1, 10],
+            "l_one_ratio": [0, 0.1, 0.5, 0.9, 1]
         }
 
     def hyperparameterize(self, training_matrix, testing_matrix, results):
