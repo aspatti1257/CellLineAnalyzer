@@ -13,14 +13,14 @@ class LassoRegressionTrainer(AbstractModelTrainer):
         return True
 
     def initializeHyperParameters(self):
-        return {"alpha": [0.0001, 0.001, 0.01, 0.1, 1, 10, 100]}
+        return {"alpha": [0.001, 0.01, 0.1, 1, 10]}
 
     def hyperparameterize(self, training_matrix, testing_matrix, results):
         return super().loopThroughHyperparams(self.initializeHyperParameters(), training_matrix,
                                               testing_matrix, results)
 
     def train(self, results, features, hyperparams):
-        model = Lasso(alpha=hyperparams[0], normalize=True, max_iter=0)
+        model = Lasso(alpha=hyperparams[0], normalize=True)
         model.fit(features, results)
         self.log.debug("Successful creation of the Lasso Regression model: %s\n", model)
         return model
