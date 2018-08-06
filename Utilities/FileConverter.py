@@ -104,7 +104,7 @@ class FileConverter(object):
                 try:
                     expected_type(element)
                 except TypeError as error:
-                    log.error("Unable to cast %s to %s.", element, expected_type)
+                    log.error("Unable to cast %s to %s. %s", element, expected_type, error)
                     return
 
         with open(file_name, 'w', newline='') as csv_file:
