@@ -55,12 +55,10 @@ class ArgumentProcessingService(object):
         results_list = self.validateAndExtractResults(results_file, is_classifier)
         gene_lists = self.extractGeneList()
 
-
         write_diagnostics = self.fetchOrReturnDefault(arguments.get(self.RECORD_DIAGNOSTICS), bool, False)
         feature_files = [file for file in os.listdir(self.input_folder) if self.fileIsFeatureFile(file, results_file)]
         feature_map = self.createAndValidateFeatureMatrix(results_list, gene_lists, write_diagnostics, feature_files)
-        #binary_matrix_file = [arguments.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)]
-        #binary_cat_matrix = self.createAndValidateFeatureMatrix(results_list, gene_lists, False, binary_matrix_file)
+        binary_cat_matrix = self.fetchBinaryCatMatrixIfApplicable(arguments, gene_lists, results_list)
 
         algorithm_configs = self.handleAlgorithmConfigs(arguments)
         if not feature_map or not gene_lists or not results_list:
@@ -88,7 +86,7 @@ class ArgumentProcessingService(object):
             self.INDIVIDUAL_TRAIN_ALGORITHM: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_ALGORITHM), str, None),
             self.INDIVIDUAL_TRAIN_HYPERPARAMS: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_HYPERPARAMS), str, ""),
             self.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO), str, None),
-            #self.BINARY_CATEGORICAL_MATRIX: binary_cat_matrix
+            self.BINARY_CATEGORICAL_MATRIX: binary_cat_matrix
         }
 
     def validateDirectoryContents(self, directory_contents):
@@ -157,7 +155,7 @@ class ArgumentProcessingService(object):
             validated_features, num_features = self.validateGeneLists(features_path, file, gene_lists)
             incomplete_features.append([file, validated_features, num_features])
 
-            null_count, feature_length = self.counting_nulls(features_path)
+            null_count, feature_length = self.countNulls(features_path)
             null_features.append([file, null_count, feature_length])
         if write_diagnostics:
             self.writeDiagnostics(incomplete_features, null_features)
@@ -227,7 +225,7 @@ class ArgumentProcessingService(object):
             finally:
                 diagnostics_file.close()
 
-    def counting_nulls(self, feature_file):
+    def countNulls(self, feature_file):
         null_count = 0
         feature_length = 0
         with open(feature_file) as feature_file:
@@ -323,6 +321,14 @@ class ArgumentProcessingService(object):
                                      SafeCastUtil.safeCast(config_split[1], int),
                                      SafeCastUtil.safeCast(config_split[2], int)]
         return configs
+
+    def fetchBinaryCatMatrixIfApplicable(self, arguments, gene_lists, results_list):
+        binary_matrix_file = arguments.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
+        if binary_matrix_file is not None:
+            return self.createAndValidateFeatureMatrix(results_list, gene_lists, False,
+                                                                    [binary_matrix_file])
+        else:
+            return None
 
     def fetchOrReturnDefault(self, field, to_type, default):
         if field:
