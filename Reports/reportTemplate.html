@@ -406,7 +406,8 @@
                        }).attr("height", function(dataPoint) {
                            return height - y(dataPoint.length);
                        }).on('mouseover', function(dataPoint) {
-                            var innerHTML = dataPoint.length + " combos with score between " + dataPoint.x0 + " and " + dataPoint.x1 + "."
+                            var innerHTML = dataPoint.length + " combo(s) with score between " + dataPoint.x0 +
+                                            " and " + dataPoint.x1 + "."
                             return tooltip.html(innerHTML).style("visibility", "visible")
                                           .style("top", (event.pageY - 17) + "px").style("left",(event.pageX + 25) + "px");
                        }).on('mouseout', function(dataPoint) {
