@@ -107,16 +107,18 @@ class MachineLearningServiceIT(unittest.TestCase):
                         continue
                     feature_gene_list_combo = line_split[0]
                     assert ":" in feature_gene_list_combo
-                    score = SafeCastUtil.safeCast(line_split[len(line_split) - 2], float)
-                    accuracy = SafeCastUtil.safeCast(line_split[len(line_split) - 1], float)
+                    score = SafeCastUtil.safeCast(line_split[1], float)
+                    accuracy = SafeCastUtil.safeCast(line_split[2], float)
                     assert score > trainer.DEFAULT_MIN_SCORE
                     if RandomizedDataGenerator.SIGNIFICANT_GENE_LIST in feature_gene_list_combo:
                         assert score >= self.THRESHOLD_OF_SIGNIFICANCE
                     else:
                         assert score < self.THRESHOLD_OF_SIGNIFICANCE
                     assert accuracy > 0
-            except ValueError as valueError:
-                self.log.error(valueError)
+                    top_importance = line_split[3]
+                    assert top_importance is not None
+            except AssertionError as error:
+                self.log.error(error)
             finally:
                 self.log.debug("Closing file %s", file_name)
                 csv_file.close()
@@ -206,8 +208,10 @@ class MachineLearningServiceIT(unittest.TestCase):
                         continue
                     feature_gene_list_combo = line_split[0]
                     assert ":" in feature_gene_list_combo
-            except ValueError as valueError:
-                self.log.error(valueError)
+                    top_importance = line_split[3]
+                    assert top_importance is not None
+            except AssertionError as error:
+                self.log.error(error)
             finally:
                 self.log.debug("Closing file %s", file_name)
                 csv_file.close()

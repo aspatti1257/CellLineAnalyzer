@@ -28,6 +28,8 @@ class MachineLearningService(object):
     logging.basicConfig()
     log.setLevel(logging.INFO)
 
+    MAXIMUM_FEATURES_RECORDED = 20
+
     def __init__(self, data):
         self.inputs = data
 
@@ -122,9 +124,12 @@ class MachineLearningService(object):
                     model_score = trainer.fetchPredictionsAndScore(model, testing_matrix, results)
                     score = model_score[0]
                     accuracy = model_score[1]
+                    ordered_importances = self.averageAndSortImportances(self.fetchFeatureImportances(model, gene_list_combo))
+
                     self.log.debug("Final score and accuracy of individual analysis for feature gene combo %s "
                                    "using algorithm %s: %s, %s", target_combo, target_algorithm, score, accuracy)
-                    self.writeToCSVInLock(score, accuracy, target_combo, input_folder, target_algorithm, outer_monte_carlo_loops)
+                    line = numpy.concatenate([[target_combo, score, accuracy], ordered_importances])
+                    self.writeToCSVInLock(line, input_folder, target_algorithm, outer_monte_carlo_loops)
                 return
         self.log.info("Gene list feature file %s combo not found in current dataset.", target_combo)
         return
@@ -191,16 +196,14 @@ class MachineLearningService(object):
 
         if not self.inputs.get(ArgumentProcessingService.SKIP_RIDGE_REGRESSION) and not is_classifier and \
                 self.shouldTrainAlgorithm(rig_reg):
-            record_diagnostics = self.inputs.get(ArgumentProcessingService.RECORD_DIAGNOSTICS)
             ridge_regression_trainer = RidgeRegressionTrainer(is_classifier)
             ridge_regression_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rig_reg, True),
-                                                         self.monteCarloPermsByAlgorithm(rig_reg, False),
-                                                         len(gene_list_combos))
+                                                        self.monteCarloPermsByAlgorithm(rig_reg, False),
+                                                        len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, ridge_regression_trainer)
 
         if not self.inputs.get(ArgumentProcessingService.SKIP_LASSO_REGRESSION) and not is_classifier and \
                 self.shouldTrainAlgorithm(las_reg):
-            record_diagnostics = self.inputs.get(ArgumentProcessingService.RECORD_DIAGNOSTICS)
             lasso_regression_trainer = LassoRegressionTrainer(is_classifier)
             lasso_regression_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rig_reg, True),
                                                          self.monteCarloPermsByAlgorithm(rig_reg, False),
@@ -234,6 +237,7 @@ class MachineLearningService(object):
         self.setVariablesOnTrainerInSpecialCases(feature_set, trainer)
         scores = []
         accuracies = []
+        importances = {}
         feature_set_as_string = self.generateFeatureSetString(feature_set)
         outer_perms = self.monteCarloPermsByAlgorithm(trainer.algorithm, True)
         for i in range(1, outer_perms + 1):
@@ -250,18 +254,25 @@ class MachineLearningService(object):
             record_diagnostics = self.inputs.get(ArgumentProcessingService.RECORD_DIAGNOSTICS)
             trainer.logIfBestHyperparamsOnRangeThreshold(optimal_hyperparams, record_diagnostics, input_folder)
 
-            prediction_data = self.fetchOuterPermutationModelScore(feature_set_as_string, trainer,
+            prediction_data = self.fetchOuterPermutationModelScore(feature_set, trainer,
                                                                    optimal_hyperparams, testing_matrix,
                                                                    training_matrix)
             scores.append(prediction_data[0])
             accuracies.append(prediction_data[1])
+            for importance in prediction_data[2].keys():
+                if importances.get(importance) is not None:
+                    importances[importance].append(prediction_data[2].get(importance))
+                else:
+                    importances[importance] = [prediction_data[2].get(importance)]
 
         average_score = numpy.mean(scores)
         average_accuracy = numpy.mean(accuracies)
+        ordered_importances = self.averageAndSortImportances(importances)
+
         self.log.debug("Average score and accuracy of all Monte Carlo runs for %s: %s, %s",
                        feature_set_as_string, average_score, average_accuracy)
-        self.writeToCSVInLock(average_score, average_accuracy, feature_set_as_string, input_folder, trainer.algorithm,
-                              num_combos)
+        line = numpy.concatenate([[feature_set_as_string, average_score, average_accuracy], ordered_importances])
+        self.writeToCSVInLock(line, input_folder, trainer.algorithm, num_combos)
         self.saveOutputToTxtFile(scores, accuracies, feature_set_as_string, input_folder, trainer.algorithm)
 
     def setVariablesOnTrainerInSpecialCases(self, feature_set, trainer):
@@ -294,14 +305,54 @@ class MachineLearningService(object):
                         feature_set_string += (file_key + ":" + gene_list_key + " ")
         return feature_set_string.strip()
 
-    def fetchOuterPermutationModelScore(self, feature_set_as_string, trainer, optimal_hyperparams,
+    def fetchOuterPermutationModelScore(self, feature_set, trainer, optimal_hyperparams,
                                         testing_matrix, training_matrix):
         # TODO: Handle hyperparams with n
         results = self.inputs.get(ArgumentProcessingService.RESULTS)
         features, relevant_results = trainer.populateFeaturesAndResultsByCellLine(training_matrix, results)
-        trainer.logOptimalHyperParams(optimal_hyperparams, feature_set_as_string)
+        trainer.logOptimalHyperParams(optimal_hyperparams, self.generateFeatureSetString(feature_set))
         model = trainer.train(relevant_results, features, optimal_hyperparams)
-        return trainer.fetchPredictionsAndScore(model, testing_matrix, results)
+        score, accuracy = trainer.fetchPredictionsAndScore(model, testing_matrix, results)
+        importances = self.fetchFeatureImportances(model, feature_set)
+        return [score, accuracy, importances]
+
+    def fetchFeatureImportances(self, model, feature_set):
+        importances = {}
+        features_in_order = []
+        for feature_file in feature_set:
+            for feature in feature_file:
+                features_in_order.append(feature)
+
+        if hasattr(model, "feature_importances_") and len(features_in_order) == len(model.feature_importances_):
+            for i in range(0, len(features_in_order)):
+                importances[features_in_order[i]] = model.feature_importances_[i]  # already normalized.
+        elif hasattr(model, "coef_") or hasattr(model, "support_vectors_"):
+            coefficients = []
+            if hasattr(model, "coef_") and len(features_in_order) == len(model.coef_):
+                coefficients = model.coef_
+            elif hasattr(model, "coef_") and len(features_in_order) == len(model.coef_[0]):
+                coefficients = model.coef_[0]
+            elif hasattr(model, "support_vectors_") and len(features_in_order) == len(model.support_vectors_[0]):
+                coefficients = model.support_vectors_[0]
+            if len(coefficients) == 0:
+                return importances
+            absolute_sum = numpy.sum([numpy.abs(coeff) for coeff in coefficients])
+            for i in range(0, len(features_in_order)):
+                if absolute_sum > 0:
+                    importances[features_in_order[i]] = numpy.abs(coefficients[i]) / absolute_sum
+                else:
+                    importances[features_in_order[i]] = numpy.abs(coefficients[i])  # should be 0.
+
+        return importances
+
+    def averageAndSortImportances(self, importances):
+        ordered_imps = []
+        [ordered_imps.append({"feature": k, "importance": numpy.mean(importances[k])}) for k in importances.keys()]
+        ordered_imps = sorted(ordered_imps, key=lambda k: k["importance"])
+        ordered_imps.reverse()
+        ordered_imps = ordered_imps[:self.MAXIMUM_FEATURES_RECORDED]
+
+        return [imp.get("feature") + " --- " + SafeCastUtil.safeCast(imp.get("importance"), str) for imp in ordered_imps]
 
     def determineInnerHyperparameters(self, feature_set, formatted_data, trainer):
         inner_model_hyperparams = {}
@@ -379,8 +430,7 @@ class MachineLearningService(object):
             trimmed_matrix[cell_line] = new_cell_line_features
         return trimmed_matrix
 
-    def writeToCSVInLock(self, average_score, average_accuracy, feature_set_as_string, input_folder, ml_algorithm,
-                         num_combos):
+    def writeToCSVInLock(self, line, input_folder, ml_algorithm, num_combos):
         lock = threading.Lock()
         lock.acquire(True)
         self.lockThreadMessage()
@@ -394,7 +444,7 @@ class MachineLearningService(object):
                 writer = csv.writer(csv_file)
                 if write_action == "w":
                     writer.writerow(self.getCSVFileHeader(self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER)))
-                writer.writerow([feature_set_as_string, average_score, average_accuracy])
+                writer.writerow(line)
             except ValueError as error:
                 self.log.error("Error writing to file %s. %s", file_name, error)
             finally:
@@ -417,10 +467,24 @@ class MachineLearningService(object):
 
     @staticmethod
     def getCSVFileHeader(is_classifier):
+        header = ["feature file: gene list combo"]
         if is_classifier:
-            return ["feature file: gene list combo", "percentage accurate predictions", "accuracy score"]
+            header.append("percentage accurate predictions")
+            header.append("accuracy score")
         else:
-            return ["feature file: gene list combo", "R^2 score", "mean squared error"]
+            header.append("R^2 score")
+            header.append("mean squared error")
+        for i in range(1, MachineLearningService.MAXIMUM_FEATURES_RECORDED + 1):
+            if i == 1:
+                suffix = "st"
+            elif i == 2:
+                suffix = "nd"
+            elif i == 3:
+                suffix = "rd"
+            else:
+                suffix = "th"
+            header.append(SafeCastUtil.safeCast(i, str) + suffix + " most important feature")
+        return header
 
     def logPercentDone(self, total_lines, num_combos, ml_algorithm):
         percent_done = numpy.round((total_lines / num_combos) * 100, 1)
