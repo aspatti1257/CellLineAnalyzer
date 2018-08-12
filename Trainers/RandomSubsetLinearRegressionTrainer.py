@@ -55,6 +55,12 @@ class RandomSubsetLinearRegressionTrainer(AbstractModelTrainer):
 
     def train(self, results, features, hyperparams):
         # TODO: Split data and return a model. Must be able to implement "predict" and "score" methods correctly.
+
+        # TODO: For each partition, there needs to be a boolean statement which can be used to partition the test data
+        # properly. However, in order to support test data that doesn't fit into any boolean statement, we should
+        # support a "catch all" model. After all of the remaining partitions are below a certain value (probably the
+        # minimum partition size), train a model with the random remainders. Then, any test data that doesn't fit this
+        # any existing boolean statement can still be tested against this model.
         return None
 
     def setModelDataDictionary(self, model_data, hyperparam_set, current_model_score):
