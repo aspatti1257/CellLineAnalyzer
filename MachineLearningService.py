@@ -105,11 +105,12 @@ class MachineLearningService(object):
         hyperparams = self.inputs.get(ArgumentProcessingService.INDIVIDUAL_TRAIN_HYPERPARAMS).split(",")
         casted_params = [SafeCastUtil.safeCast(param, float) for param in hyperparams]
 
+        outer_monte_carlo_loops = self.inputs.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS)
         for gene_list_combo in gene_list_combos:
             plain_text_name = self.generateFeatureSetString(gene_list_combo)
             if plain_text_name == target_combo:
                 trainer = self.createTrainerFromTargetAlgorithm(is_classifier, target_algorithm)
-                for permutation in range(0, self.inputs.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS)):
+                for permutation in range(0, outer_monte_carlo_loops):
                     results = self.inputs.get(ArgumentProcessingService.RESULTS)
                     formatted_data = self.formatData(self.inputs, trainer.algorithm)
                     training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
@@ -122,9 +123,8 @@ class MachineLearningService(object):
                     score = model_score[0]
                     accuracy = model_score[1]
                     self.log.debug("Final score and accuracy of individual analysis for feature gene combo %s "
-                                  "using algorithm %s: %s, %s", target_combo, target_algorithm, score, accuracy)
-                    self.writeToCSVInLock(score, accuracy, target_combo, input_folder, target_algorithm,
-                                          len(gene_list_combos))
+                                   "using algorithm %s: %s, %s", target_combo, target_algorithm, score, accuracy)
+                    self.writeToCSVInLock(score, accuracy, target_combo, input_folder, target_algorithm, outer_monte_carlo_loops)
                 return
         self.log.info("Gene list feature file %s combo not found in current dataset.", target_combo)
         return
