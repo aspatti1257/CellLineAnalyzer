@@ -44,3 +44,13 @@ class RandomForestTrainer(AbstractModelTrainer):
         self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
                       "m_val = %s\n" +
                       "max depth = %s", feature_set_as_string, self.algorithm, hyperparams[0], hyperparams[1])
+
+    def fetchFeatureImportances(self, model, gene_list_combo):
+        importances = {}
+        features_in_order = super().generateFeaturesInOrder(gene_list_combo)
+
+        if hasattr(model, "feature_importances_") and len(features_in_order) == len(model.feature_importances_):
+            for i in range(0, len(features_in_order)):
+                importances[features_in_order[i]] = model.feature_importances_[i]  # already normalized.
+
+        return importances

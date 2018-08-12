@@ -45,6 +45,10 @@ class AbstractModelTrainer(ABC):
     def supportsHyperparams(self):
         pass
 
+    @abstractmethod
+    def fetchFeatureImportances(self, model, gene_list_combo):
+        pass
+
     def logTrainingMessage(self, outer_monte_carlo_perms, inner_monte_carlo_perms, num_gene_list_combos):
         num_models = self.determineNumModelsToCreate(outer_monte_carlo_perms, inner_monte_carlo_perms, num_gene_list_combos)
         self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "
@@ -155,3 +159,20 @@ class AbstractModelTrainer(ABC):
                 diagnostics_file.close()
                 # TODO: Lock thread message here too. Extract to logging utility or something.
                 lock.release()
+
+    def generateFeaturesInOrder(self, gene_list_combo):
+        features_in_order = []
+        for feature_file in gene_list_combo:
+            for feature in feature_file:
+                features_in_order.append(feature)
+        return features_in_order
+
+    def normalizeCoefficients(self, coefficients, features_in_order):
+        importances = {}
+        absolute_sum = numpy.sum([numpy.abs(coeff) for coeff in coefficients])
+        for i in range(0, len(features_in_order)):
+            if absolute_sum > 0:
+                importances[features_in_order[i]] = numpy.abs(coefficients[i]) / absolute_sum
+            else:
+                importances[features_in_order[i]] = numpy.abs(coefficients[i])  # should be 0.
+        return importances

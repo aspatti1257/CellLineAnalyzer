@@ -115,8 +115,9 @@ class MachineLearningServiceIT(unittest.TestCase):
                     else:
                         assert score < self.THRESHOLD_OF_SIGNIFICANCE
                     assert accuracy > 0
-                    top_importance = line_split[3]
-                    assert top_importance is not None
+                    if len(line_split) > 3:
+                        top_importance = line_split[3]
+                        assert top_importance is not None
             except AssertionError as error:
                 self.log.error(error)
             finally:
@@ -208,8 +209,9 @@ class MachineLearningServiceIT(unittest.TestCase):
                         continue
                     feature_gene_list_combo = line_split[0]
                     assert ":" in feature_gene_list_combo
-                    top_importance = line_split[3]
-                    assert top_importance is not None
+                    if len(line_split) > 3:
+                        top_importance = line_split[3]
+                        assert top_importance is not None
             except AssertionError as error:
                 self.log.error(error)
             finally:

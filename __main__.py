@@ -74,6 +74,7 @@ def performMachineLearning(valid_inputs, input_folder):
     machine_learning_service = MachineLearningService(valid_inputs)
     return machine_learning_service.analyze(input_folder)
 
+
 def writeHTMLSummaryFile(input_folder):
     html_writing_service = HTMLWritingService(input_folder)
     html_writing_service.writeSummaryFile()

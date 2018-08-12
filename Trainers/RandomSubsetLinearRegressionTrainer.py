@@ -62,3 +62,8 @@ class RandomSubsetLinearRegressionTrainer(AbstractModelTrainer):
 
     def logOptimalHyperParams(self, hyperparams, feature_set_as_string):
         pass  # No hyperparams for this model
+
+
+    def fetchFeatureImportances(self, model, gene_list_combo):
+        # TODO: Fetch feature importances from existing model object.
+        return {}

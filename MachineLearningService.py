@@ -12,6 +12,7 @@ from HTMLWritingService import HTMLWritingService
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from ArgumentProcessingService import ArgumentProcessingService
 from DataFormattingService import DataFormattingService
+from Trainers.AbstractModelTrainer import AbstractModelTrainer
 from Trainers.RandomForestTrainer import RandomForestTrainer
 from Trainers.LinearSVMTrainer import LinearSVMTrainer
 from Trainers.RadialBasisFunctionSVMTrainer import RadialBasisFunctionSVMTrainer
@@ -124,7 +125,7 @@ class MachineLearningService(object):
                     model_score = trainer.fetchPredictionsAndScore(model, testing_matrix, results)
                     score = model_score[0]
                     accuracy = model_score[1]
-                    ordered_importances = self.averageAndSortImportances(self.fetchFeatureImportances(model, gene_list_combo))
+                    ordered_importances = self.averageAndSortImportances(trainer.fetchFeatureImportances(model, gene_list_combo))
 
                     self.log.debug("Final score and accuracy of individual analysis for feature gene combo %s "
                                    "using algorithm %s: %s, %s", target_combo, target_algorithm, score, accuracy)
@@ -313,37 +314,7 @@ class MachineLearningService(object):
         trainer.logOptimalHyperParams(optimal_hyperparams, self.generateFeatureSetString(feature_set))
         model = trainer.train(relevant_results, features, optimal_hyperparams)
         score, accuracy = trainer.fetchPredictionsAndScore(model, testing_matrix, results)
-        importances = self.fetchFeatureImportances(model, feature_set)
-        return [score, accuracy, importances]
-
-    def fetchFeatureImportances(self, model, feature_set):
-        importances = {}
-        features_in_order = []
-        for feature_file in feature_set:
-            for feature in feature_file:
-                features_in_order.append(feature)
-
-        if hasattr(model, "feature_importances_") and len(features_in_order) == len(model.feature_importances_):
-            for i in range(0, len(features_in_order)):
-                importances[features_in_order[i]] = model.feature_importances_[i]  # already normalized.
-        elif hasattr(model, "coef_") or hasattr(model, "support_vectors_"):
-            coefficients = []
-            if hasattr(model, "coef_") and len(features_in_order) == len(model.coef_):
-                coefficients = model.coef_
-            elif hasattr(model, "coef_") and len(features_in_order) == len(model.coef_[0]):
-                coefficients = model.coef_[0]
-            elif hasattr(model, "support_vectors_") and len(features_in_order) == len(model.support_vectors_[0]):
-                coefficients = model.support_vectors_[0]
-            if len(coefficients) == 0:
-                return importances
-            absolute_sum = numpy.sum([numpy.abs(coeff) for coeff in coefficients])
-            for i in range(0, len(features_in_order)):
-                if absolute_sum > 0:
-                    importances[features_in_order[i]] = numpy.abs(coefficients[i]) / absolute_sum
-                else:
-                    importances[features_in_order[i]] = numpy.abs(coefficients[i])  # should be 0.
-
-        return importances
+        return [score, accuracy, trainer.fetchFeatureImportances(model, feature_set)]
 
     def averageAndSortImportances(self, importances):
         ordered_imps = []

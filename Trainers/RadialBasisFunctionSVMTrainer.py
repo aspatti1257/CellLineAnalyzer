@@ -53,3 +53,6 @@ class RadialBasisFunctionSVMTrainer(AbstractModelTrainer):
                           "gamma = %s\n" +
                           "episolon = %s", feature_set_as_string, self.algorithm, hyperparams[0],
                           hyperparams[1], hyperparams[2])
+
+    def fetchFeatureImportances(self, model, gene_list_combo):
+        return {}  # Not supported.

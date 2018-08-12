@@ -1,4 +1,5 @@
 from sklearn.linear_model import ElasticNet
+import numpy
 
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
@@ -39,3 +40,10 @@ class ElasticNetTrainer(AbstractModelTrainer):
                       "alpha = %s\n" +
                       "l one ratio = %s", feature_set_as_string, self.algorithm, hyperparams[0],
                       hyperparams[1])
+
+    def fetchFeatureImportances(self, model, gene_list_combo):
+        features_in_order = super().generateFeaturesInOrder(gene_list_combo)
+        if hasattr(model, "coef_") and hasattr(model, "coef_") and len(features_in_order) == len(model.coef_):
+            return super().normalizeCoefficients(model.coef_, features_in_order)
+
+        return {}

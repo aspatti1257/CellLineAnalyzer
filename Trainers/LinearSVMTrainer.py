@@ -1,4 +1,5 @@
 from sklearn import svm
+import numpy
 
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
@@ -48,3 +49,12 @@ class LinearSVMTrainer(AbstractModelTrainer):
             self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
                           "c_val = %s\n" +
                           "epsilon = %s", feature_set_as_string, self.algorithm, hyperparams[0], hyperparams[1])
+
+    def fetchFeatureImportances(self, model, gene_list_combo):
+        features_in_order = super().generateFeaturesInOrder(gene_list_combo)
+        if hasattr(model, "coef_") and hasattr(model, "coef_"):
+            if self.is_classifier and len(features_in_order) == len(model.coef_[0]):
+                return super().normalizeCoefficients(model.coef_[0], features_in_order)
+            elif not self.is_classifier and len(features_in_order) == len(model.coef_):
+                return super().normalizeCoefficients(model.coef_, features_in_order)
+        return {}
