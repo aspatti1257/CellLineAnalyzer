@@ -1,6 +1,5 @@
 import sys
 import logging
-import os
 
 from ArgumentProcessingService import ArgumentProcessingService
 from MachineLearningService import MachineLearningService
@@ -25,6 +24,7 @@ def main():
         log.error("Exiting program, invalid data sent in target folder.")
     return
 
+
 def promptUserForInput():
     simulation_to_run = input("-------Main Menu-------\n"
                               "Choose your task:\n"
@@ -44,11 +44,13 @@ def promptUserForInput():
         matlab_files_directory = recursivelyPromptUser("Enter folder path of the matlab files:\n", str)
         FileConverter.convertMatLabToCSV(matlab_files_directory)
 
+
 def runMainCellLineAnalysis(input_folder):
     valid_inputs = handleInputFolderProcessing(input_folder)
     if valid_inputs is not None:
         performMachineLearning(valid_inputs, input_folder)
         writeHTMLSummaryFile(input_folder)
+
 
 def recursivelyPromptUser(message, return_type):
     response = input(message)

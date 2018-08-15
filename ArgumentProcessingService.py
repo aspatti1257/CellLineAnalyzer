@@ -261,7 +261,8 @@ class ArgumentProcessingService(object):
                             for i in range(0, len(feature_names)):
                                 if feature_names[i].strip() == gene_list_feature.strip():
                                     important_index = i
-                            feature_matrix[self.FEATURE_NAMES].append(feature_name)
+                            if feature_name not in feature_matrix[self.FEATURE_NAMES]:
+                                feature_matrix[self.FEATURE_NAMES].append(feature_name)
                             important_feature_indices.append(important_index)
                     else:
                         features = self.extractCastedFeatures(line, important_feature_indices)
