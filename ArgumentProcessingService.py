@@ -143,7 +143,8 @@ class ArgumentProcessingService(object):
         for file in [f for f in files if self.GENE_LISTS in f]:
             file_path = self.input_folder + "/" + file
             with open(file_path) as gene_list_file:
-                gene_lists[file.split(".csv")[0]] = gene_list_file.read().strip().split(",")
+                genes_array = gene_list_file.read().strip().split(",")
+                gene_lists[file.split(".csv")[0]] = [gene for gene in genes_array if len(gene.strip()) > 0]
 
         return gene_lists
 
@@ -292,7 +293,7 @@ class ArgumentProcessingService(object):
 
     def extractCastedFeatures(self, line, important_feature_indices):
         important_features = []
-        feature_values = line.split(",")
+        feature_values = line.strip().split(",")
         for index in important_feature_indices:
             if index is None:
                 # TODO: Verify that this is acceptable, it works for one hot encoding and should never vary in any model

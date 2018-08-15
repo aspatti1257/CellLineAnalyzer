@@ -65,7 +65,7 @@ class MachineLearningService(object):
                 file_name = file_keys[i]
                 gene_list = gene_lists[gene_list_keys[SafeCastUtil.safeCast(perm[i], int)]]
                 if len(gene_list) > 0:
-                    feature_strings.append([file_name + "." + gene for gene in gene_list])
+                    feature_strings.append([file_name + "." + gene for gene in gene_list if len(gene.strip()) > 0])
             if len(feature_strings) > 0:
                 gene_list_combos.append(feature_strings)
 
@@ -414,7 +414,7 @@ class MachineLearningService(object):
             try:
                 writer = csv.writer(csv_file)
                 if write_action == "w":
-                    writer.writerow(self.getCSVFileHeader(self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER)))
+                    writer.writerow(self.getCSVFileHeader(self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER), ml_algorithm))
                 writer.writerow(line)
             except ValueError as error:
                 self.log.error("Error writing to file %s. %s", file_name, error)
@@ -437,7 +437,7 @@ class MachineLearningService(object):
 
 
     @staticmethod
-    def getCSVFileHeader(is_classifier):
+    def getCSVFileHeader(is_classifier, ml_algorithm):
         header = ["feature file: gene list combo"]
         if is_classifier:
             header.append("percentage accurate predictions")
@@ -445,6 +445,8 @@ class MachineLearningService(object):
         else:
             header.append("R^2 score")
             header.append("mean squared error")
+        if ml_algorithm == SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM:
+            return header
         for i in range(1, MachineLearningService.MAXIMUM_FEATURES_RECORDED + 1):
             if i == 1:
                 suffix = "st"

@@ -103,7 +103,7 @@ class MachineLearningServiceIT(unittest.TestCase):
                     num_lines += 1
                     line_split = line.strip().split(",")
                     if line_index == 0:
-                        assert line_split == MachineLearningService.getCSVFileHeader(is_classifier)
+                        assert line_split == MachineLearningService.getCSVFileHeader(is_classifier, trainer.algorithm)
                         continue
                     feature_gene_list_combo = line_split[0]
                     assert ":" in feature_gene_list_combo
@@ -205,7 +205,7 @@ class MachineLearningServiceIT(unittest.TestCase):
                     num_lines += 1
                     line_split = line.strip().split(",")
                     if line_index == 0:
-                        assert line_split == MachineLearningService.getCSVFileHeader(is_classifier)
+                        assert line_split == MachineLearningService.getCSVFileHeader(is_classifier, algorithm)
                         continue
                     feature_gene_list_combo = line_split[0]
                     assert ":" in feature_gene_list_combo

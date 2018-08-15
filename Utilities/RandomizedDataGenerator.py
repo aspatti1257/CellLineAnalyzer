@@ -74,8 +74,10 @@ class RandomizedDataGenerator(object):
                 writer = csv.writer(feature_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                 features_in_this_file = []
                 for i in range(0, len(features)):
-                    if not i in important_features or random.random() > 0.5:
+                    if i not in important_features or random.random() > 0.5:
                         features_in_this_file.append(features[i])
+                if random.random() > 0.5:
+                    features_in_this_file.append("")
                 writer.writerow(features_in_this_file)
 
                 for cell in range(0, num_cells):
@@ -143,6 +145,7 @@ class RandomizedDataGenerator(object):
             gene_list_size = random.randint(2, len(important_features))
             gene_list = [RandomizedDataGenerator.FEATURE_PREFIX + SafeCastUtil.safeCast(feature, str) for feature in
                          important_features[:gene_list_size]]
+            gene_list.append("")
             important_features = important_features[gene_list_size:]
             file_name = RandomizedDataGenerator.GENERATED_DATA_FOLDER + "/" + ArgumentProcessingService.GENE_LISTS +\
                         SafeCastUtil.safeCast(gene_list_num, str) + ".csv"
