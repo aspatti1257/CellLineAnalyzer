@@ -8,7 +8,7 @@ from Trainers.LinearSVMTrainer import LinearSVMTrainer
 from Trainers.RadialBasisFunctionSVMTrainer import RadialBasisFunctionSVMTrainer
 from Trainers.RidgeRegressionTrainer import RidgeRegressionTrainer
 from Trainers.LassoRegressionTrainer import LassoRegressionTrainer
-from Trainers.RandomSubsetLinearRegressionTrainer import RandomSubsetLinearRegressionTrainer
+from Trainers.RandomSubsetElasticNetTrainer import RandomSubsetElasticNetTrainer
 
 from ArgumentProcessingService import ArgumentProcessingService
 from MachineLearningService import MachineLearningService
@@ -61,19 +61,17 @@ class MachineLearningServiceIT(unittest.TestCase):
     def testLassoRegressor(self):
         self.evaluateMachineLearningModel(LassoRegressionTrainer(False))
 
-
-    def testRandomSubsetLinearRegressor(self):  # TODO: DRY this up and get it passing!
+    def testRandomSubsetElasticNet(self):  # TODO: DRY this up and get it passing!
         ml_service = MachineLearningService(self.formatRandomizedData(False))
         ml_service.log.setLevel(logging.DEBUG)
         binary_cat_matrix = ml_service.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
-        rslr_trainer = RandomSubsetLinearRegressionTrainer(False, binary_cat_matrix)
+        rsen_trainer = RandomSubsetElasticNetTrainer(False, binary_cat_matrix)
 
-        num_gene_list_combos = 8
-        gene_list_combos_shortened = ml_service.determineGeneListCombos()[0:num_gene_list_combos]
+        gene_list_combos = ml_service.determineGeneListCombos()
         target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
-        # ml_service.handleParallellization(gene_list_combos_shortened, target_dir, rslr_trainer)
+        # ml_service.handleParallellization(gene_list_combos, target_dir, rsen_trainer)
 
-        # self.assertResults(target_dir, rslr_trainer, num_gene_list_combos + 1, rslr_trainer.is_classifier)
+        # self.assertResults(target_dir, rsen_trainer, len(gene_list_combos) + 1, rsen_trainer.is_classifier)
 
     def evaluateMachineLearningModel(self, trainer):
         ml_service = MachineLearningService(self.formatRandomizedData(trainer.is_classifier))

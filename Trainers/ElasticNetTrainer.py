@@ -1,5 +1,4 @@
 from sklearn.linear_model import ElasticNet
-import numpy
 
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Trainers.AbstractModelTrainer import AbstractModelTrainer

@@ -33,15 +33,12 @@ class HTMLWritingService(object):
             finally:
                 summary_file.close()
 
-        self.log.info(new_file)
-
     def generateStatsOverviewObject(self):
         stats_overview_object = {}
         with open(self.input_folder + "/" + self.RECORD_FILE) as record_file:
             try:
                 for line_index, line in enumerate(record_file):
                     line_split = [segment.strip() for segment in line.split("---")]
-                    self.log.info(line_split)
                     if len(line_split) < 3:
                         self.log.warning("Line from results file not split properly: %s", line)
                         continue

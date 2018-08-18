@@ -12,14 +12,13 @@ from HTMLWritingService import HTMLWritingService
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from ArgumentProcessingService import ArgumentProcessingService
 from DataFormattingService import DataFormattingService
-from Trainers.AbstractModelTrainer import AbstractModelTrainer
 from Trainers.RandomForestTrainer import RandomForestTrainer
 from Trainers.LinearSVMTrainer import LinearSVMTrainer
 from Trainers.RadialBasisFunctionSVMTrainer import RadialBasisFunctionSVMTrainer
 from Trainers.ElasticNetTrainer import ElasticNetTrainer
 from Trainers.RidgeRegressionTrainer import RidgeRegressionTrainer
 from Trainers.LassoRegressionTrainer import LassoRegressionTrainer
-from Trainers.RandomSubsetLinearRegressionTrainer import RandomSubsetLinearRegressionTrainer
+from Trainers.RandomSubsetElasticNetTrainer import RandomSubsetElasticNetTrainer
 from Utilities.SafeCastUtil import SafeCastUtil
 
 
@@ -166,7 +165,7 @@ class MachineLearningService(object):
         enet = SupportedMachineLearningAlgorithms.ELASTIC_NET
         rig_reg = SupportedMachineLearningAlgorithms.RIDGE_REGRESSION
         las_reg = SupportedMachineLearningAlgorithms.LASSO_REGRESSION
-        rslr = SupportedMachineLearningAlgorithms.RANDOM_SUBSET_LINEAR_REGRESSION
+        rsen = SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET
 
         if not self.inputs.get(ArgumentProcessingService.SKIP_RF) and self.shouldTrainAlgorithm(rf):
             rf_trainer = RandomForestTrainer(is_classifier)
@@ -212,12 +211,12 @@ class MachineLearningService(object):
             self.handleParallellization(gene_list_combos, input_folder, lasso_regression_trainer)
 
         binary_cat_matrix = self.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
-        if self.shouldTrainAlgorithm(rslr) and not is_classifier and binary_cat_matrix is not None:
-            rslr_trainer = RandomSubsetLinearRegressionTrainer(is_classifier, binary_cat_matrix)
-            rslr_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rslr, True),
-                                            self.monteCarloPermsByAlgorithm(rslr, False),
+        if self.shouldTrainAlgorithm(rsen) and not is_classifier and binary_cat_matrix is not None:
+            rsen_trainer = RandomSubsetElasticNetTrainer(is_classifier, binary_cat_matrix)
+            rsen_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rsen, True),
+                                            self.monteCarloPermsByAlgorithm(rsen, False),
                                             len(gene_list_combos))
-            self.handleParallellization(gene_list_combos, input_folder, rslr_trainer)
+            self.handleParallellization(gene_list_combos, input_folder, rsen_trainer)
 
     def monteCarloPermsByAlgorithm(self, algorithm, outer):
         if outer:
@@ -235,7 +234,10 @@ class MachineLearningService(object):
                                       for feature_set in gene_list_combos)
 
     def runMonteCarloSelection(self, feature_set, trainer, input_folder, num_combos):
-        self.setVariablesOnTrainerInSpecialCases(feature_set, trainer)
+        if not trainer.shouldProcessFeatureSet(feature_set):
+            return
+
+        self.setVariablesOnTrainerInSpecialCases(feature_set, trainer)  # TODO: Remove this.
         scores = []
         accuracies = []
         importances = {}
@@ -277,7 +279,7 @@ class MachineLearningService(object):
         self.saveOutputToTxtFile(scores, accuracies, feature_set_as_string, input_folder, trainer.algorithm)
 
     def setVariablesOnTrainerInSpecialCases(self, feature_set, trainer):
-        if trainer.algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_LINEAR_REGRESSION:
+        if trainer.algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET:
             trainer.current_feature_set = feature_set
 
     def generateFeatureSetString(self, feature_set):
@@ -347,7 +349,7 @@ class MachineLearningService(object):
 
     def formatData(self, inputs, algorithm):
         data_formatting_service = DataFormattingService(inputs)
-        return data_formatting_service.formatData(algorithm != SupportedMachineLearningAlgorithms.RANDOM_SUBSET_LINEAR_REGRESSION)
+        return data_formatting_service.formatData(algorithm != SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET)
 
     def reformatInputsByTrainingMatrix(self, training_matrix):
         new_inputs = {ArgumentProcessingService.FEATURES: {}, ArgumentProcessingService.RESULTS: []}
