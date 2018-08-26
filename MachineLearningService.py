@@ -216,7 +216,7 @@ class MachineLearningService(object):
             rsen_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rsen, True),
                                             self.monteCarloPermsByAlgorithm(rsen, False),
                                             len(gene_list_combos))
-            self.handleParallellization(gene_list_combos, input_folder, rsen_trainer)
+            # self.handleParallellization(gene_list_combos, input_folder, rsen_trainer)
 
     def monteCarloPermsByAlgorithm(self, algorithm, outer):
         if outer:

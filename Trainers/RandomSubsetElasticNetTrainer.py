@@ -47,9 +47,6 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
         }
 
     def hyperparameterize(self, training_matrix, testing_matrix, results):
-        # TODO: create a new matrix consisting only of the features shared by self.binary_categorical_matrix.
-        # Set them as a trainer level variable (self.formatted_binary_matrix).
-
         # Remove this assertion and MachineLearningService.setVariablesOnTrainerInSpecialCases() when this is reliable.
         assert training_matrix.get(ArgumentProcessingService.FEATURE_NAMES) == numpy.concatenate(self.current_feature_set).tolist()
         self.current_feature_set_as_strings = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
@@ -57,10 +54,8 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
 
     def train(self, results, features, hyperparams):
         # TODO: Split data and return a model. Must be able to implement "predict" and "score" methods correctly.
-
-
         model = RandomSubsetElasticNetModel(hyperparams[0], hyperparams[1], hyperparams[2], hyperparams[3],
-                                            self.current_feature_set_as_strings)
+                                            self.current_feature_set_as_strings, self.bin_cat_matrix_name)
 
         model.fit(features, results)
         self.log.debug("Successful creation of Random Subset Elastic Net model: %s\n", model)
