@@ -22,11 +22,11 @@ either be passed as a parameter on the command line, or entered at the prompt af
 .CSV files called RandomForestAnalysis.csv, LinearSVMAnalysis.csv, RadialBasisFunctionSVMAnalysis.csv,
 ElasticNetAnalysis.csv, RidgeRegressionAnalysis.csv or/and LassoRegressionAnalysis depending on which machine learning modules you opt to use.
 
-This program will also generate an HTML document summarizing the how well each analysis performed and giving an overview
-of the data submitted.
+This program will also generate a HTML document summarizing how well each analysis performed and giving an overview
+of the data submitted. Please use Google Chrome in order to see quantitative information when hovering over the respective
+plots.
 
-Also part of this program, is the option to generate a series of .CSVs from MATLAB files. Making the main input to this
-program easier to generate.
+Also part of this program is the option to generate a series of .CSVs from MATLAB files.
 
 ## Table of Contents
 Running the Cell Line Analyzer API involves three steps: <br />
@@ -88,7 +88,7 @@ across the first row of a csv.
 The arguments.txt file is simply a list of important, tunable parameters for this analysis. Some are required, and the
 ones that aren't are marked with a star (*).
 
-`results`: "File Name of CSV"
+`results`: File Name of CSV
 
 `data_split`*: Optional float between 0 and 1, representing how much data should be held out for each Monte Carlo
               subsampling. Defaults to 0.8.
@@ -102,7 +102,10 @@ ones that aren't are marked with a star (*).
 `is_classifier`: 0 for regression, 1 for classification
 
 `num_threads`* : Optional integer representing the number of threads to use for multi-processing operations. Defaults to
-                 the number of CPUs on your computer. Cannot exceed this value.
+                 the number of CPUs on your computer. Cannot exceed this value. Be aware of this line if submitting jobs on
+                 a cluster. Usually, the amount of threads has to be quantified on a cluster but without setting this integer
+                 equal to the quantified one, the software will use all available resources what probably will
+                 result in complications on the cluster.
 
 `skip_rf`* : <b>DEPRECATED</b> Optionally skip Random Forest analysis. Defaults to False.
 
@@ -166,7 +169,7 @@ ones that aren't are marked with a star (*).
                                     "RadialBasisFunctionSVMAnalysis"
                                     "ElasticNetAnalysis"
                                     "RidgeRegressionAnalysis"
-                                    LassoRegressionAnalysis"
+                                    "LassoRegressionAnalysis"
 
 `individual_train_hyperparams`*: Optionally train only the specified ML algorithm with these hyperparams and a specified
                                  gene list feature combo. Values should be a comma separated list with no quotes or
@@ -228,8 +231,9 @@ Enter `0` for Analysis of Cell Lines
 
 Type in the path of your desired folder, which contains `Arguments.txt`, Feature Data, and Output Data
 
-Your results will be printed in the terminal and saved to either a RandomForestAnalysis.csv file, a
-LinearSVMAnalaysis.csv, and or a RadialBasisFunctionSVM.csv file. These files will be written to the directory from
+Your results will be printed in the terminal and saved to either a RandomForestAnalysis.csv, a
+LinearSVMAnalysis.csv, a RadialBasisFunctionSVMAnalysis.csv, a RidgeRegressionAnalysis.csv, a LassoRegressionAnalysis.csv
+or/and an ElasticNetAnalysis.csv file. These files will be written to the directory from
 which the program is called.
 
 Alternatively, you can input the path of your target folder as an argument to the program:
@@ -269,7 +273,8 @@ file combo.
 - For each algorithm, the following three plots:
     - A histogram of the scores (mean R^2 or accuracy) for the top 5, bottom 5, and a randomly selected set
       of 15 gene list and feature file combos. Shown with averages and error bars.
-    - A histogram of the accuracies, for the same 25 combos. Also shown with averages and error bars.
+    - A histogram of the accuracies (mean squared errors for regression) for the same 25 combos. Also shown with averages
+      and error bars.
     - A pie chart of how well each gene list performs, surrounded by a donut chart of how well each feature file
       performs all relative to each other.
 
