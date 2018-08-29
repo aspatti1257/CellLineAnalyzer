@@ -294,6 +294,13 @@ Make sure all of these packages are installed for python 3.6. If you don't have 
 from the command line:
 `pip install PACKAGE_NAME` where PACKAGE_NAME is scipy, sklearn, etc.
 
+- Be aware that LinearSVM needs less features than samples in order to work properly. Using gene lists, the amount of features
+  is significantly reduced, but usually this amount is still larger than the amount of samples (cell lines). If you use two
+  feature files (for instance, gene expression and mutation data sets) and gene lists with a total gene count of 500, you would
+  get 1000 features as a result. Usually, the amount of cell lines is smaller than that. The same logic applies to linear 
+  regression models (RidgeRegression, LassoRegression and ElasticNet), but the algorithms applied in the CLA have much tuning
+  implemented so that some coefficients are set to zero.
+
 The Python package installer pip should come standard on unix bases operating systems. For Windows, you'll need to use
 Powershell to install both python and pip.
 
