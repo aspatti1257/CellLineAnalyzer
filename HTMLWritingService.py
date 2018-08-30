@@ -14,8 +14,9 @@ class HTMLWritingService(object):
     RECORD_FILE = "FullResultsSummary.txt"
     SUMMARY_FILE = "SummaryReport.html"
 
-    def __init__(self, input_folder):
+    def __init__(self, input_folder, is_classifier):
         self.input_folder = input_folder
+        self.is_classifier = is_classifier
 
     def writeSummaryFile(self):
         self.createStatsOverviewFromFile()
@@ -71,6 +72,9 @@ class HTMLWritingService(object):
                     elif "//INSERT CHART DATA HERE" in line:
                         new_file.append("\t\t\t\t$scope.allData = " +
                                         SafeCastUtil.safeCast(stats_overview_object, str) + ";\n")
+                    elif "//INSERT IS CLASSIFIER HERE" in line:
+                        new_file.append("\t\t\t\t$scope.isClassifier = " +
+                                        SafeCastUtil.safeCast(self.is_classifier, str).lower() + ";\n")
                     else:
                         new_file.append(line)
             except ValueError as valueError:

@@ -36,6 +36,8 @@
 
                 //INSERT DEFAULT MIN SCORE HERE;
 
+                //INSERT IS CLASSIFIER HERE;
+
                 $scope.topScoringComboByAlgorightm = {};
                 $scope.scoresByAlgorithm = {};
                 $scope.bestAlgorithm = {};
@@ -60,7 +62,9 @@
                 function createAndScoreErrorCharts() {
                     _.forEach($scope.allData, function(data, algorithm) {
                         createErrorChart(processErrorData(data, DATA_TYPE.score, algorithm), "#" + algorithm + "ScoreErrorChart");
-                        createErrorChart(processErrorData(data, DATA_TYPE.accuracy, algorithm), "#" + algorithm + "AccuracyErrorChart");
+                        if (!$scope.isClassifier) {
+                            createErrorChart(processErrorData(data, DATA_TYPE.accuracy, algorithm), "#" + algorithm + "AccuracyErrorChart");
+                        }
                     });
                 }
 
@@ -568,8 +572,8 @@
                 <div class="centered">
                     <svg width="960" height="500" id="{{key}}ScoreErrorChart" class="chart"></svg>
                 </div>
-                <h4>Accuracies</h4>
-                <div class="centered">
+                <h4 ng-if="!isClassifier">Accuracies</h4>
+                <div class="centered" ng-if="!isClassifier">
                     <svg width="960" height="500" id="{{key}}AccuracyErrorChart" class="chart"></svg>
                 </div>
                 <h4>Breakdown of Significance for Gene Lists and Feature Files</h4>

@@ -35,7 +35,7 @@ class HTMLWritingServiceIT(unittest.TestCase):
             finally:
                 record_file.close()
 
-        html_service = HTMLWritingService(input_folder)
+        html_service = HTMLWritingService(input_folder, False)
         html_service.writeSummaryFile()
 
     def runMLAnalysis(self, is_classifier):

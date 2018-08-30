@@ -49,7 +49,8 @@ def runMainCellLineAnalysis(input_folder):
     valid_inputs = handleInputFolderProcessing(input_folder)
     if valid_inputs is not None:
         performMachineLearning(valid_inputs, input_folder)
-        writeHTMLSummaryFile(input_folder)
+        is_classifier = valid_inputs.get(ArgumentProcessingService.IS_CLASSIFIER)
+        writeHTMLSummaryFile(input_folder, is_classifier)
 
 
 def recursivelyPromptUser(message, return_type):
@@ -76,8 +77,8 @@ def performMachineLearning(valid_inputs, input_folder):
     return machine_learning_service.analyze(input_folder)
 
 
-def writeHTMLSummaryFile(input_folder):
-    html_writing_service = HTMLWritingService(input_folder)
+def writeHTMLSummaryFile(input_folder, is_classifier):
+    html_writing_service = HTMLWritingService(input_folder, is_classifier)
     html_writing_service.writeSummaryFile()
 
 
