@@ -273,8 +273,8 @@ file combo.
 - For each algorithm, the following three plots:
     - A histogram of the scores (mean R^2 or accuracy) for the top 5, bottom 5, and a randomly selected set
       of 15 gene list and feature file combos. Shown with averages and error bars.
-    - A histogram of the accuracies (mean squared errors for regression) for the same 25 combos. Also shown with averages
-      and error bars.
+    - A histogram of the accuracies (only for regression, where it is the mean squared errors) for the same 25 combos. Also
+      shown with averages and error bars.
     - A pie chart of how well each gene list performs, surrounded by a donut chart of how well each feature file
       performs all relative to each other.
 
@@ -282,17 +282,23 @@ file combo.
 # 6.) Troubleshooting
 
 - This program requires python 3.6. You can check your version of python by running typing `python --version` in the
-command line. If it's 3.6.x, please upgrade.
+  command line. If it's 3.6.x, please upgrade.
 
 - Make sure that your is_classifier variable matches what is in your results.csv file. If your results.csv file is
-filled with 0s and 1s for the values, but is_classifier=0, we'll try to interpret all that data as regression data. At
-best, the results will be nonsensical, at worst, it will error when attempting to create a proper machine learning
-model.
+  filled with 0s and 1s for the values, but is_classifier=0, we'll try to interpret all that data as regression data. At
+  best, the results will be nonsensical, at worst, it will error when attempting to create a proper machine learning
+  model.
 
 - This program also requires installation of the following packages: scipy, numpy, pandas, joblib, sklearn
-Make sure all of these packages are installed for python 3.6. If you don't have them, you can install them with pip
-from the command line:
-`pip install PACKAGE_NAME` where PACKAGE_NAME is scipy, sklearn, etc.
+  Make sure all of these packages are installed for python 3.6. If you don't have them, you can install them with pip
+  from the command line:
+  `pip install PACKAGE_NAME` where PACKAGE_NAME is scipy, sklearn, etc.
+
+- Please not for the accuracy score of classification: This measure is the accuracy score as provided by sklearn. This metric
+  can perform very bad, depending on the base rates of the classes. If there are two classes ('sensitive' and 'resistant', for
+  example) and one of these classes ('sensitive') has a low base rate, one gets a high accuracy score when always predicting
+  'resistant'. Thus, it could be possible that a model with given accuracy score performs much better than one with a higher 
+  accuracy score, which is known as the accuracy paradox. If another measure is whished, it should be manually coded.
 
 - Be aware that LinearSVM needs less features than samples in order to work properly. Using gene lists, the amount of features
   is significantly reduced, but usually this amount is still larger than the amount of samples (cell lines). If you use two
