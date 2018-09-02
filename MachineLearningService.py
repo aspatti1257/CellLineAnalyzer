@@ -229,14 +229,13 @@ class MachineLearningService(object):
         requested_threads = self.inputs.get(ArgumentProcessingService.NUM_THREADS)
         nodes_to_use = numpy.amin([requested_threads, max_nodes])
 
+        valid_combos = [feature_set for feature_set in gene_list_combos if trainer.shouldProcessFeatureSet(feature_set)]
+
         Parallel(n_jobs=nodes_to_use)(delayed(self.runMonteCarloSelection)(feature_set, trainer, input_folder,
-                                                                           len(gene_list_combos))
-                                      for feature_set in gene_list_combos)
+                                                                           len(valid_combos))
+                                      for feature_set in valid_combos)
 
     def runMonteCarloSelection(self, feature_set, trainer, input_folder, num_combos):
-        if not trainer.shouldProcessFeatureSet(feature_set):
-            return
-
         self.setVariablesOnTrainerInSpecialCases(feature_set, trainer)  # TODO: Remove this.
         scores = []
         accuracies = []

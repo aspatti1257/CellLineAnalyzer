@@ -61,17 +61,26 @@ class MachineLearningServiceIT(unittest.TestCase):
     def testLassoRegressor(self):
         self.evaluateMachineLearningModel(LassoRegressionTrainer(False))
 
-    def testRandomSubsetElasticNet(self):  # TODO: DRY this up and get it passing!
+    def testRandomSubsetElasticNet(self):
         ml_service = MachineLearningService(self.formatRandomizedData(False))
         ml_service.log.setLevel(logging.DEBUG)
         binary_cat_matrix = ml_service.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
         rsen_trainer = RandomSubsetElasticNetTrainer(False, binary_cat_matrix)
 
-        gene_list_combos = ml_service.determineGeneListCombos()
-        target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
-        # ml_service.handleParallellization(gene_list_combos, target_dir, rsen_trainer)
+        filtered_combos = []
+        for combo in ml_service.determineGeneListCombos():
+            is_valid = True
+            for feature_set in combo:
+                if len([feature for feature in feature_set if "bin_cat.significant_feature" in feature]) > 0:
+                    is_valid = False
+            if is_valid and rsen_trainer.shouldProcessFeatureSet(combo):
+                filtered_combos.append(combo)
 
-        # self.assertResults(target_dir, rsen_trainer, len(gene_list_combos) + 1, rsen_trainer.is_classifier)
+        trimmed_combos = filtered_combos[0:8]
+        target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
+        ml_service.handleParallellization(trimmed_combos, target_dir, rsen_trainer)
+
+        self.assertResults(target_dir, rsen_trainer, len(trimmed_combos) + 1, rsen_trainer.is_classifier)
 
     def evaluateMachineLearningModel(self, trainer):
         ml_service = MachineLearningService(self.formatRandomizedData(trainer.is_classifier))
@@ -175,7 +184,7 @@ class MachineLearningServiceIT(unittest.TestCase):
         self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.LASSO_REGRESSION,
                                                             "1", False)
 
-    def testIndividualRandomPartitionLinearRegressor(self):
+    def testIndividualRandomSubsetElasticNet(self):
         # TODO:
         # self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.RIDGE_REGRESSION,
         #  None, False)
