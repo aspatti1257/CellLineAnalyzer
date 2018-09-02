@@ -6,6 +6,7 @@ from ArgumentProcessingService import ArgumentProcessingService
 from Utilities.SafeCastUtil import SafeCastUtil
 from CustomModels.RandomSubsetElasticNetModel import RandomSubsetElasticNetModel
 
+
 class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
 
     def __init__(self, is_classifier, binary_categorical_matrix):
@@ -79,7 +80,6 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
                 uses_other_feature_file = True
 
         return uses_bin_cat_matrix and uses_other_feature_file
-
 
     def fetchFeatureImportances(self, model, gene_list_combo):
         # TODO: Fetch feature importances from existing model object.

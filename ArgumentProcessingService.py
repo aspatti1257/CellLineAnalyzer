@@ -247,7 +247,8 @@ class ArgumentProcessingService(object):
         gene_list_features = []
         for gene_list in gene_lists.values():
             for gene_list_feature in gene_list:
-                gene_list_features.append(gene_list_feature)
+                if gene_list_feature not in gene_list_features:
+                    gene_list_features.append(gene_list_feature)
 
         with open(features_path) as feature_file:
             try:
@@ -298,7 +299,7 @@ class ArgumentProcessingService(object):
         for index in important_feature_indices:
             if index is None:
                 # TODO: Verify that this is acceptable, it works for one hot encoding and should never vary in any model
-                important_features.append(0)
+                important_features.append("'0'")
             else:
                 if SafeCastUtil.safeCast(feature_values[index], float) is not None:
                     important_features.append(SafeCastUtil.safeCast(feature_values[index].strip(), float))
