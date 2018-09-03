@@ -42,7 +42,7 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
         return {
             "upper_bound": [0.95, 0.85, 0.75],
             "lower_bound": [0.10, 0.15, 0.2],
-            "alpha": [0.1, 1, 10],
+            "alpha": [0.001, 0.01, 0.1, 1, 10],
             "l_one_ratio": [0, 0.1, 0.5, 0.9, 1]
         }
 
