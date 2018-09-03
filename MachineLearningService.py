@@ -193,14 +193,6 @@ class MachineLearningService(object):
                                                   self.monteCarloPermsByAlgorithm(enet, False),
                                                   len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, elasticnet_trainer)
-           
-        if not self.inputs.get(ArgumentProcessingService.SKIP_RANDOM_SUBSET_ELASTIC_NET) and not is_classifier and \
-                self.shouldTrainAlgorithm(rsen):
-            random_subset_elastic_net_trainer = RandomSubsetElasticNetTrainer(is_classifier)
-            random_subset_elastic_net_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rsen, True),
-                                                        self.monteCarloPermsByAlgorithm(rsen, False),
-                                                        len(gene_list_combos))
-            self.handleParallellization(gene_list_combos, input_folder, random_subset_elastic_net_trainer)
 
         if not self.inputs.get(ArgumentProcessingService.SKIP_RIDGE_REGRESSION) and not is_classifier and \
                 self.shouldTrainAlgorithm(rig_reg):
