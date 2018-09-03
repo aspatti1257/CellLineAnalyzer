@@ -9,7 +9,7 @@ class SupportedMachineLearningAlgorithms:
     ELASTIC_NET = "ElasticNetAnalysis"
     RIDGE_REGRESSION = "RidgeRegressionAnalysis"
     LASSO_REGRESSION = "LassoRegressionAnalysis"
-    RANDOM_SUBSET_ELASTIC_NET = "RandomSubsetElasticNet"
+    RANDOM_SUBSET_ELASTIC_NET = "RandomSubsetElasticNetAnalysis"
 
     @staticmethod
     def fetchAlgorithms():
