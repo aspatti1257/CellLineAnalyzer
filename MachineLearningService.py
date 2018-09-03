@@ -148,10 +148,11 @@ class MachineLearningService(object):
             trainer = RidgeRegressionTrainer(is_classifier)
         elif target_algorithm == SupportedMachineLearningAlgorithms.LASSO_REGRESSION and not is_classifier:
             trainer = LassoRegressionTrainer(is_classifier)
-        elif target_algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET and not is_classifier:
-            trainer = RandomSubsetElasticNetTrainer(is_classifier, False, None)
+        # TODO: Pass binary categorical matrix in and attempt RSEN.
+        # elif target_algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET and not is_classifier:
+        #     trainer = RandomSubsetElasticNetTrainer(is_classifier, None)
         else:
-            raise ValueError("Unsupported Machine Learning algorithm: %s", target_algorithm)
+            raise ValueError("Unsupported Machine Learning algorithm for individual training: %s", target_algorithm)
         return trainer
 
     def shouldTrainAlgorithm(self, algorithm):
@@ -206,8 +207,8 @@ class MachineLearningService(object):
                 self.shouldTrainAlgorithm(las_reg):
             lasso_regression_trainer = LassoRegressionTrainer(is_classifier)
             lasso_regression_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rig_reg, True),
-                                                         self.monteCarloPermsByAlgorithm(rig_reg, False),
-                                                         len(gene_list_combos))
+                                                        self.monteCarloPermsByAlgorithm(rig_reg, False),
+                                                        len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, lasso_regression_trainer)
 
         binary_cat_matrix = self.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
