@@ -31,6 +31,7 @@ class ArgumentProcessingService(object):
     SKIP_LINEAR_SVM = "skip_linear_svm"
     SKIP_RBF_SVM = "skip_rbf_svm"
     SKIP_ELASTIC_NET = "skip_elastic_net"
+    SKIP_RANDOM_SUBSET_ELASTIC_NET = "skip_rsen"
     SKIP_RIDGE_REGRESSION = "skip_ridge_regression"
     SKIP_LASSO_REGRESSION = "skip_lasso_regression"
     RECORD_DIAGNOSTICS = "record_diagnostics"
@@ -77,6 +78,8 @@ class ArgumentProcessingService(object):
             self.SKIP_LINEAR_SVM: self.fetchOrReturnDefault(arguments.get(self.SKIP_LINEAR_SVM), bool, False),
             self.SKIP_RBF_SVM: self.fetchOrReturnDefault(arguments.get(self.SKIP_RBF_SVM), bool, False),
             self.SKIP_ELASTIC_NET: self.fetchOrReturnDefault(arguments.get(self.SKIP_ELASTIC_NET), bool, False),
+            self.SKIP_RANDOM_SUBSET_ELASTIC_NET: self.fetchOrReturnDefault(arguments.get(self.SKIP_RANDOM_SUBSET_ELASTIC_NET),
+                                                                  bool, False),
             self.SKIP_RIDGE_REGRESSION: self.fetchOrReturnDefault(arguments.get(self.SKIP_RIDGE_REGRESSION),
                                                                   bool, False),
             self.SKIP_LASSO_REGRESSION: self.fetchOrReturnDefault(arguments.get(self.SKIP_LASSO_REGRESSION),
