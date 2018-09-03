@@ -16,6 +16,8 @@ class ArgumentProcessingService(object):
     ARGUMENTS_FILE = "arguments.txt"
     GENE_LISTS = "gene_list"
 
+    UNFILLED_VALUE_PLACEHOLDER = "'0'"
+
     RESULTS = "results"
     IS_CLASSIFIER = "is_classifier"
     FEATURES = "features"
@@ -299,7 +301,7 @@ class ArgumentProcessingService(object):
         for index in important_feature_indices:
             if index is None:
                 # TODO: Verify that this is acceptable, it works for one hot encoding and should never vary in any model
-                important_features.append("'0'")
+                important_features.append(self.UNFILLED_VALUE_PLACEHOLDER)
             else:
                 if SafeCastUtil.safeCast(feature_values[index], float) is not None:
                     important_features.append(SafeCastUtil.safeCast(feature_values[index].strip(), float))

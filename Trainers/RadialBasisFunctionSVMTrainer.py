@@ -26,7 +26,7 @@ class RadialBasisFunctionSVMTrainer(AbstractModelTrainer):
         return super().loopThroughHyperparams(self.initializeHyperParameters(self.is_classifier), training_matrix,
                                               testing_matrix, results)
 
-    def train(self, results, features, hyperparams):
+    def train(self, results, features, hyperparams, feature_names):
         if len(hyperparams) == 2 or self.is_classifier:
             model = svm.SVC(kernel='rbf', C=hyperparams[0], gamma=hyperparams[1])
         else:

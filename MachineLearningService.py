@@ -120,7 +120,8 @@ class MachineLearningService(object):
                     testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, gene_list_combo,
                                                                  formatted_data)
                     features, relevant_results = trainer.populateFeaturesAndResultsByCellLine(training_matrix, results)
-                    model = trainer.train(relevant_results, features, casted_params)
+                    feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
+                    model = trainer.train(relevant_results, features, casted_params, feature_names)
                     model_score = trainer.fetchPredictionsAndScore(model, testing_matrix, results)
                     score = model_score[0]
                     accuracy = model_score[1]
@@ -236,7 +237,6 @@ class MachineLearningService(object):
                                       for feature_set in valid_combos)
 
     def runMonteCarloSelection(self, feature_set, trainer, input_folder, num_combos):
-        self.setVariablesOnTrainerInSpecialCases(feature_set, trainer)  # TODO: Remove this.
         scores = []
         accuracies = []
         importances = {}
@@ -277,10 +277,6 @@ class MachineLearningService(object):
         self.writeToCSVInLock(line, input_folder, trainer.algorithm, num_combos)
         self.saveOutputToTxtFile(scores, accuracies, feature_set_as_string, input_folder, trainer.algorithm)
 
-    def setVariablesOnTrainerInSpecialCases(self, feature_set, trainer):
-        if trainer.algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET:
-            trainer.current_feature_set = feature_set
-
     def generateFeatureSetString(self, feature_set):
         feature_map = {}
         for feature_list in feature_set:
@@ -313,7 +309,8 @@ class MachineLearningService(object):
         results = self.inputs.get(ArgumentProcessingService.RESULTS)
         features, relevant_results = trainer.populateFeaturesAndResultsByCellLine(training_matrix, results)
         trainer.logOptimalHyperParams(optimal_hyperparams, self.generateFeatureSetString(feature_set))
-        model = trainer.train(relevant_results, features, optimal_hyperparams)
+        feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
+        model = trainer.train(relevant_results, features, optimal_hyperparams, feature_names)
         score, accuracy = trainer.fetchPredictionsAndScore(model, testing_matrix, results)
         return [score, accuracy, trainer.fetchFeatureImportances(model, feature_set)]
 

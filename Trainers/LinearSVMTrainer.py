@@ -26,7 +26,7 @@ class LinearSVMTrainer(AbstractModelTrainer):
         return super().loopThroughHyperparams(self.initializeHyperParameters(self.is_classifier), training_matrix,
                                               testing_matrix, results)
 
-    def train(self, results, features, hyperparams):
+    def train(self, results, features, hyperparams, feature_names):
         if self.is_classifier:
             model = svm.LinearSVC(C=hyperparams[0])
         else:

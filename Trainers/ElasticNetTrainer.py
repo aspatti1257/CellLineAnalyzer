@@ -21,7 +21,7 @@ class ElasticNetTrainer(AbstractModelTrainer):
     def hyperparameterize(self, training_matrix, testing_matrix, results):
         return super().loopThroughHyperparams(self.initializeHyperParameters(), training_matrix, testing_matrix, results)
 
-    def train(self, results, features, hyperparams):
+    def train(self, results, features, hyperparams, feature_names):
         if self.is_classifier:
             self.log.debug("Unable to train Elastic Net classifier. Returning default min score.")
             return None

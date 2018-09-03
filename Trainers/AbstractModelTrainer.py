@@ -30,7 +30,7 @@ class AbstractModelTrainer(ABC):
         pass
 
     @abstractmethod
-    def train(self, results, features, hyperparams):
+    def train(self, results, features, hyperparams, feature_names):
         pass
 
     @abstractmethod
@@ -68,10 +68,11 @@ class AbstractModelTrainer(ABC):
         self.hyperparameters = hyperparams
 
         features, relevant_results = self.populateFeaturesAndResultsByCellLine(training_matrix, results)
+        feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
 
         model_data = {}
         for hyperparam_set in self.fetchAllHyperparamPermutations(hyperparams):
-            model = self.train(relevant_results, features, hyperparam_set)
+            model = self.train(relevant_results, features, hyperparam_set, feature_names)
             current_model_score = self.fetchPredictionsAndScore(model, testing_matrix, results)
             self.setModelDataDictionary(model_data, hyperparam_set, current_model_score)
         return model_data

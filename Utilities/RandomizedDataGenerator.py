@@ -111,9 +111,9 @@ class RandomizedDataGenerator(object):
         is_exponential = feature_num % 2 == 0
         if RandomizedDataGenerator.BINARY_CATEGORICAL_SUFFIX in file_name:
             if result < 0.5:
-                return [0]
+                return ["'0'"]
             else:
-                return [1]
+                return ["'1'"]
         elif RandomizedDataGenerator.CATEGORICAL_SUFFIX in file_name:
             if result < 0.5:
                 return [np.random.choice(["a", "b"])]
@@ -130,7 +130,7 @@ class RandomizedDataGenerator(object):
     @staticmethod
     def writeRandomFeature(file_name):
         if RandomizedDataGenerator.BINARY_CATEGORICAL_SUFFIX in file_name:
-            return [SafeCastUtil.safeCast(np.random.choice([0, 1]), int)]
+            return [np.random.choice(["'0'", "'1'"])]
         if RandomizedDataGenerator.CATEGORICAL_SUFFIX in file_name:
             return [SafeCastUtil.safeCast(np.random.choice(["a", "b", "c", "d", "e"]), str)]
         elif RandomizedDataGenerator.INTEGER_SUFFIX in file_name:

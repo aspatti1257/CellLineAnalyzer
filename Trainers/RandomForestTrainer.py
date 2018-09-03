@@ -26,7 +26,7 @@ class RandomForestTrainer(AbstractModelTrainer):
         p = len(SafeCastUtil.safeCast(training_matrix.values(), list)[0])  # number of features
         return super().loopThroughHyperparams(self.initializeHyperParameters(n, p), training_matrix, testing_matrix, results)
 
-    def train(self, results, features, hyperparams):
+    def train(self, results, features, hyperparams, feature_names):
         max_depth = numpy.min([SafeCastUtil.safeCast(numpy.floor(hyperparams[0]), int), len(features)])
         max_leaf_nodes = numpy.maximum(2, SafeCastUtil.safeCast(numpy.ceil(hyperparams[1]), int))
         if self.is_classifier:

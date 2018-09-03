@@ -21,7 +21,7 @@ class RidgeRegressionTrainer(AbstractModelTrainer):
         return super().loopThroughHyperparams(self.initializeHyperParameters(), training_matrix,
                                               testing_matrix, results)
 
-    def train(self, results, features, hyperparams):
+    def train(self, results, features, hyperparams, feature_names):
         model = Ridge(alpha=hyperparams[0], normalize=True)
         model.fit(features, results)
         self.log.debug("Successful creation of the Ridge Regression model: %s\n", model)

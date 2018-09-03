@@ -10,12 +10,11 @@ from CustomModels.RandomSubsetElasticNetModel import RandomSubsetElasticNetModel
 class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
 
     def __init__(self, is_classifier, binary_categorical_matrix):
-        # TODO: assert this is indeed binary here. If not, throw exception.
         self.validateBinaryCategoricalMatrix(binary_categorical_matrix)
 
         self.binary_categorical_matrix = binary_categorical_matrix
         self.bin_cat_matrix_name = binary_categorical_matrix.get(ArgumentProcessingService.FEATURE_NAMES)[0].split(".")[0]
-        self.current_feature_set = []
+        self.current_feature_set_as_strings = []
         self.formatted_binary_matrix = []
         super().__init__(SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET,
                          self.initializeHyperParameters(), is_classifier)
@@ -48,15 +47,12 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
         }
 
     def hyperparameterize(self, training_matrix, testing_matrix, results):
-        # Remove this assertion and MachineLearningService.setVariablesOnTrainerInSpecialCases() when this is reliable.
-        assert training_matrix.get(ArgumentProcessingService.FEATURE_NAMES) == numpy.concatenate(self.current_feature_set).tolist()
-        self.current_feature_set_as_strings = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
         return super().loopThroughHyperparams(self.initializeHyperParameters(), training_matrix, testing_matrix, results)
 
-    def train(self, results, features, hyperparams):
+    def train(self, results, features, hyperparams, feature_names):
         # TODO: Split data and return a model. Must be able to implement "predict" and "score" methods correctly.
         model = RandomSubsetElasticNetModel(hyperparams[0], hyperparams[1], hyperparams[2], hyperparams[3],
-                                            self.current_feature_set_as_strings, self.bin_cat_matrix_name)
+                                            feature_names, self.bin_cat_matrix_name)
 
         model.fit(features, results)
         self.log.debug("Successful creation of Random Subset Elastic Net model: %s\n", model)

@@ -21,7 +21,7 @@ class LassoRegressionTrainer(AbstractModelTrainer):
         return super().loopThroughHyperparams(self.initializeHyperParameters(), training_matrix,
                                               testing_matrix, results)
 
-    def train(self, results, features, hyperparams):
+    def train(self, results, features, hyperparams, feature_names):
         model = Lasso(alpha=hyperparams[0], normalize=True)
         model.fit(features, results)
         self.log.debug("Successful creation of the Lasso Regression model: %s\n", model)
