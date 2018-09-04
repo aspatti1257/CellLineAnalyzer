@@ -60,7 +60,7 @@ class RandomSubsetElasticNetModel:
                 if min_count < len(match_pool["features"]) < max_count:
                     self.createAndFitModel(current_phrase, match_pool)
                     current_pool = remaining_pool
-            if boolean_generation_attempts > self.MAX_BOOLEAN_GENERATION_ATTEMPTS:
+            if boolean_generation_attempts >= self.MAX_BOOLEAN_GENERATION_ATTEMPTS:
                 break
 
         self.fallback_model = ElasticNet(alpha=self.alpha, l1_ratio=self.l_one_ratio)
