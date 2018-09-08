@@ -1,5 +1,6 @@
 from Utilities.SafeCastUtil import SafeCastUtil
 
+
 class RecursiveBooleanPhrase:
 
     def __init__(self, split, name, value, is_or, nested_phrase):

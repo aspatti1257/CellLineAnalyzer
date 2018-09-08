@@ -41,7 +41,7 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
     def initializeHyperParameters(self):
         return {
             "upper_bound": [0.95, 0.85, 0.75],
-            "lower_bound": [0.10, 0.15, 0.2],
+            "lower_bound": [0.10, 0.15, 0.2], # TODO: Remove these
             "alpha": [0.001, 0.01, 0.1, 1, 10],
             "l_one_ratio": [0, 0.1, 0.5, 0.9, 1]
         }
@@ -50,9 +50,13 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
         return super().loopThroughHyperparams(self.initializeHyperParameters(), training_matrix, testing_matrix, results)
 
     def train(self, results, features, hyperparams, feature_names):
-        # TODO: Split data and return a model. Must be able to implement "predict" and "score" methods correctly.
+        binary_feature_indices = []
+        for i in range(0, len(feature_names)):
+            if self.bin_cat_matrix_name in feature_names[i]:
+                binary_feature_indices.append(i)
+
         model = RandomSubsetElasticNetModel(hyperparams[0], hyperparams[1], hyperparams[2], hyperparams[3],
-                                            feature_names, self.bin_cat_matrix_name)
+                                            binary_feature_indices)
 
         model.fit(features, results)
         self.log.debug("Successful creation of Random Subset Elastic Net model: %s\n", model)

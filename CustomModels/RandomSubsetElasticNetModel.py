@@ -12,29 +12,30 @@ class RandomSubsetElasticNetModel:
     # smaller than the upper bound and larger than the lower bound. Prevents recursion.
     MAX_BOOLEAN_GENERATION_ATTEMPTS = 10
 
-    def __init__(self, upper_bound, lower_bound, alpha, l_one_ratio, feature_names, bin_cat_matrix_name):
+    # The percentage of training data that needs to have at least one boolean phrase which matches it in order for
+    # training to be complete.
+    DEFAULT_COVERAGE_THRESHOLD = 0.8
+
+    def __init__(self, upper_bound, lower_bound, alpha, l_one_ratio, binary_feature_indices):
         self.upper_bound = upper_bound
         self.lower_bound = lower_bound
         self.alpha = alpha
         self.l_one_ratio = l_one_ratio
-        self.feature_names = feature_names
-        self.bin_cat_matrix_name = bin_cat_matrix_name
-        self.feature_indices_to_values = self.determineBinCatFeatureIndices(feature_names, bin_cat_matrix_name)
+        self.feature_indices_to_values = self.determineBinCatFeatureIndices(binary_feature_indices)
         self.models_by_statement = []
         self.fallback_model = None
 
-    def determineBinCatFeatureIndices(self, feature_names, bin_cat_matrix_name):
+    def determineBinCatFeatureIndices(self, binary_feature_indices):
         bin_cat_features = {}
-        for i in range(0, len(feature_names)):
-            if bin_cat_matrix_name in feature_names[i]:
-                bin_cat_features[i] = []  # Filled in at fitting time.
+        for i in range(0, len(binary_feature_indices)):
+            bin_cat_features[i] = []  # Filled in at fitting time.
         return bin_cat_features
 
     def fit(self, features, results):
         self.determineUniqueFeatureBinaryFeatureValues(features)
         min_count = SafeCastUtil.safeCast(self.lower_bound * len(features), int)
         max_count = SafeCastUtil.safeCast(self.upper_bound * len(features), int)
-
+        #TODO: Current pool is always the full trained feature set. Redundancy is okay.
         current_pool = {"features": features[:], "results": results[:]}
 
         boolean_generation_attempts = 0
@@ -75,7 +76,7 @@ class RandomSubsetElasticNetModel:
 
     def generatePhrase(self, current_phrase, feature_to_split_on, min_count, selected_pool):
         value_to_split_on = random.choice(self.feature_indices_to_values[feature_to_split_on])
-        feature_name = self.feature_names[feature_to_split_on]
+        feature_name = "unknown"
         is_or = len(selected_pool["features"]) < min_count
         return RecursiveBooleanPhrase(feature_to_split_on, feature_name, value_to_split_on, is_or, current_phrase)
 
@@ -94,12 +95,14 @@ class RandomSubsetElasticNetModel:
         return remaining_pool, match_pool
 
     def createAndFitModel(self, current_phrase, selected_pool):
-        model = ElasticNet(alpha=self.alpha, l1_ratio=self.l_one_ratio)
         trimmed_features = self.trimBooleanFeatures(selected_pool["features"])
+        model = ElasticNet(alpha=self.alpha, l1_ratio=self.l_one_ratio)
         model.fit(trimmed_features, selected_pool["results"])
+        r_squared_score = model.score(trimmed_features, selected_pool["results"])
         self.models_by_statement.append({
             "phrase": current_phrase,
-            "model": model
+            "model": model,
+            "score": r_squared_score
         })
 
     def trimBooleanFeatures(self, features):
