@@ -18,13 +18,15 @@ class RandomSubsetElasticNetModel:
     # training to be complete.
     DEFAULT_COVERAGE_THRESHOLD = 0.8
 
-    def __init__(self, alpha, l_one_ratio, binary_feature_indices, upper_bound=0.35, lower_bound=0.10, p=0):
+    def __init__(self, alpha, l_one_ratio, binary_feature_indices, upper_bound=0.35, lower_bound=0.10, p=0,
+                 explicit_model_count=-1):
         self.alpha = alpha
         self.l_one_ratio = l_one_ratio
         self.feature_indices_to_values = self.determineBinCatFeatureIndices(binary_feature_indices)
         self.upper_bound = upper_bound
         self.lower_bound = lower_bound
-        self.p = p  # TODO: Write test for this
+        self.p = p
+        self.explicit_model_count = explicit_model_count  # Explicit count of models to create
         self.models_by_phrase = []
         self.fallback_model = None
 
@@ -37,6 +39,8 @@ class RandomSubsetElasticNetModel:
     def fit(self, features, results):
         self.determineUniqueFeatureBinaryFeatureValues(features)
         min_count = SafeCastUtil.safeCast(self.lower_bound * len(features), int)
+        if min_count == 0:
+            min_count = 1
         max_count = SafeCastUtil.safeCast(self.upper_bound * len(features), int)
 
         matching_threshold = SafeCastUtil.safeCast(self.DEFAULT_COVERAGE_THRESHOLD * len(features), int)
@@ -46,7 +50,9 @@ class RandomSubsetElasticNetModel:
         rounds_with_no_new_matches = 0
         boolean_generation_attempts = 0
 
-        while total_matched_feature_sets < matching_threshold and rounds_with_no_new_matches < self.MAX_BOOLEAN_GENERATION_ATTEMPTS:
+        while (((len(self.models_by_phrase) < self.explicit_model_count) and self.explicit_model_count > 0) or
+               (total_matched_feature_sets < matching_threshold and self.explicit_model_count <= 0)) and\
+                rounds_with_no_new_matches < self.MAX_BOOLEAN_GENERATION_ATTEMPTS:
             unused_features = SafeCastUtil.safeCast(self.feature_indices_to_values.keys(), list)
             current_phrase = None
             match_pool = {"features": [], "results": []}
@@ -63,7 +69,7 @@ class RandomSubsetElasticNetModel:
 
                 match_pool = self.fetchMatchingPool(current_phrase, full_pool)
 
-                if min_count < len(match_pool["features"]) < max_count:
+                if min_count <= len(match_pool["features"]) <= max_count:
                     self.createAndFitModel(current_phrase, match_pool)
                     new_matched_feature_sets = len(self.featuresMatchingPhrase(features))
                     if new_matched_feature_sets <= total_matched_feature_sets:
@@ -105,8 +111,9 @@ class RandomSubsetElasticNetModel:
         model = ElasticNet(alpha=self.alpha, l1_ratio=self.l_one_ratio)
         model.fit(trimmed_features, selected_pool["results"])
         r_squared_score = r2_score(selected_pool["results"], model.predict(trimmed_features))
-        model_phrase = ModelPhraseDataObject(model, current_phrase, r_squared_score)
-        self.models_by_phrase.append(model_phrase)
+        if current_phrase.split is None or r_squared_score <= 0:  # always accept the fallback model
+            model_phrase = ModelPhraseDataObject(model, current_phrase, r_squared_score)
+            self.models_by_phrase.append(model_phrase)
 
     def trimBooleanFeatures(self, features):
         trimmed_features = []
@@ -164,5 +171,3 @@ class RandomSubsetElasticNetModel:
 
     def score(self, features, relevant_results):
         return r2_score(relevant_results, self.predict(features))
-
-
