@@ -1,9 +1,11 @@
 from sklearn.linear_model import ElasticNet
+from sklearn.metrics import r2_score
 import random
+import numpy
 
 from Utilities.SafeCastUtil import SafeCastUtil
 from CustomModels.RecursiveBooleanPhrase import RecursiveBooleanPhrase
-from Trainers.AbstractModelTrainer import AbstractModelTrainer
+from CustomModels.ModelPhraseDataObject import ModelPhraseDataObject
 
 
 class RandomSubsetElasticNetModel:
@@ -16,13 +18,14 @@ class RandomSubsetElasticNetModel:
     # training to be complete.
     DEFAULT_COVERAGE_THRESHOLD = 0.8
 
-    def __init__(self, upper_bound, lower_bound, alpha, l_one_ratio, binary_feature_indices):
-        self.upper_bound = upper_bound
-        self.lower_bound = lower_bound
+    def __init__(self, alpha, l_one_ratio, binary_feature_indices, upper_bound=0.35, lower_bound=0.10, p=0):
         self.alpha = alpha
         self.l_one_ratio = l_one_ratio
         self.feature_indices_to_values = self.determineBinCatFeatureIndices(binary_feature_indices)
-        self.models_by_statement = []
+        self.upper_bound = upper_bound
+        self.lower_bound = lower_bound
+        self.p = p  # TODO: Write test for this
+        self.models_by_phrase = []
         self.fallback_model = None
 
     def determineBinCatFeatureIndices(self, binary_feature_indices):
@@ -35,16 +38,18 @@ class RandomSubsetElasticNetModel:
         self.determineUniqueFeatureBinaryFeatureValues(features)
         min_count = SafeCastUtil.safeCast(self.lower_bound * len(features), int)
         max_count = SafeCastUtil.safeCast(self.upper_bound * len(features), int)
-        #TODO: Current pool is always the full trained feature set. Redundancy is okay.
-        current_pool = {"features": features[:], "results": results[:]}
 
+        matching_threshold = SafeCastUtil.safeCast(self.DEFAULT_COVERAGE_THRESHOLD * len(features), int)
+        full_pool = {"features": features[:], "results": results[:]}
+
+        total_matched_feature_sets = 0
+        rounds_with_no_new_matches = 0
         boolean_generation_attempts = 0
 
-        while len(current_pool["features"]) > min_count:
-
-            match_pool = {"features": [], "results": []}
-            current_phrase = None
+        while total_matched_feature_sets < matching_threshold and rounds_with_no_new_matches < self.MAX_BOOLEAN_GENERATION_ATTEMPTS:
             unused_features = SafeCastUtil.safeCast(self.feature_indices_to_values.keys(), list)
+            current_phrase = None
+            match_pool = {"features": [], "results": []}
 
             while (len(match_pool["features"]) < min_count or len(match_pool["features"]) > max_count) \
                     and boolean_generation_attempts < self.MAX_BOOLEAN_GENERATION_ATTEMPTS:
@@ -56,16 +61,22 @@ class RandomSubsetElasticNetModel:
                 unused_features = [feature for feature in unused_features if feature is not feature_to_split_on]
                 current_phrase = self.generatePhrase(current_phrase, feature_to_split_on, min_count, match_pool)
 
-                remaining_pool, match_pool = self.sortIntoPoolsByPhrase(current_phrase, current_pool)
+                match_pool = self.fetchMatchingPool(current_phrase, full_pool)
 
                 if min_count < len(match_pool["features"]) < max_count:
                     self.createAndFitModel(current_phrase, match_pool)
-                    current_pool = remaining_pool
+                    new_matched_feature_sets = len(self.featuresMatchingPhrase(features))
+                    if new_matched_feature_sets <= total_matched_feature_sets:
+                        rounds_with_no_new_matches += 1
+                    else:
+                        rounds_with_no_new_matches = 0
+                    total_matched_feature_sets = new_matched_feature_sets
+
             if boolean_generation_attempts >= self.MAX_BOOLEAN_GENERATION_ATTEMPTS:
                 break
 
-        self.fallback_model = ElasticNet(alpha=self.alpha, l1_ratio=self.l_one_ratio)
-        self.fallback_model.fit(self.trimBooleanFeatures(features), results)
+        fallback_phrase = RecursiveBooleanPhrase(None, None, None, None)
+        self.createAndFitModel(fallback_phrase, full_pool)
 
     def determineUniqueFeatureBinaryFeatureValues(self, features):
         for feature_set in features:
@@ -76,34 +87,26 @@ class RandomSubsetElasticNetModel:
 
     def generatePhrase(self, current_phrase, feature_to_split_on, min_count, selected_pool):
         value_to_split_on = random.choice(self.feature_indices_to_values[feature_to_split_on])
-        feature_name = "unknown"
         is_or = len(selected_pool["features"]) < min_count
-        return RecursiveBooleanPhrase(feature_to_split_on, feature_name, value_to_split_on, is_or, current_phrase)
+        return RecursiveBooleanPhrase(feature_to_split_on, value_to_split_on, is_or, current_phrase)
 
-    def sortIntoPoolsByPhrase(self, current_phrase, current_pool):
+    def fetchMatchingPool(self, current_phrase, full_pool):
         match_pool = {"features": [], "results": []}
-        remaining_pool = {"features": [], "results": []}
-        for i in range(0, len(current_pool["features"])):
-            feature_set = current_pool["features"][i]
-            result = current_pool["results"][i]
+        for i in range(0, len(full_pool["features"])):
+            feature_set = full_pool["features"][i]
+            result = full_pool["results"][i]
             if current_phrase.analyzeForFeatureSet(feature_set):
                 match_pool["features"].append(feature_set)
                 match_pool["results"].append(result)
-            else:
-                remaining_pool["features"].append(feature_set)
-                remaining_pool["results"].append(result)
-        return remaining_pool, match_pool
+        return match_pool
 
     def createAndFitModel(self, current_phrase, selected_pool):
         trimmed_features = self.trimBooleanFeatures(selected_pool["features"])
         model = ElasticNet(alpha=self.alpha, l1_ratio=self.l_one_ratio)
         model.fit(trimmed_features, selected_pool["results"])
-        r_squared_score = model.score(trimmed_features, selected_pool["results"])
-        self.models_by_statement.append({
-            "phrase": current_phrase,
-            "model": model,
-            "score": r_squared_score
-        })
+        r_squared_score = r2_score(selected_pool["results"], model.predict(trimmed_features))
+        model_phrase = ModelPhraseDataObject(model, current_phrase, r_squared_score)
+        self.models_by_phrase.append(model_phrase)
 
     def trimBooleanFeatures(self, features):
         trimmed_features = []
@@ -115,38 +118,51 @@ class RandomSubsetElasticNetModel:
             trimmed_features.append(trimmed_feature_set)
         return trimmed_features
 
+    def featuresMatchingPhrase(self, features):
+        matching_features = []
+        for feature_set in features:
+            matches_a_phrase = False
+            for model_by_phrase in self.models_by_phrase:
+                if model_by_phrase.phrase.analyzeForFeatureSet(feature_set):
+                    matches_a_phrase = True
+                    break
+            if matches_a_phrase:
+                matching_features.append(feature_set)
+
+        return matching_features
+
     def predict(self, features):
         predictions = []  # Order matters, so we can't sort into pools.
         for feature in features:
-            prediction = None
-            for boolean_statement in self.models_by_statement:
-                if boolean_statement["phrase"].analyzeForFeatureSet(feature):
-                    prediction = boolean_statement["model"].predict(self.trimBooleanFeatures([feature]))
-                    break
-            if prediction is None:
-                prediction = self.fallback_model.predict(self.trimBooleanFeatures([feature]))
-            predictions.append(prediction[0])
+            predictions_and_scores = []
+            for model_by_phrase in self.models_by_phrase:
+                if model_by_phrase.phrase.analyzeForFeatureSet(feature):
+                    raw_prediction = model_by_phrase.model.predict(self.trimBooleanFeatures([feature]))
+                    predictions_and_scores.append([raw_prediction[0], model_by_phrase.score])
+
+            sum_of_matching_r2 = numpy.sum([pred[1] for pred in predictions_and_scores])
+            if sum_of_matching_r2 > 0:
+                max_weight = numpy.max([pred[1] for pred in predictions_and_scores])
+                num_weights_with_max_weight = len([pred[1] for pred in predictions_and_scores if pred[1] == max_weight])
+
+                matching_weighted_preds = []
+                for i in range(0, len(predictions_and_scores)):
+                    is_max = 0
+                    if predictions_and_scores[i][1] == max_weight:
+                        is_max = 1
+                    ratio_of_max_score = predictions_and_scores[i][1] / sum_of_matching_r2
+
+                    weight = (self.p * is_max / num_weights_with_max_weight) + ((1 - self.p) * ratio_of_max_score)
+                    matching_weighted_preds.append(weight * predictions_and_scores[i][0])
+
+                predictions.append(numpy.sum(matching_weighted_preds))
+            else:
+                unweighted_pred = numpy.average([pred[0] for pred in predictions_and_scores])
+                predictions.append(unweighted_pred)
+
         return predictions
 
     def score(self, features, relevant_results):
-        max_score = AbstractModelTrainer.DEFAULT_MIN_SCORE
+        return r2_score(relevant_results, self.predict(features))
 
-        current_pool = {"features": features[:], "results": relevant_results[:]}
-        for model_by_statement in self.models_by_statement:
-            remaining_pool, match_pool = self.sortIntoPoolsByPhrase(model_by_statement.get("phrase"), current_pool)
-
-            max_score = self.fetchBestScoreByModel(match_pool.get("features"), match_pool.get("results"),
-                                                   max_score, model_by_statement.get("model"))
-            current_pool = remaining_pool
-
-        return self.fetchBestScoreByModel(current_pool.get("features"), current_pool.get("results"),
-                                          max_score, self.fallback_model)
-
-    def fetchBestScoreByModel(self, features, results, current_score, model):
-        trimmed_features = self.trimBooleanFeatures(features)
-        if len(trimmed_features) > 0:
-            score = model.score(trimmed_features, results)
-            if score > current_score:
-                return score
-        return current_score
 
