@@ -76,8 +76,6 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
         arguments = argument_processing_service.handleInputFolder()
         assert arguments.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS) == 10
         assert arguments.get(ArgumentProcessingService.INNER_MONTE_CARLO_PERMUTATIONS) == 10
-        assert arguments.get(ArgumentProcessingService.SKIP_RF)
-        assert not arguments.get(ArgumentProcessingService.SKIP_ELASTIC_NET)
 
     def testArgumentsByAlgorithm(self):
         input_folder = self.current_working_dir + "/SampleClassifierDataFolder"
@@ -93,7 +91,7 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
         arguments = argument_processing_service.handleInputFolder()
         features = arguments.get(argument_processing_service.FEATURES)
         assert arguments is not None
-        assert len(arguments) == 20
+        assert len(arguments) == 15
         assert (len(arguments.get(argument_processing_service.RESULTS)) + 1) == len(features.keys())
         assert arguments.get(argument_processing_service.IS_CLASSIFIER) == is_classifier
         assert len(features.get(argument_processing_service.FEATURE_NAMES)) < self.total_features_in_files

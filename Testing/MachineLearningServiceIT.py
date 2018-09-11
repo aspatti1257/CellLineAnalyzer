@@ -65,7 +65,7 @@ class MachineLearningServiceIT(unittest.TestCase):
         ml_service = MachineLearningService(self.formatRandomizedData(False))
         ml_service.log.setLevel(logging.DEBUG)
         binary_cat_matrix = ml_service.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
-        rsen_trainer = RandomSubsetElasticNetTrainer(False, binary_cat_matrix)
+        rsen_trainer = RandomSubsetElasticNetTrainer(False, binary_cat_matrix, 0)
 
         filtered_combos = []
         for combo in ml_service.determineGeneListCombos():

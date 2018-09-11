@@ -27,14 +27,8 @@ class ArgumentProcessingService(object):
     DATA_SPLIT = "data_split"
     NUM_THREADS = "num_threads"
     ALGORITHM_CONFIGS = "algorithm_configs"
-    SKIP_RF = "skip_rf"
-    SKIP_LINEAR_SVM = "skip_linear_svm"
-    SKIP_RBF_SVM = "skip_rbf_svm"
-    SKIP_ELASTIC_NET = "skip_elastic_net"
-    SKIP_RANDOM_SUBSET_ELASTIC_NET = "skip_rsen"
-    SKIP_RIDGE_REGRESSION = "skip_ridge_regression"
-    SKIP_LASSO_REGRESSION = "skip_lasso_regression"
     RECORD_DIAGNOSTICS = "record_diagnostics"
+    RSEN_P_VAL="rsen_p_val"
     BINARY_CATEGORICAL_MATRIX = "binary_categorical_matrix"
 
     INDIVIDUAL_TRAIN_ALGORITHM = "individual_train_algorithm"
@@ -74,16 +68,6 @@ class ArgumentProcessingService(object):
             self.INNER_MONTE_CARLO_PERMUTATIONS: self.fetchOrReturnDefault(arguments.get(self.INNER_MONTE_CARLO_PERMUTATIONS), int, 10),
             self.OUTER_MONTE_CARLO_PERMUTATIONS: self.fetchOrReturnDefault(arguments.get(self.OUTER_MONTE_CARLO_PERMUTATIONS), int, 10),
             self.DATA_SPLIT: self.fetchOrReturnDefault(arguments.get(self.DATA_SPLIT), float, 0.8),
-            self.SKIP_RF: self.fetchOrReturnDefault(arguments.get(self.SKIP_RF), bool, False),
-            self.SKIP_LINEAR_SVM: self.fetchOrReturnDefault(arguments.get(self.SKIP_LINEAR_SVM), bool, False),
-            self.SKIP_RBF_SVM: self.fetchOrReturnDefault(arguments.get(self.SKIP_RBF_SVM), bool, False),
-            self.SKIP_ELASTIC_NET: self.fetchOrReturnDefault(arguments.get(self.SKIP_ELASTIC_NET), bool, False),
-            self.SKIP_RANDOM_SUBSET_ELASTIC_NET: self.fetchOrReturnDefault(arguments.get(self.SKIP_RANDOM_SUBSET_ELASTIC_NET),
-                                                                  bool, False),
-            self.SKIP_RIDGE_REGRESSION: self.fetchOrReturnDefault(arguments.get(self.SKIP_RIDGE_REGRESSION),
-                                                                  bool, False),
-            self.SKIP_LASSO_REGRESSION: self.fetchOrReturnDefault(arguments.get(self.SKIP_LASSO_REGRESSION),
-                                                                  bool, False),
             self.ALGORITHM_CONFIGS: algorithm_configs,
             self.NUM_THREADS: self.fetchOrReturnDefault(arguments.get(self.NUM_THREADS), int,
                                                         multiprocessing.cpu_count()),
@@ -91,7 +75,8 @@ class ArgumentProcessingService(object):
             self.INDIVIDUAL_TRAIN_ALGORITHM: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_ALGORITHM), str, None),
             self.INDIVIDUAL_TRAIN_HYPERPARAMS: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_HYPERPARAMS), str, ""),
             self.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO), str, None),
-            self.BINARY_CATEGORICAL_MATRIX: binary_cat_matrix
+            self.BINARY_CATEGORICAL_MATRIX: binary_cat_matrix,
+            self.RSEN_P_VAL: self.fetchOrReturnDefault(arguments.get(self.RSEN_P_VAL), float, 0.0)
         }
 
     def validateDirectoryContents(self, directory_contents):

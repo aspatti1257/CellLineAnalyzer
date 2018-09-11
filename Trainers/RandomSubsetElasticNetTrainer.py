@@ -1,5 +1,3 @@
-import numpy
-
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
 from ArgumentProcessingService import ArgumentProcessingService
@@ -9,13 +7,15 @@ from CustomModels.RandomSubsetElasticNetModel import RandomSubsetElasticNetModel
 
 class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
 
-    def __init__(self, is_classifier, binary_categorical_matrix):
+    def __init__(self, is_classifier, binary_categorical_matrix, p_val):
         self.validateBinaryCategoricalMatrix(binary_categorical_matrix)
 
         self.binary_categorical_matrix = binary_categorical_matrix
+        # TODO: Can potentially break here if "." is in feature file name.
         self.bin_cat_matrix_name = binary_categorical_matrix.get(ArgumentProcessingService.FEATURE_NAMES)[0].split(".")[0]
         self.current_feature_set_as_strings = []
         self.formatted_binary_matrix = []
+        self.p_val = p_val
         super().__init__(SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET,
                          self.initializeHyperParameters(), is_classifier)
 
@@ -53,7 +53,7 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
             if self.bin_cat_matrix_name in feature_names[i]:
                 binary_feature_indices.append(i)
 
-        model = RandomSubsetElasticNetModel(hyperparams[0], hyperparams[1], binary_feature_indices)
+        model = RandomSubsetElasticNetModel(hyperparams[0], hyperparams[1], binary_feature_indices, p=self.p_val)
 
         model.fit(features, results)
         self.log.debug("Successful creation of Random Subset Elastic Net model: %s\n", model)

@@ -168,43 +168,40 @@ class MachineLearningService(object):
         las_reg = SupportedMachineLearningAlgorithms.LASSO_REGRESSION
         rsen = SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET
 
-        if not self.inputs.get(ArgumentProcessingService.SKIP_RF) and self.shouldTrainAlgorithm(rf):
+        if self.shouldTrainAlgorithm(rf):
             rf_trainer = RandomForestTrainer(is_classifier)
             rf_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rf, True),
                                           self.monteCarloPermsByAlgorithm(rf, False), len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, rf_trainer)
 
-        if not self.inputs.get(ArgumentProcessingService.SKIP_LINEAR_SVM) and self.shouldTrainAlgorithm(lin_svm):
+        if self.shouldTrainAlgorithm(lin_svm):
             linear_svm_trainer = LinearSVMTrainer(is_classifier)
             linear_svm_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(lin_svm, True),
                                                   self.monteCarloPermsByAlgorithm(lin_svm, False),
                                                   len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, linear_svm_trainer)
 
-        if not self.inputs.get(ArgumentProcessingService.SKIP_RBF_SVM) and self.shouldTrainAlgorithm(rbf):
+        if self.shouldTrainAlgorithm(rbf):
             rbf_svm_trainer = RadialBasisFunctionSVMTrainer(is_classifier)
             rbf_svm_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rbf, True),
                                                self.monteCarloPermsByAlgorithm(rbf, False), len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, rbf_svm_trainer)
 
-        if not self.inputs.get(ArgumentProcessingService.SKIP_ELASTIC_NET) and not is_classifier and\
-                self.shouldTrainAlgorithm(enet):
+        if not is_classifier and self.shouldTrainAlgorithm(enet):
             elasticnet_trainer = ElasticNetTrainer(is_classifier)
             elasticnet_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(enet, True),
                                                   self.monteCarloPermsByAlgorithm(enet, False),
                                                   len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, elasticnet_trainer)
 
-        if not self.inputs.get(ArgumentProcessingService.SKIP_RIDGE_REGRESSION) and not is_classifier and \
-                self.shouldTrainAlgorithm(rig_reg):
+        if not is_classifier and self.shouldTrainAlgorithm(rig_reg):
             ridge_regression_trainer = RidgeRegressionTrainer(is_classifier)
             ridge_regression_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rig_reg, True),
                                                         self.monteCarloPermsByAlgorithm(rig_reg, False),
                                                         len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, ridge_regression_trainer)
 
-        if not self.inputs.get(ArgumentProcessingService.SKIP_LASSO_REGRESSION) and not is_classifier and \
-                self.shouldTrainAlgorithm(las_reg):
+        if not is_classifier and self.shouldTrainAlgorithm(las_reg):
             lasso_regression_trainer = LassoRegressionTrainer(is_classifier)
             lasso_regression_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rig_reg, True),
                                                         self.monteCarloPermsByAlgorithm(rig_reg, False),
@@ -213,7 +210,8 @@ class MachineLearningService(object):
 
         binary_cat_matrix = self.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
         if self.shouldTrainAlgorithm(rsen) and not is_classifier and binary_cat_matrix is not None:
-            rsen_trainer = RandomSubsetElasticNetTrainer(is_classifier, binary_cat_matrix)
+            p_val = self.inputs.get(ArgumentProcessingService.RSEN_P_VAL)
+            rsen_trainer = RandomSubsetElasticNetTrainer(is_classifier, binary_cat_matrix, p_val)
             rsen_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rsen, True),
                                             self.monteCarloPermsByAlgorithm(rsen, False),
                                             len(gene_list_combos))

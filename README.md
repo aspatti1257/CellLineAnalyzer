@@ -107,22 +107,6 @@ ones that aren't are marked with a star (*).
                  equal to the quantified one, the software will use all available resources what probably will
                  result in complications on the cluster.
 
-`skip_rf`* : <b>DEPRECATED</b> Optionally skip Random Forest analysis. Defaults to False.
-
-`skip_linear_svm`* : <b>DEPRECATED</b> Optionally skip Linear Support Vector Machine analysis. Defaults to False.
-
-`skip_rbf_svm`* : <b>DEPRECATED</b> Optionally skip Radial Basis Function Support Vector Machine analysis. Defaults
-                  to False.
-
-`skip_elastic_net`* : <b>DEPRECATED</b> Optionally skip Elastic Net analysis. Defaults to False. Only applies for
-                      regressors.
-
-`skip_ridge_regression`*: <b>DEPRECATED</b>  Optionally skip Ridge Regression analysis. Defaults to False. Only
-                            applies for regressors.
-
-`skip_lasso_regression`*: <b>DEPRECATED</b>  Optionally skip Lasso Regression analysis. Defaults to False. Only
-                            applies for regressors.
-
 `RandomForestAnalysis`*: The configuration for the Random Forest analysis. Accepts three parameters: True or False,
                          for whether the analysis should run at all. The number of outer monte carlo loops, and the
                          number of inner monte carlo loops. If not specified, defaults to True and the inner/outer
@@ -156,6 +140,13 @@ ones that aren't are marked with a star (*).
                             outer monte carlo loops, and the number of inner monte carlo loops. If not specified,
                             defaults to True and the inner/outer monte carlo param values set by other arguments
                             in this file.
+
+
+`RandomSubsetElasticNetAnalysis`: The configuration for the Random Subset Elastic Net analysis. Accepts three
+                                   parameters: True or False, for whether the analysis should run at all. The number of
+                                   outer monte carlo loops, and the number of inner monte carlo loops. If not specified,
+                                   defaults to True and the inner/outer monte carlo param values set by other arguments
+                                   in this file.
 
 `record_diagnostics`*: Optionally print out a diagnostics file which tells you which genes (and their indices) from
                        your gene_lists are missing in which feature files. Also, logs when optimal hyperparameter for a
