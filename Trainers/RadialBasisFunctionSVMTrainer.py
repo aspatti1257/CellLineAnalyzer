@@ -51,7 +51,7 @@ class RadialBasisFunctionSVMTrainer(AbstractModelTrainer):
             self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
                           "c_val = %s\n" +
                           "gamma = %s\n" +
-                          "episolon = %s", feature_set_as_string, self.algorithm, hyperparams[0],
+                          "epsilon = %s", feature_set_as_string, self.algorithm, hyperparams[0],
                           hyperparams[1], hyperparams[2])
 
     def fetchFeatureImportances(self, model, gene_list_combo):
