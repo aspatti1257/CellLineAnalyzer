@@ -33,3 +33,13 @@ class RecursiveBooleanPhrase:
             summary += self.nested_phrase.asSummaryString()
 
         return summary + ")"
+
+    def equals(self, other_phrase):
+        attributes_are_equal = self.split == other_phrase.split and self.value == other_phrase.value and\
+                               self.is_or == other_phrase.is_or
+        if not attributes_are_equal or (self.nested_phrase is None and other_phrase.nested_phrase is not None) or\
+                (self.nested_phrase is not None and other_phrase.nested_phrase is None):
+            return False
+        if self.nested_phrase is not None and self.nested_phrase is not None:
+            return self.nested_phrase.equals(other_phrase.nested_phrase)
+        return True

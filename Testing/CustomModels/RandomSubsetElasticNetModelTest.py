@@ -1,9 +1,11 @@
 import unittest
 import logging
 import random
+import copy
 
 
 from CustomModels.RandomSubsetElasticNetModel import RandomSubsetElasticNetModel
+from Utilities.SafeCastUtil import SafeCastUtil
 
 
 class RandomSubsetElasticNetModelTest(unittest.TestCase):
@@ -46,10 +48,20 @@ class RandomSubsetElasticNetModelTest(unittest.TestCase):
         model = self.trainModelWithExplicitNumberOfPhrases(5, False)
         assert len(model.models_by_phrase) == 5
 
+    def testDuplicatePhrasesAreNotCreated(self):
+        model = self.trainModelWithExplicitNumberOfPhrases(5, False)
+        assert len(model.models_by_phrase) == 5
+
+        first_phrase = copy.deepcopy(model.models_by_phrase[0].phrase)
+        assert first_phrase.equals(model.models_by_phrase[0].phrase)
+
+        first_phrase.is_or = not first_phrase.is_or
+        assert not first_phrase.equals(model.models_by_phrase[0].phrase)
+
     def trainModelWithExplicitNumberOfPhrases(self, phrase_count, at_least):
         num_phrases = 0
         model = None
-        explicit_count = -1
+        explicit_count = 0
         if not at_least:
             explicit_count = phrase_count
         while (not at_least and num_phrases != phrase_count) or (at_least and num_phrases < phrase_count):
@@ -61,4 +73,28 @@ class RandomSubsetElasticNetModelTest(unittest.TestCase):
 
         return model
 
+    def testParameterValidationWorks(self):
+        self.assertInvalidParams([-1, 0, 1])
+        self.assertInvalidParams([0, 1, "test"])
+        self.assertInvalidParams(self.binary_feature_indices, alpha=-1)
+        self.assertInvalidParams(self.binary_feature_indices, l_one_ratio=-1)
+        self.assertInvalidParams(self.binary_feature_indices, upper_bound=5)
+        self.assertInvalidParams(self.binary_feature_indices, lower_bound=-1)
+        self.assertInvalidParams(self.binary_feature_indices, lower_bound=.3, upper_bound=.1)
+        self.assertInvalidParams(self.binary_feature_indices, p=100)
+        self.assertInvalidParams(self.binary_feature_indices, explicit_model_count=-2)
+        self.assertInvalidParams(self.binary_feature_indices, max_boolean_generation_attempts=0)
+        self.assertInvalidParams(self.binary_feature_indices, default_coverage_threshold=1.4)
 
+    def assertInvalidParams(self, binary_feature_indices, alpha=1, l_one_ratio=2, upper_bound=0.5, lower_bound=0.1, p=0,
+                            explicit_model_count=-1, max_boolean_generation_attempts=10,
+                            default_coverage_threshold=0.8):
+        error = ""
+        try:
+            RandomSubsetElasticNetModel(alpha, l_one_ratio, binary_feature_indices, upper_bound=upper_bound,
+                                        lower_bound=lower_bound, p=p, explicit_model_count=explicit_model_count,
+                                        max_boolean_generation_attempts=max_boolean_generation_attempts,
+                                        default_coverage_threshold=default_coverage_threshold)
+        except AttributeError as attributeError:
+            error = SafeCastUtil.safeCast(attributeError, str)
+        assert "invalid parameters" in error
