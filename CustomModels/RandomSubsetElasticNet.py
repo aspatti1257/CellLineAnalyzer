@@ -94,7 +94,7 @@ class RandomSubsetElasticNet:
             statement.append("Default coverage threshold should be a float between 0 and 1.")
 
         if len(statement) > 0:
-            self.log.error("Unable to instantiate RandomSubsetElasticNetModel due to invalid parameters: ",
+            self.log.error("Unable to instantiate RandomSubsetElasticNetModel due to invalid parameters: %s",
                            str(statement))
             raise AttributeError("Unable to instantiate RandomSubsetElasticNetModel due to invalid parameters: " +
                                  str(statement))
