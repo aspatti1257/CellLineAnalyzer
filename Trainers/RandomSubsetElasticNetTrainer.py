@@ -2,7 +2,7 @@ from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithm
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
 from ArgumentProcessingService import ArgumentProcessingService
 from Utilities.SafeCastUtil import SafeCastUtil
-from CustomModels.RandomSubsetElasticNetModel import RandomSubsetElasticNetModel
+from CustomModels.RandomSubsetElasticNet import RandomSubsetElasticNet
 
 
 class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
@@ -53,7 +53,7 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
             if self.bin_cat_matrix_name in feature_names[i]:
                 binary_feature_indices.append(i)
 
-        model = RandomSubsetElasticNetModel(hyperparams[0], hyperparams[1], binary_feature_indices, p=self.p_val)
+        model = RandomSubsetElasticNet(hyperparams[0], hyperparams[1], binary_feature_indices, p=self.p_val)
 
         model.fit(features, results)
         self.log.debug("Successful creation of Random Subset Elastic Net model: %s\n", model)

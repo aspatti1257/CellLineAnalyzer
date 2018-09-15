@@ -4,7 +4,7 @@ import random
 import copy
 
 
-from CustomModels.RandomSubsetElasticNetModel import RandomSubsetElasticNetModel
+from CustomModels.RandomSubsetElasticNet import RandomSubsetElasticNet
 from Utilities.SafeCastUtil import SafeCastUtil
 
 
@@ -54,9 +54,11 @@ class RandomSubsetElasticNetModelTest(unittest.TestCase):
 
         first_phrase = copy.deepcopy(model.models_by_phrase[0].phrase)
         assert first_phrase.equals(model.models_by_phrase[0].phrase)
+        assert model.currentPhraseExists(first_phrase)
 
         first_phrase.is_or = not first_phrase.is_or
         assert not first_phrase.equals(model.models_by_phrase[0].phrase)
+        assert not model.currentPhraseExists(first_phrase)
 
     def trainModelWithExplicitNumberOfPhrases(self, phrase_count, at_least):
         num_phrases = 0
@@ -66,8 +68,8 @@ class RandomSubsetElasticNetModelTest(unittest.TestCase):
             explicit_count = phrase_count
         while (not at_least and num_phrases != phrase_count) or (at_least and num_phrases < phrase_count):
 
-            model = RandomSubsetElasticNetModel(1, 2, self.binary_feature_indices, upper_bound=0.5, lower_bound=0, p=0,
-                                                explicit_model_count=(explicit_count - 1))
+            model = RandomSubsetElasticNet(1, 2, self.binary_feature_indices, upper_bound=0.5, lower_bound=0, p=0,
+                                           explicit_model_count=(explicit_count - 1))
             model.fit(self.train_features, self.train_results)
             num_phrases = len(model.models_by_phrase)
 
@@ -91,10 +93,10 @@ class RandomSubsetElasticNetModelTest(unittest.TestCase):
                             default_coverage_threshold=0.8):
         error = ""
         try:
-            RandomSubsetElasticNetModel(alpha, l_one_ratio, binary_feature_indices, upper_bound=upper_bound,
-                                        lower_bound=lower_bound, p=p, explicit_model_count=explicit_model_count,
-                                        max_boolean_generation_attempts=max_boolean_generation_attempts,
-                                        default_coverage_threshold=default_coverage_threshold)
+            RandomSubsetElasticNet(alpha, l_one_ratio, binary_feature_indices, upper_bound=upper_bound,
+                                   lower_bound=lower_bound, p=p, explicit_model_count=explicit_model_count,
+                                   max_boolean_generation_attempts=max_boolean_generation_attempts,
+                                   coverage_threshold=default_coverage_threshold)
         except AttributeError as attributeError:
             error = SafeCastUtil.safeCast(attributeError, str)
         assert "invalid parameters" in error

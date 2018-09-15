@@ -1,6 +1,3 @@
-from Utilities.SafeCastUtil import SafeCastUtil
-
-
 class RecursiveBooleanPhrase:
 
     def __init__(self, split, value, is_or, nested_phrase):
@@ -24,13 +21,13 @@ class RecursiveBooleanPhrase:
         return current_statement
 
     def toSummaryString(self):
-        summary = "(Feature " + (SafeCastUtil.safeCast(self.split, str) + " == " + SafeCastUtil.safeCast(self.value, str))
+        summary = "(Feature " + (str(self.split) + " == " + str(self.value))
         if self.nested_phrase is not None:
             if self.is_or:
                 summary += " OR "
             else:
                 summary += " AND "
-            summary += self.nested_phrase.asSummaryString()
+            summary += self.nested_phrase.toSummaryString()
 
         return summary + ")"
 
