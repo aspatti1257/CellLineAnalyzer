@@ -82,6 +82,21 @@ class MachineLearningServiceIT(unittest.TestCase):
 
         self.assertResults(target_dir, rsen_trainer, len(trimmed_combos) + 1, rsen_trainer.is_classifier)
 
+    def testRandomSubsetElasticNetWithCombinedGeneLists(self):
+        inputs = self.formatRandomizedData(False)
+        inputs[ArgumentProcessingService.RSEN_COMBINE_GENE_LISTS] = True
+        ml_service = MachineLearningService(inputs)
+        ml_service.log.setLevel(logging.DEBUG)
+        binary_cat_matrix = ml_service.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
+        rsen_trainer = RandomSubsetElasticNetTrainer(False, binary_cat_matrix, 0)
+        gene_list_combos = ml_service.determineGeneListCombos()
+
+        combos = ml_service.fetchValidGeneListCombos(gene_list_combos, rsen_trainer)
+        assert len(combos) < len(gene_list_combos)
+
+        for combo in combos:
+            assert "ALL_GENE_LISTS" in ml_service.generateFeatureSetString(combo)
+
     def evaluateMachineLearningModel(self, trainer):
         ml_service = MachineLearningService(self.formatRandomizedData(trainer.is_classifier))
         ml_service.log.setLevel(logging.DEBUG)

@@ -99,7 +99,7 @@ class RandomSubsetElasticNet:
             raise AttributeError("Unable to instantiate RandomSubsetElasticNetModel due to invalid parameters: " +
                                  str(statement))
         else:
-            self.log.debug("Valid parameters requested. Creating RandomSubsetElasticNetModel.")
+            self.log.debug("Valid parameters requested. Creating RandomSubsetElasticNet model.")
 
     def determineBinCatFeatureIndices(self, binary_feature_indices):
         bin_cat_features = {}

@@ -28,7 +28,8 @@ class ArgumentProcessingService(object):
     NUM_THREADS = "num_threads"
     ALGORITHM_CONFIGS = "algorithm_configs"
     RECORD_DIAGNOSTICS = "record_diagnostics"
-    RSEN_P_VAL="rsen_p_val"
+    RSEN_P_VAL = "rsen_p_val"
+    RSEN_COMBINE_GENE_LISTS = "rsen_combine_gene_lists"
     BINARY_CATEGORICAL_MATRIX = "binary_categorical_matrix"
 
     INDIVIDUAL_TRAIN_ALGORITHM = "individual_train_algorithm"
@@ -76,7 +77,8 @@ class ArgumentProcessingService(object):
             self.INDIVIDUAL_TRAIN_HYPERPARAMS: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_HYPERPARAMS), str, ""),
             self.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO), str, None),
             self.BINARY_CATEGORICAL_MATRIX: binary_cat_matrix,
-            self.RSEN_P_VAL: self.fetchOrReturnDefault(arguments.get(self.RSEN_P_VAL), float, 0.0)
+            self.RSEN_P_VAL: self.fetchOrReturnDefault(arguments.get(self.RSEN_P_VAL), float, 0.0),
+            self.RSEN_COMBINE_GENE_LISTS: self.fetchOrReturnDefault(arguments.get(self.RSEN_COMBINE_GENE_LISTS), bool, False)
         }
 
     def validateDirectoryContents(self, directory_contents):

@@ -170,6 +170,11 @@ ones that aren't are marked with a star (*).
                            specified hyperparameters. Should be formatted as FEATURE_FILE_NAME:GENE_LIST_FILE_NAME
                            without the .csv extensions. See example below.
 
+`rsen_combine_gene_lists`*: Optionally combine all gene lists into one when when selecting binary categorical features
+                            for RandomSubsetElasticNet analysis.
+
+`rsen_p_val`*: Optionally set the "p" value for RandomSubsetElasticNet analysis. Determines how predictions are scored.
+
 Any .csv file in this path that is not the a gene list file, or the results.csv file, will be interpreted as a features
 file.
 

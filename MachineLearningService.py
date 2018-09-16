@@ -7,6 +7,8 @@ import os
 import threading
 
 from joblib import Parallel, delayed
+from collections import OrderedDict
+from itertools import repeat
 
 from HTMLWritingService import HTMLWritingService
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
@@ -228,11 +230,42 @@ class MachineLearningService(object):
         requested_threads = self.inputs.get(ArgumentProcessingService.NUM_THREADS)
         nodes_to_use = numpy.amin([requested_threads, max_nodes])
 
-        valid_combos = [feature_set for feature_set in gene_list_combos if trainer.shouldProcessFeatureSet(feature_set)]
+        valid_combos = self.fetchValidGeneListCombos(gene_list_combos, trainer)
 
         Parallel(n_jobs=nodes_to_use)(delayed(self.runMonteCarloSelection)(feature_set, trainer, input_folder,
                                                                            len(valid_combos))
                                       for feature_set in valid_combos)
+
+    def fetchValidGeneListCombos(self, gene_list_combos, trainer):
+        valid_combos = [feature_set for feature_set in gene_list_combos if trainer.shouldProcessFeatureSet(feature_set)]
+
+        if trainer.algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET and \
+                self.inputs.get(ArgumentProcessingService.RSEN_COMBINE_GENE_LISTS):
+            all_genes = self.fetchAllGeneListGenesDeduped()
+            # TODO: Can fail if "." in feature name.
+            bin_cat_matrix = self.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX).get(
+                                             ArgumentProcessingService.FEATURE_NAMES)[0].split(".")[0]
+            full_gene_list = [bin_cat_matrix + "." + gene for gene in all_genes if len(gene.strip()) > 0]
+
+            new_combos = []
+            for combo in valid_combos:
+                new_combo = []
+                for feature_set in combo:
+                    if bin_cat_matrix in feature_set[0]:
+                        new_combo.append(full_gene_list)
+                    else:
+                        new_combo.append(feature_set)
+                if new_combo not in new_combos:
+                    new_combos.append(new_combo)
+            return new_combos
+        else:
+            return valid_combos
+
+    def fetchAllGeneListGenesDeduped(self):
+        all_genes = SafeCastUtil.safeCast(self.inputs.get(ArgumentProcessingService.GENE_LISTS).values(), list)
+        concated_genes = SafeCastUtil.safeCast(numpy.concatenate(all_genes), list)
+        dedupded_genes = list(OrderedDict(zip(concated_genes, repeat(None))))
+        return dedupded_genes
 
     def runMonteCarloSelection(self, feature_set, trainer, input_folder, num_combos):
         scores = []
@@ -289,16 +322,20 @@ class MachineLearningService(object):
 
         feature_set_string = ""
         for file_key in feature_map.keys():
-            for gene_list_key in gene_lists.keys():
-                if len(feature_map[file_key]) == len(gene_lists[gene_list_key]):
-                    feature_map[file_key].sort()
-                    gene_lists[gene_list_key].sort()
-                    same_list = True
-                    for i in range(0, len(gene_lists[gene_list_key])):
-                        if gene_lists[gene_list_key][i] != feature_map[file_key][i]:
-                            same_list = False
-                    if same_list:
-                        feature_set_string += (file_key + ":" + gene_list_key + " ")
+            if self.inputs.get(ArgumentProcessingService.RSEN_COMBINE_GENE_LISTS) and \
+                            len(feature_map[file_key]) == len(self.fetchAllGeneListGenesDeduped()):
+                feature_set_string += (file_key + ":ALL_GENE_LISTS ")
+            else:
+                for gene_list_key in gene_lists.keys():
+                    if len(feature_map[file_key]) == len(gene_lists[gene_list_key]):
+                        feature_map[file_key].sort()
+                        gene_lists[gene_list_key].sort()
+                        same_list = True
+                        for i in range(0, len(gene_lists[gene_list_key])):
+                            if gene_lists[gene_list_key][i] != feature_map[file_key][i]:
+                                same_list = False
+                        if same_list:
+                            feature_set_string += (file_key + ":" + gene_list_key + " ")
         return feature_set_string.strip()
 
     def fetchOuterPermutationModelScore(self, feature_set, trainer, optimal_hyperparams,
