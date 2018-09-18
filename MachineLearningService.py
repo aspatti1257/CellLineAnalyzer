@@ -116,7 +116,7 @@ class MachineLearningService(object):
                 trainer = self.createTrainerFromTargetAlgorithm(is_classifier, target_algorithm)
                 for permutation in range(0, outer_monte_carlo_loops):
                     results = self.inputs.get(ArgumentProcessingService.RESULTS)
-                    formatted_data = self.formatData(self.inputs, trainer.algorithm)
+                    formatted_data = self.formatData(self.inputs)
                     training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
                                                                   gene_list_combo, formatted_data)
                     testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, gene_list_combo,
@@ -275,7 +275,7 @@ class MachineLearningService(object):
         outer_perms = self.monteCarloPermsByAlgorithm(trainer.algorithm, True)
         for i in range(1, outer_perms + 1):
             gc.collect()
-            formatted_data = self.formatData(self.inputs, trainer.algorithm)
+            formatted_data = self.formatData(self.inputs)
             training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set,
                                                           formatted_data)
             testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set,
@@ -364,7 +364,7 @@ class MachineLearningService(object):
         for j in range(1, inner_perms + 1):
             formatted_inputs = self.reformatInputsByTrainingMatrix(
                 formatted_data.get(DataFormattingService.TRAINING_MATRIX))
-            further_formatted_data = self.formatData(formatted_inputs, trainer.algorithm)
+            further_formatted_data = self.formatData(formatted_inputs)
             inner_validation_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set,
                                                                   further_formatted_data)
             inner_train_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set,
@@ -378,9 +378,9 @@ class MachineLearningService(object):
                     inner_model_hyperparams[data] = [model_data[data]]
         return inner_model_hyperparams
 
-    def formatData(self, inputs, algorithm):
+    def formatData(self, inputs):
         data_formatting_service = DataFormattingService(inputs)
-        return data_formatting_service.formatData(algorithm != SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET)
+        return data_formatting_service.formatData(True)
 
     def reformatInputsByTrainingMatrix(self, training_matrix):
         new_inputs = {ArgumentProcessingService.FEATURES: {}, ArgumentProcessingService.RESULTS: []}
