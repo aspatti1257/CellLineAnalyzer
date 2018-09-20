@@ -108,7 +108,7 @@ class RandomSubsetElasticNet:
         return bin_cat_features
 
     def fit(self, features, results):
-        self.determineUniqueFeatureBinaryFeatureValues(features)
+        self.determineUniqueBinaryFeatureValues(features)
         min_count = int(self.lower_bound * len(features))
         if min_count == 0:
             min_count = 1
@@ -160,7 +160,7 @@ class RandomSubsetElasticNet:
         fallback_phrase = RecursiveBooleanPhrase(None, None, None, None)
         self.createAndFitModel(fallback_phrase, full_pool)
 
-    def determineUniqueFeatureBinaryFeatureValues(self, features):
+    def determineUniqueBinaryFeatureValues(self, features):
         for feature_set in features:
             for i in range(0, len(feature_set)):
                 if i in list(self.feature_indices_to_values.keys()) and feature_set[i] not in \
