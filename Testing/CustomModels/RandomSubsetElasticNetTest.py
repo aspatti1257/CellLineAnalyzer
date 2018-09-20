@@ -100,3 +100,13 @@ class RandomSubsetElasticNetModelTest(unittest.TestCase):
         except AttributeError as attributeError:
             error = SafeCastUtil.safeCast(attributeError, str)
         assert "invalid parameters" in error
+
+    def testRSENFailsIfNonBinaryMatrixSentIn(self):
+        self.train_features[0][0] = 2
+        error = ""
+        try:
+            model = RandomSubsetElasticNet(1, 2, self.binary_feature_indices)
+            model.fit(self.train_features, self.train_results)
+        except ValueError as valueError:
+            error = SafeCastUtil.safeCast(valueError, str)
+        assert "Non-binary feature" in error

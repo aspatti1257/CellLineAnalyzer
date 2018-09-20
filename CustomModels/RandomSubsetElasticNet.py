@@ -166,6 +166,9 @@ class RandomSubsetElasticNet:
                 if i in list(self.feature_indices_to_values.keys()) and feature_set[i] not in \
                         self.feature_indices_to_values[i]:
                     self.feature_indices_to_values[i].append(feature_set[i])
+                    if len(self.feature_indices_to_values[i]) > 2:
+                        self.log.error("Non-binary feature detected during training at index %s", i)
+                        raise ValueError("Non-binary feature detected during training at index %s", i)
 
     def generatePhrase(self, current_phrase, feature_to_split_on, min_count, selected_pool):
         value_to_split_on = random.choice(self.feature_indices_to_values[feature_to_split_on])
