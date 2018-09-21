@@ -230,13 +230,13 @@ class MachineLearningService(object):
         requested_threads = self.inputs.get(ArgumentProcessingService.NUM_THREADS)
         nodes_to_use = numpy.amin([requested_threads, max_nodes])
 
-        valid_combos = self.fetchValidGeneListCombos(gene_list_combos, trainer)
+        valid_combos = self.fetchValidGeneListCombos(input_folder, gene_list_combos, trainer)
 
         Parallel(n_jobs=nodes_to_use)(delayed(self.runMonteCarloSelection)(feature_set, trainer, input_folder,
                                                                            len(valid_combos))
                                       for feature_set in valid_combos)
 
-    def fetchValidGeneListCombos(self, gene_list_combos, trainer):
+    def fetchValidGeneListCombos(self, input_folder, gene_list_combos, trainer):
         valid_combos = [feature_set for feature_set in gene_list_combos if trainer.shouldProcessFeatureSet(feature_set)]
 
         if trainer.algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET and \
@@ -257,9 +257,32 @@ class MachineLearningService(object):
                         new_combo.append(feature_set)
                 if new_combo not in new_combos:
                     new_combos.append(new_combo)
-            return new_combos
+            return self.trimAnalyzedCombos(input_folder, new_combos, trainer)
         else:
+            return self.trimAnalyzedCombos(input_folder, valid_combos, trainer)
+
+    def trimAnalyzedCombos(self, input_folder, valid_combos, trainer):
+        file_name = trainer.algorithm + ".csv"
+        if file_name not in os.listdir(input_folder):
             return valid_combos
+
+        existing_combo_strings = []
+        with open(input_folder + "/" + file_name) as analyzed_file:
+            try:
+                for line_index, line in enumerate(analyzed_file):
+                    if line_index == 0:
+                        continue
+                    existing_combo_strings.append(line.strip().split(",")[0])
+            except ValueError as error:
+                self.log.error("Error reading existing combos from analysis file: %s", analyzed_file, error)
+            finally:
+                analyzed_file.close()
+
+        trimmed_combos = []
+        for combo in valid_combos:
+            if self.generateFeatureSetString(combo) not in existing_combo_strings:
+                trimmed_combos.append(combo)
+        return trimmed_combos
 
     def fetchAllGeneListGenesDeduped(self):
         all_genes = SafeCastUtil.safeCast(self.inputs.get(ArgumentProcessingService.GENE_LISTS).values(), list)

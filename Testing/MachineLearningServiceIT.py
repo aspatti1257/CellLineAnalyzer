@@ -84,6 +84,7 @@ class MachineLearningServiceIT(unittest.TestCase):
 
     def testRandomSubsetElasticNetWithCombinedGeneLists(self):
         inputs = self.formatRandomizedData(False)
+        input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         inputs[ArgumentProcessingService.RSEN_COMBINE_GENE_LISTS] = True
         ml_service = MachineLearningService(inputs)
         ml_service.log.setLevel(logging.DEBUG)
@@ -91,7 +92,7 @@ class MachineLearningServiceIT(unittest.TestCase):
         rsen_trainer = RandomSubsetElasticNetTrainer(False, binary_cat_matrix, 0)
         gene_list_combos = ml_service.determineGeneListCombos()
 
-        combos = ml_service.fetchValidGeneListCombos(gene_list_combos, rsen_trainer)
+        combos = ml_service.fetchValidGeneListCombos(input_folder, gene_list_combos, rsen_trainer)
         assert len(combos) < len(gene_list_combos)
 
         for combo in combos:
@@ -240,3 +241,13 @@ class MachineLearningServiceIT(unittest.TestCase):
                 self.log.debug("Closing file %s", file_name)
                 csv_file.close()
                 assert num_lines == expected_lines
+
+    def testTrimmingExistingFeatures(self):
+        input_folder = self.current_working_dir + "/SampleClassifierDataFolder"
+        argument_processing_service = ArgumentProcessingService(input_folder)
+        inputs = argument_processing_service.handleInputFolder()
+        ml_service = MachineLearningService(inputs)
+        gene_list_combos = ml_service.determineGeneListCombos()
+        trainer = RandomForestTrainer(True)
+        trimmed_combos = ml_service.fetchValidGeneListCombos(input_folder, gene_list_combos, trainer)
+        assert len(trimmed_combos) == (len(gene_list_combos) - 1)

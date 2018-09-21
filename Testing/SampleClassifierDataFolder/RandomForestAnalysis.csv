@@ -1,0 +1,2 @@
+feature file: gene list combo,R^2 score,mean squared error,1st most important feature
+features:gene_list1,0.0,0.0,feature_one --- 1.0
