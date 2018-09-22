@@ -26,7 +26,7 @@ class RandomSubsetElasticNetModelTest(unittest.TestCase):
     binary_feature_indices = [0, 1, 2, 3]
 
     def testPValueWorksAsIntended(self):
-        model = self.trainModelWithExplicitNumberOfPhrases(2, True)
+        model = self.trainModelWithExplicitNumberOfPhrases(10, True)
 
         for enet_model in model.models_by_phrase:  # fake the scores so that we don't have models which tie
             enet_model.score = random.random()
@@ -72,8 +72,12 @@ class RandomSubsetElasticNetModelTest(unittest.TestCase):
                                            explicit_model_count=(explicit_count - 1))
             model.fit(self.train_features, self.train_results)
             num_phrases = len(model.models_by_phrase)
+            [self.assertScore(model_phrase) for model_phrase in model.models_by_phrase if model_phrase.phrase.value is not None]
 
         return model
+
+    def assertScore(self, phrase):
+        assert phrase.score > 0
 
     def testParameterValidationWorks(self):
         self.assertInvalidParams([-1, 0, 1])
