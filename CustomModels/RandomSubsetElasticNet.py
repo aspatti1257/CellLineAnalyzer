@@ -196,7 +196,7 @@ class RandomSubsetElasticNet:
         model = ElasticNet(alpha=self.alpha, l1_ratio=self.l_one_ratio)
         model.fit(trimmed_features, selected_pool[RandomSubsetElasticNet.RESULTS])
         r_squared_score = r2_score(selected_pool[RandomSubsetElasticNet.RESULTS], model.predict(trimmed_features))
-        if current_phrase.split is None or r_squared_score <= 0:  # always accept the fallback model
+        if current_phrase.split is None or r_squared_score > 0:  # always accept the fallback model
             model_phrase = ModelPhraseDataObject(model, current_phrase, r_squared_score)
             self.log.debug("Created model for phrase: %s. \nWith R^2 score of: ", current_phrase.toSummaryString(),
                            r_squared_score)
