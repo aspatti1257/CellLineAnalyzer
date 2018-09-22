@@ -491,7 +491,6 @@ class MachineLearningService(object):
         self.unlockThreadMessage()
         lock.release()
 
-
     @staticmethod
     def getCSVFileHeader(is_classifier, ml_algorithm):
         header = ["feature file: gene list combo"]
@@ -503,6 +502,10 @@ class MachineLearningService(object):
             header.append("mean squared error")
         if ml_algorithm == SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM:
             return header
+
+        feature_analysis = " most important feature"
+        if ml_algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET:
+            feature_analysis = " most significant boolean phrase"
         for i in range(1, MachineLearningService.MAXIMUM_FEATURES_RECORDED + 1):
             if i == 1:
                 suffix = "st"
@@ -512,7 +515,7 @@ class MachineLearningService(object):
                 suffix = "rd"
             else:
                 suffix = "th"
-            header.append(SafeCastUtil.safeCast(i, str) + suffix + " most important feature")
+            header.append(SafeCastUtil.safeCast(i, str) + suffix + feature_analysis)
         return header
 
     def logPercentDone(self, total_lines, num_combos, ml_algorithm):

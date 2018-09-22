@@ -4,6 +4,8 @@ from ArgumentProcessingService import ArgumentProcessingService
 from Utilities.SafeCastUtil import SafeCastUtil
 from CustomModels.RandomSubsetElasticNet import RandomSubsetElasticNet
 
+from collections import OrderedDict
+
 
 class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
 
@@ -63,7 +65,9 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
         model_data[hyperparam_set[0], hyperparam_set[1]] = current_model_score
 
     def logOptimalHyperParams(self, hyperparams, feature_set_as_string):
-        pass  # TODO
+        self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
+                      "alpha = %s\n" +
+                      "l one ratio = %s", feature_set_as_string, self.algorithm, hyperparams[0], hyperparams[1])
 
     def shouldProcessFeatureSet(self, feature_set):
         # Feature set should contain a gene list applied to the binary categorical matrix AND another gene list applied
@@ -79,5 +83,7 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
         return uses_bin_cat_matrix and uses_other_feature_file
 
     def fetchFeatureImportances(self, model, gene_list_combo):
-        # TODO: Fetch feature importances from existing model object.
-        return {}
+        scores_by_string = {}
+        for model_phrase in model.models_by_phrase:
+            scores_by_string[model_phrase.phrase.toSummaryString()] = model_phrase.score
+        return scores_by_string

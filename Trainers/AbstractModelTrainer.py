@@ -39,7 +39,7 @@ class AbstractModelTrainer(ABC):
 
     @abstractmethod
     def logOptimalHyperParams(self, hyperparams, feature_set_as_string):
-        pass
+        pass  # TODO: Consider logging to diagnostics file as well.
 
     @abstractmethod
     def supportsHyperparams(self):
