@@ -4,8 +4,6 @@ from ArgumentProcessingService import ArgumentProcessingService
 from Utilities.SafeCastUtil import SafeCastUtil
 from CustomModels.RandomSubsetElasticNet import RandomSubsetElasticNet
 
-from collections import OrderedDict
-
 
 class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
 
