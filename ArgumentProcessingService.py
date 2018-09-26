@@ -135,8 +135,10 @@ class ArgumentProcessingService(object):
         for file in [f for f in files if self.GENE_LISTS in f]:
             file_path = self.input_folder + "/" + file
             with open(file_path) as gene_list_file:
-                genes_array = gene_list_file.read().strip().split(",")
-                gene_lists[file.split(".csv")[0]] = [gene for gene in genes_array if len(gene.strip()) > 0]
+                genes = gene_list_file.read().strip().split(",")
+                genes_deduped = []
+                [genes_deduped.append(g.strip()) for g in genes if g not in genes_deduped and len(g.strip()) > 0]
+                gene_lists[file.split(".csv")[0]] = genes_deduped
 
         return gene_lists
 
