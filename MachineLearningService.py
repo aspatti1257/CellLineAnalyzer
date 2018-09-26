@@ -127,7 +127,8 @@ class MachineLearningService(object):
                     model_score = trainer.fetchPredictionsAndScore(model, testing_matrix, results)
                     score = model_score[0]
                     accuracy = model_score[1]
-                    ordered_importances = self.averageAndSortImportances(trainer.fetchFeatureImportances(model, gene_list_combo))
+                    ordered_importances = self.averageAndSortImportances(trainer.fetchFeatureImportances(model, gene_list_combo),
+                                                                         outer_monte_carlo_loops)
 
                     self.log.debug("Final score and accuracy of individual analysis for feature gene combo %s "
                                    "using algorithm %s: %s, %s", target_combo, target_algorithm, score, accuracy)
@@ -323,7 +324,7 @@ class MachineLearningService(object):
 
         average_score = numpy.mean(scores)
         average_accuracy = numpy.mean(accuracies)
-        ordered_importances = self.averageAndSortImportances(importances)
+        ordered_importances = self.averageAndSortImportances(importances, outer_perms)
 
         self.log.debug("Average score and accuracy of all Monte Carlo runs for %s: %s, %s",
                        feature_set_as_string, average_score, average_accuracy)
@@ -372,12 +373,9 @@ class MachineLearningService(object):
         score, accuracy = trainer.fetchPredictionsAndScore(model, testing_matrix, results)
         return [score, accuracy, trainer.fetchFeatureImportances(model, feature_set)]
 
-    def averageAndSortImportances(self, importances):
+    def averageAndSortImportances(self, importances, outer_loops):
         ordered_imps = []
-        sum_of_all_imps = numpy.sum([numpy.sum(imps) for imps in importances.values()])
-        if sum_of_all_imps <= 0:
-            sum_of_all_imps = 1
-        [ordered_imps.append({"feature": key, "importance": numpy.sum(importances[key]) / sum_of_all_imps}) for key in
+        [ordered_imps.append({"feature": key, "importance": numpy.sum(importances[key]) / outer_loops}) for key in
          importances.keys()]
         ordered_imps = sorted(ordered_imps, key=lambda k: k["importance"])
         ordered_imps.reverse()
