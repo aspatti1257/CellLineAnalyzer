@@ -162,32 +162,13 @@ class MachineLearningService(object):
 
     def analyzeAllGeneListCombos(self, gene_list_combos, input_folder, is_classifier):
 
-        rf = SupportedMachineLearningAlgorithms.RANDOM_FOREST
-        lin_svm = SupportedMachineLearningAlgorithms.LINEAR_SVM
-        rbf = SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM
         enet = SupportedMachineLearningAlgorithms.ELASTIC_NET
         rig_reg = SupportedMachineLearningAlgorithms.RIDGE_REGRESSION
         las_reg = SupportedMachineLearningAlgorithms.LASSO_REGRESSION
+        lin_svm = SupportedMachineLearningAlgorithms.LINEAR_SVM
+        rbf = SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM
+        rf = SupportedMachineLearningAlgorithms.RANDOM_FOREST
         rsen = SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET
-
-        if self.shouldTrainAlgorithm(rf):
-            rf_trainer = RandomForestTrainer(is_classifier)
-            rf_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rf, True),
-                                          self.monteCarloPermsByAlgorithm(rf, False), len(gene_list_combos))
-            self.handleParallellization(gene_list_combos, input_folder, rf_trainer)
-
-        if self.shouldTrainAlgorithm(lin_svm):
-            linear_svm_trainer = LinearSVMTrainer(is_classifier)
-            linear_svm_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(lin_svm, True),
-                                                  self.monteCarloPermsByAlgorithm(lin_svm, False),
-                                                  len(gene_list_combos))
-            self.handleParallellization(gene_list_combos, input_folder, linear_svm_trainer)
-
-        if self.shouldTrainAlgorithm(rbf):
-            rbf_svm_trainer = RadialBasisFunctionSVMTrainer(is_classifier)
-            rbf_svm_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rbf, True),
-                                               self.monteCarloPermsByAlgorithm(rbf, False), len(gene_list_combos))
-            self.handleParallellization(gene_list_combos, input_folder, rbf_svm_trainer)
 
         if not is_classifier and self.shouldTrainAlgorithm(enet):
             elasticnet_trainer = ElasticNetTrainer(is_classifier)
@@ -209,6 +190,25 @@ class MachineLearningService(object):
                                                         self.monteCarloPermsByAlgorithm(rig_reg, False),
                                                         len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, lasso_regression_trainer)
+
+        if self.shouldTrainAlgorithm(lin_svm):
+            linear_svm_trainer = LinearSVMTrainer(is_classifier)
+            linear_svm_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(lin_svm, True),
+                                                  self.monteCarloPermsByAlgorithm(lin_svm, False),
+                                                  len(gene_list_combos))
+            self.handleParallellization(gene_list_combos, input_folder, linear_svm_trainer)
+
+        if self.shouldTrainAlgorithm(rbf):
+            rbf_svm_trainer = RadialBasisFunctionSVMTrainer(is_classifier)
+            rbf_svm_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rbf, True),
+                                               self.monteCarloPermsByAlgorithm(rbf, False), len(gene_list_combos))
+            self.handleParallellization(gene_list_combos, input_folder, rbf_svm_trainer)
+
+        if self.shouldTrainAlgorithm(rf):
+            rf_trainer = RandomForestTrainer(is_classifier)
+            rf_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rf, True),
+                                          self.monteCarloPermsByAlgorithm(rf, False), len(gene_list_combos))
+            self.handleParallellization(gene_list_combos, input_folder, rf_trainer)
 
         binary_cat_matrix = self.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
         if self.shouldTrainAlgorithm(rsen) and not is_classifier and binary_cat_matrix is not None:
@@ -374,7 +374,11 @@ class MachineLearningService(object):
 
     def averageAndSortImportances(self, importances):
         ordered_imps = []
-        [ordered_imps.append({"feature": k, "importance": numpy.mean(importances[k])}) for k in importances.keys()]
+        sum_of_all_imps = numpy.sum([numpy.sum(imps) for imps in importances.values()])
+        if sum_of_all_imps <= 0:
+            sum_of_all_imps = 1
+        [ordered_imps.append({"feature": key, "importance": numpy.sum(importances[key]) / sum_of_all_imps}) for key in
+         importances.keys()]
         ordered_imps = sorted(ordered_imps, key=lambda k: k["importance"])
         ordered_imps.reverse()
         ordered_imps = ordered_imps[:self.MAXIMUM_FEATURES_RECORDED]

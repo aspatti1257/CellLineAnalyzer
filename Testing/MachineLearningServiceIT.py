@@ -109,7 +109,7 @@ class MachineLearningServiceIT(unittest.TestCase):
         self.assertResults(target_dir, trainer, num_gene_list_combos + 1, trainer.is_classifier)
 
     def formatRandomizedData(self, is_classifier):
-        RandomizedDataGenerator.generateRandomizedFiles(3, 1000, 150, is_classifier, 1, .8)
+        RandomizedDataGenerator.generateRandomizedFiles(3, 1000, 150, is_classifier, 2, .8)
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         argument_processing_service = ArgumentProcessingService(input_folder)
         return argument_processing_service.handleInputFolder()
