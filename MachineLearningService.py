@@ -377,11 +377,10 @@ class MachineLearningService(object):
         ordered_imps = []
         [ordered_imps.append({"feature": key, "importance": numpy.sum(importances[key]) / outer_loops}) for key in
          importances.keys()]
-        ordered_imps = sorted(ordered_imps, key=lambda k: k["importance"])
-        ordered_imps.reverse()
-        ordered_imps = ordered_imps[:self.MAXIMUM_FEATURES_RECORDED]
+        ordered_imps = sorted(ordered_imps, key=lambda k: k["importance"], reverse=True)
+        final_imps = ordered_imps[:self.MAXIMUM_FEATURES_RECORDED]
 
-        return [imp.get("feature") + " --- " + SafeCastUtil.safeCast(imp.get("importance"), str) for imp in ordered_imps]
+        return [imp.get("feature") + " --- " + SafeCastUtil.safeCast(imp.get("importance"), str) for imp in final_imps]
 
     def determineInnerHyperparameters(self, feature_set, formatted_data, trainer):
         inner_model_hyperparams = {}

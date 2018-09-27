@@ -1,6 +1,8 @@
 import logging
 import os
 import unittest
+import numpy
+import math
 
 from Trainers.ElasticNetTrainer import ElasticNetTrainer
 from Trainers.RandomForestTrainer import RandomForestTrainer
@@ -251,3 +253,46 @@ class MachineLearningServiceIT(unittest.TestCase):
         trainer = RandomForestTrainer(True)
         trimmed_combos = ml_service.fetchValidGeneListCombos(input_folder, gene_list_combos, trainer)
         assert len(trimmed_combos) == (len(gene_list_combos) - 1)
+
+    def testSortingByFeatureImportances(self):
+        DELIMITER = " --- "
+        ml_service = MachineLearningService(None)
+        # All columns add up to 1. Equal number of importances for each feature.
+        importances = {
+            "geneA": [0.0, 0.1, 0.2, 0.4, 0.0],   # total == 0.7
+            "geneB": [1.0, 0.1, 0.2, 0.1, 0.5],   # total == 1.9
+            "geneC": [0.0, 0.1, 0.2, 0.1, 0.25],  # total == 0.65
+            "geneD": [0.0, 0.1, 0.2, 0.3, 0.25],  # total == 0.85
+            "geneE": [0.0, 0.6, 0.2, 0.1, 0.0],   # total == 0.9
+        }
+
+        sorted_importances1 = ml_service.averageAndSortImportances(importances, 5)
+        assert sorted_importances1[0] == "geneB --- 0.38"
+        assert sorted_importances1[1] == "geneE --- 0.18"
+        assert sorted_importances1[2] == "geneD --- 0.17"
+        assert sorted_importances1[3] == "geneA --- 0.14"
+        assert sorted_importances1[4] == "geneC --- 0.13"
+        assert numpy.sum([SafeCastUtil.safeCast(imp.split(DELIMITER)[1], float) for imp in sorted_importances1]) == 1.0
+
+        sorted_importances2 = ml_service.averageAndSortImportances(importances, 6)
+        assert len(sorted_importances1) == len(sorted_importances1)
+        for i in range(0, len(sorted_importances2)):
+            split1 = sorted_importances1[i].split(DELIMITER)
+            split2 = sorted_importances2[i].split(DELIMITER)
+            assert split1[0] == split2[0]
+            assert SafeCastUtil.safeCast(split1[1], float) > SafeCastUtil.safeCast(split2[1], float)
+        assert numpy.sum([SafeCastUtil.safeCast(imp.split(DELIMITER)[1], float) for imp in sorted_importances2]) < 1.0
+
+        # 6 columns. Now all the others are missing one.
+        importances["geneF"] = [0, 0, 0, 0, 0, 1.0]  # total == 1.0
+        sorted_importances3 = ml_service.averageAndSortImportances(importances, 6)
+        assert len(sorted_importances3) > len(sorted_importances1)
+        assert math.isclose(
+            numpy.sum([SafeCastUtil.safeCast(imp.split(DELIMITER)[1], float) for imp in sorted_importances3]), 1.0)
+
+        importances["geneG"] = [0, 0, 0, 0, 0, 0, 2.0]  # total == 2.0
+        sorted_importances4 = ml_service.averageAndSortImportances(importances, 7)
+        assert len(sorted_importances4) > len(sorted_importances3)
+        assert numpy.sum([SafeCastUtil.safeCast(imp.split(DELIMITER)[1], float) for imp in sorted_importances4]) > 1.0
+
+

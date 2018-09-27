@@ -54,6 +54,7 @@ class LinearSVMTrainer(AbstractModelTrainer):
         features_in_order = super().generateFeaturesInOrder(gene_list_combo)
         if hasattr(model, "coef_") and hasattr(model, "coef_"):
             if self.is_classifier and len(features_in_order) == len(model.coef_[0]):
+                # TODO: This is probably wrong. Find proper way to get importances for classifier case.
                 return super().normalizeCoefficients(model.coef_[0], features_in_order)
             elif not self.is_classifier and len(features_in_order) == len(model.coef_):
                 return super().normalizeCoefficients(model.coef_, features_in_order)
