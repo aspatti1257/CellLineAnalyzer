@@ -69,6 +69,15 @@ class MachineLearningServiceIT(unittest.TestCase):
         binary_cat_matrix = ml_service.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
         rsen_trainer = RandomSubsetElasticNetTrainer(False, binary_cat_matrix, 0)
 
+        filtered_combos = self.fetchFilteredRSENCombos(ml_service, rsen_trainer)
+
+        trimmed_combos = filtered_combos[0:8]
+        target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
+        ml_service.handleParallellization(trimmed_combos, target_dir, rsen_trainer)
+
+        self.assertResults(target_dir, rsen_trainer, len(trimmed_combos) + 1, rsen_trainer.is_classifier)
+
+    def fetchFilteredRSENCombos(self, ml_service, rsen_trainer):
         filtered_combos = []
         for combo in ml_service.determineGeneListCombos():
             is_valid = True
@@ -77,12 +86,7 @@ class MachineLearningServiceIT(unittest.TestCase):
                     is_valid = False
             if is_valid and rsen_trainer.shouldProcessFeatureSet(combo):
                 filtered_combos.append(combo)
-
-        trimmed_combos = filtered_combos[0:8]
-        target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
-        ml_service.handleParallellization(trimmed_combos, target_dir, rsen_trainer)
-
-        self.assertResults(target_dir, rsen_trainer, len(trimmed_combos) + 1, rsen_trainer.is_classifier)
+        return filtered_combos
 
     def testRandomSubsetElasticNetWithCombinedGeneLists(self):
         inputs = self.formatRandomizedData(False)
@@ -203,15 +207,20 @@ class MachineLearningServiceIT(unittest.TestCase):
                                                             "1", False)
 
     def testIndividualRandomSubsetElasticNet(self):
-        # TODO:
-        # self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.RIDGE_REGRESSION,
-        #  None, False)
-        assert True
+        self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET,
+                                                            "0.1,0.1", False)
 
     def evaluateMachineLearningModelForIndividualCombo(self, algorithm, hyperparams, is_classifier):
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         ml_service = MachineLearningService(self.formatRandomizedDataForIndividualCombo(is_classifier, algorithm,
                                                                                         hyperparams, input_folder))
+        if algorithm is SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET:
+            binary_categorical_matrix = ml_service.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
+            dummy_trainer = RandomSubsetElasticNetTrainer(False, binary_categorical_matrix, 0)
+            target_combo = self.fetchFilteredRSENCombos(ml_service, dummy_trainer)[0]
+            target_combo_string = ml_service.generateFeatureSetString(target_combo)
+            ml_service.inputs[ArgumentProcessingService.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO] = target_combo_string
+
         ml_service.analyze(input_folder)
         self.assertResultsForIndividualCombo(input_folder, algorithm, 11, is_classifier)
 

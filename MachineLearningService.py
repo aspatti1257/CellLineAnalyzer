@@ -151,9 +151,13 @@ class MachineLearningService(object):
             trainer = RidgeRegressionTrainer(is_classifier)
         elif target_algorithm == SupportedMachineLearningAlgorithms.LASSO_REGRESSION and not is_classifier:
             trainer = LassoRegressionTrainer(is_classifier)
-        # TODO: Pass binary categorical matrix in and attempt RSEN.
-        # elif target_algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET and not is_classifier:
-        #     trainer = RandomSubsetElasticNetTrainer(is_classifier, None)
+        elif target_algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET and\
+                not is_classifier and \
+                self.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX) is not None and\
+                self.inputs.get(ArgumentProcessingService.RSEN_P_VAL) is not None:
+            trainer = RandomSubsetElasticNetTrainer(is_classifier,
+                                                    self.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX),
+                                                    self.inputs.get(ArgumentProcessingService.RSEN_P_VAL))
         else:
             raise ValueError("Unsupported Machine Learning algorithm for individual training: %s", target_algorithm)
         return trainer

@@ -13,8 +13,6 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
         self.binary_categorical_matrix = binary_categorical_matrix
         # TODO: Can potentially break here if "." is in feature file name.
         self.bin_cat_matrix_name = binary_categorical_matrix.get(ArgumentProcessingService.FEATURE_NAMES)[0].split(".")[0]
-        self.current_feature_set_as_strings = []
-        self.formatted_binary_matrix = []
         self.p_val = p_val
         super().__init__(SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET,
                          self.initializeHyperParameters(), is_classifier)
