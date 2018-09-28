@@ -303,5 +303,3 @@ class MachineLearningServiceIT(unittest.TestCase):
         sorted_importances4 = ml_service.averageAndSortImportances(importances, 7)
         assert len(sorted_importances4) > len(sorted_importances3)
         assert numpy.sum([SafeCastUtil.safeCast(imp.split(DELIMITER)[1], float) for imp in sorted_importances4]) > 1.0
-
-

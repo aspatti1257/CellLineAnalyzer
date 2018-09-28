@@ -1,8 +1,8 @@
 from sklearn import svm
-import numpy
 
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
+from Utilities.SafeCastUtil import SafeCastUtil
 
 
 class LinearSVMTrainer(AbstractModelTrainer):
@@ -41,14 +41,17 @@ class LinearSVMTrainer(AbstractModelTrainer):
         else:
             model_data[hyperparam_set[0], hyperparam_set[1]] = current_model_score
 
-    def logOptimalHyperParams(self, hyperparams, feature_set_as_string):
+    def logOptimalHyperParams(self, hyperparams, feature_set_as_string, record_diagnostics, input_folder):
+        message = "Optimal Hyperparameters for " + feature_set_as_string + " " + self.algorithm + " algorithm " \
+                  "chosen as:\n" +\
+                        "\tc_val = " + SafeCastUtil.safeCast(hyperparams[0], str)
         if self.is_classifier:
-            self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
-                          "c_val = %s\n", feature_set_as_string, self.algorithm, hyperparams)
+            message = message + ".\n"
         else:
-            self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
-                          "c_val = %s\n" +
-                          "epsilon = %s", feature_set_as_string, self.algorithm, hyperparams[0], hyperparams[1])
+            message = message + "\n\tepsilon = " + SafeCastUtil.safeCast(hyperparams[1], str) + ".\n"
+        self.log.info(message)
+        if record_diagnostics:
+            self.writeToDiagnosticsFile(input_folder, message)
 
     def fetchFeatureImportances(self, model, gene_list_combo):
         features_in_order = super().generateFeaturesInOrder(gene_list_combo)

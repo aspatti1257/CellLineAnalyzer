@@ -2,6 +2,7 @@ from sklearn.linear_model import ElasticNet
 
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
+from Utilities.SafeCastUtil import SafeCastUtil
 
 
 class ElasticNetTrainer(AbstractModelTrainer):
@@ -34,11 +35,14 @@ class ElasticNetTrainer(AbstractModelTrainer):
     def setModelDataDictionary(self, model_data, hyperparam_set, current_model_score):
         model_data[hyperparam_set[0], hyperparam_set[1]] = current_model_score
 
-    def logOptimalHyperParams(self, hyperparams, feature_set_as_string):
-        self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
-                      "alpha = %s\n" +
-                      "l one ratio = %s", feature_set_as_string, self.algorithm, hyperparams[0],
-                      hyperparams[1])
+    def logOptimalHyperParams(self, hyperparams, feature_set_as_string, record_diagnostics, input_folder):
+        message = "Optimal Hyperparameters for " + feature_set_as_string + " " + self.algorithm + " algorithm " \
+                  "chosen as:\n" +\
+                        "\talpha = " + SafeCastUtil.safeCast(hyperparams[0], str) + "\n" \
+                        "\tl_one_ratio = " + SafeCastUtil.safeCast(hyperparams[1], str) + ".\n"
+        self.log.info(message)
+        if record_diagnostics:
+            self.writeToDiagnosticsFile(input_folder, message)
 
     def fetchFeatureImportances(self, model, gene_list_combo):
         features_in_order = super().generateFeaturesInOrder(gene_list_combo)

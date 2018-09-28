@@ -314,6 +314,8 @@ class MachineLearningService(object):
             optimal_hyperparams = self.determineOptimalHyperparameters(feature_set, formatted_data, trainer)
             record_diagnostics = self.inputs.get(ArgumentProcessingService.RECORD_DIAGNOSTICS)
             trainer.logIfBestHyperparamsOnRangeThreshold(optimal_hyperparams, record_diagnostics, input_folder)
+            trainer.logOptimalHyperParams(optimal_hyperparams, self.generateFeatureSetString(feature_set),
+                                          record_diagnostics, input_folder)
 
             prediction_data = self.fetchOuterPermutationModelScore(feature_set, trainer,
                                                                    optimal_hyperparams, testing_matrix,
@@ -371,7 +373,6 @@ class MachineLearningService(object):
         # TODO: Handle hyperparams with n
         results = self.inputs.get(ArgumentProcessingService.RESULTS)
         features, relevant_results = trainer.populateFeaturesAndResultsByCellLine(training_matrix, results)
-        trainer.logOptimalHyperParams(optimal_hyperparams, self.generateFeatureSetString(feature_set))
         feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
         model = trainer.train(relevant_results, features, optimal_hyperparams, feature_names)
         score, accuracy = trainer.fetchPredictionsAndScore(model, testing_matrix, results)

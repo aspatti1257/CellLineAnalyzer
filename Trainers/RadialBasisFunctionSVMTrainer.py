@@ -2,6 +2,7 @@ from sklearn import svm
 
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
+from Utilities.SafeCastUtil import SafeCastUtil
 
 
 class RadialBasisFunctionSVMTrainer(AbstractModelTrainer):
@@ -41,18 +42,18 @@ class RadialBasisFunctionSVMTrainer(AbstractModelTrainer):
         else:
             model_data[hyperparam_set[0], hyperparam_set[1], None] = current_model_score
 
-    def logOptimalHyperParams(self, hyperparams, feature_set_as_string):
+    def logOptimalHyperParams(self, hyperparams, feature_set_as_string, record_diagnostics, input_folder):
+        message = "Optimal Hyperparameters for " + feature_set_as_string + " " + self.algorithm + " algorithm " \
+                  "chosen as:\n" +\
+                        "\tc_val = " + SafeCastUtil.safeCast(hyperparams[0], str) + "\n" \
+                        "\tgamma = " + SafeCastUtil.safeCast(hyperparams[1], str)
         if self.is_classifier:
-            self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
-                          "c_val = %s\n" +
-                          "gamma = %s", feature_set_as_string, self.algorithm, hyperparams[0],
-                          hyperparams[1])
+            message = message + ".\n"
         else:
-            self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
-                          "c_val = %s\n" +
-                          "gamma = %s\n" +
-                          "epsilon = %s", feature_set_as_string, self.algorithm, hyperparams[0],
-                          hyperparams[1], hyperparams[2])
+            message = message + "\n\tepsilon = " + SafeCastUtil.safeCast(hyperparams[2], str) + ".\n"
+        self.log.info(message)
+        if record_diagnostics:
+            self.writeToDiagnosticsFile(input_folder, message)
 
     def fetchFeatureImportances(self, model, gene_list_combo):
         return {}  # Not supported.

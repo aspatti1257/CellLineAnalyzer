@@ -40,10 +40,14 @@ class RandomForestTrainer(AbstractModelTrainer):
     def setModelDataDictionary(self, model_data, hyperparam_set, current_model_score):
         model_data[hyperparam_set[0], hyperparam_set[1]] = current_model_score
 
-    def logOptimalHyperParams(self, hyperparams, feature_set_as_string):
-        self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
-                      "m_val = %s\n" +
-                      "max depth = %s", feature_set_as_string, self.algorithm, hyperparams[0], hyperparams[1])
+    def logOptimalHyperParams(self, hyperparams, feature_set_as_string, record_diagnostics, input_folder):
+        message = "Optimal Hyperparameters for " + feature_set_as_string + " " + self.algorithm + " algorithm " \
+                  "chosen as:\n" +\
+                        "\tm_val = " + SafeCastUtil.safeCast(hyperparams[0], str) + "\n" \
+                        "\tmax_depth = " + SafeCastUtil.safeCast(hyperparams[1], str) + ".\n"
+        self.log.info(message)
+        if record_diagnostics:
+            self.writeToDiagnosticsFile(input_folder, message)
 
     def fetchFeatureImportances(self, model, gene_list_combo):
         importances = {}

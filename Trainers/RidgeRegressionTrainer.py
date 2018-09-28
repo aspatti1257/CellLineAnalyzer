@@ -1,8 +1,8 @@
 from sklearn.linear_model import Ridge
-import numpy
 
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
+from Utilities.SafeCastUtil import SafeCastUtil
 
 
 class RidgeRegressionTrainer(AbstractModelTrainer):
@@ -30,9 +30,13 @@ class RidgeRegressionTrainer(AbstractModelTrainer):
     def setModelDataDictionary(self, model_data, hyperparam_set, current_model_score):
         model_data[hyperparam_set[0], None] = current_model_score
 
-    def logOptimalHyperParams(self, hyperparams, feature_set_as_string):
-        self.log.info("Optimal Hyperparameters for %s %s algorithm chosen as:\n" +
-                      "alpha = %s\n", feature_set_as_string, self.algorithm, hyperparams[0])
+    def logOptimalHyperParams(self, hyperparams, feature_set_as_string, record_diagnostics, input_folder):
+        message = "Optimal Hyperparameters for " + feature_set_as_string + " " + self.algorithm + " algorithm " \
+                  "chosen as:\n" +\
+                        "\talpha = " + SafeCastUtil.safeCast(hyperparams[0], str) + ".\n"
+        self.log.info(message)
+        if record_diagnostics:
+            self.writeToDiagnosticsFile(input_folder, message)
 
     def fetchFeatureImportances(self, model, gene_list_combo):
         features_in_order = super().generateFeaturesInOrder(gene_list_combo)
