@@ -379,6 +379,10 @@ class MachineLearningService(object):
         return [score, accuracy, trainer.fetchFeatureImportances(model, feature_set)]
 
     def averageAndSortImportances(self, importances, outer_loops):
+        for key in importances.keys():
+            if len(importances[key]) != outer_loops:
+                self.log.warning("Different amount of importances for feature %s than expected. Should be %s but is "
+                                 "instead %s.", key, outer_loops, len(importances[key]))
         ordered_imps = []
         [ordered_imps.append({"feature": key, "importance": numpy.sum(importances[key]) / outer_loops}) for key in
          importances.keys()]
