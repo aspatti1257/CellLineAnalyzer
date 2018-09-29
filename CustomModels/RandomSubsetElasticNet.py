@@ -28,6 +28,7 @@ from CustomModels.ModelPhraseDataObject import ModelPhraseDataObject
 #
 # RandomSubsetElasticNet uses sklearn.metrics.r2_score and sklearn.linear_model.ElasticNet.
 class RandomSubsetElasticNet:
+
     log = logging.getLogger(__name__)
     log.setLevel(logging.INFO)
 
@@ -35,10 +36,12 @@ class RandomSubsetElasticNet:
     RESULTS = "results"
 
     def __init__(self, alpha, l_one_ratio, binary_feature_indices, upper_bound=0.35, lower_bound=0.10, p=0,
-                 explicit_model_count=-1, max_boolean_generation_attempts=10, coverage_threshold=0.8):
+                 explicit_model_count=-1, max_boolean_generation_attempts=10, coverage_threshold=0.8,
+                 explicit_phrases=None):
 
         self.validateParams(alpha, l_one_ratio, binary_feature_indices, upper_bound, lower_bound, p,
-                            explicit_model_count, max_boolean_generation_attempts, coverage_threshold)
+                            explicit_model_count, max_boolean_generation_attempts, coverage_threshold,
+                            explicit_phrases)
 
         self.alpha = alpha
         self.l_one_ratio = l_one_ratio
@@ -60,11 +63,15 @@ class RandomSubsetElasticNet:
         # training to be complete.
         self.coverage_threshold = coverage_threshold
 
+        # Explicit boolean phrases to be used for the analysis. This is an array of RecursiveBooleanPhrase objects.
+        self.explicit_phrases = explicit_phrases
+
         self.models_by_phrase = []
         self.fallback_model = None
 
     def validateParams(self, alpha, l_one_ratio, binary_feature_indices, upper_bound, lower_bound, p,
-                       explicit_model_count, max_boolean_generation_attempts, default_coverage_threshold):
+                       explicit_model_count, max_boolean_generation_attempts, default_coverage_threshold,
+                       explicit_phrases):
         statement = []
         if not isinstance(alpha, numbers.Number) or alpha < 0:
             statement.append("Alpha parameter must be a float > 0.")
@@ -93,11 +100,18 @@ class RandomSubsetElasticNet:
                 or default_coverage_threshold < 0 or default_coverage_threshold > 1:
             statement.append("Default coverage threshold should be a float between 0 and 1.")
 
+        if explicit_phrases is not None:
+            for phrase in explicit_phrases:
+                if not phrase.isValid(binary_feature_indices):
+                    statement.append("Invalid explicit phrase detected. Must split on binary feature indices: " +
+                                     phrase.toSummaryString())
+
         if len(statement) > 0:
             self.log.error("Unable to instantiate RandomSubsetElasticNetModel due to invalid parameters: %s",
                            str(statement))
             raise AttributeError("Unable to instantiate RandomSubsetElasticNetModel due to invalid parameters: " +
                                  str(statement))
+
         else:
             self.log.debug("Valid parameters requested. Creating RandomSubsetElasticNet model.")
 
@@ -109,18 +123,32 @@ class RandomSubsetElasticNet:
 
     def fit(self, features, results):
         self.determineUniqueBinaryFeatureValues(features)
+
+        fallback_phrase = RecursiveBooleanPhrase(None, None, None, None)
+        full_pool = {RandomSubsetElasticNet.FEATURES: features[:], RandomSubsetElasticNet.RESULTS: results[:]}
+
         min_count = int(self.lower_bound * len(features))
         if min_count == 0:
             min_count = 1
         max_count = int(self.upper_bound * len(features))
 
-        matching_threshold = int(self.coverage_threshold * len(features))
-        full_pool = {RandomSubsetElasticNet.FEATURES: features[:], RandomSubsetElasticNet.RESULTS: results[:]}
+        if self.explicit_phrases is None or len(self.explicit_phrases) == 0:
+            self.fitFeaturesToNewBooleanPhrases(features, full_pool, min_count, max_count)
+            self.createAndFitModel(fallback_phrase, full_pool)
+        else:
+            for phrase in self.explicit_phrases:
+                match_pool = self.fetchMatchingPool(phrase, full_pool)
+                if min_count <= len(match_pool[RandomSubsetElasticNet.FEATURES]) <= max_count and not \
+                        self.currentPhraseExists(phrase):
+                    self.createAndFitModel(phrase, match_pool)
+            if not self.currentPhraseExists(fallback_phrase):
+                self.createAndFitModel(fallback_phrase, full_pool)
 
+    def fitFeaturesToNewBooleanPhrases(self, features, full_pool, min_count, max_count):
+        matching_threshold = int(self.coverage_threshold * len(features))
         total_matched_feature_sets = 0
         rounds_with_no_new_matches = 0
         boolean_generation_attempts = 0
-
         while (((len(self.models_by_phrase) < self.explicit_model_count) and self.explicit_model_count > 0) or
                (total_matched_feature_sets < matching_threshold and self.explicit_model_count <= 0)) and \
                 rounds_with_no_new_matches < self.max_boolean_generation_attempts:
@@ -156,9 +184,6 @@ class RandomSubsetElasticNet:
                                " threshold to prevent infinite loop. Matched %s out of %s required.",
                                str(total_matched_feature_sets), str(matching_threshold))
                 break
-
-        fallback_phrase = RecursiveBooleanPhrase(None, None, None, None)
-        self.createAndFitModel(fallback_phrase, full_pool)
 
     def determineUniqueBinaryFeatureValues(self, features):
         for feature_set in features:

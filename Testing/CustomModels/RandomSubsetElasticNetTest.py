@@ -6,6 +6,7 @@ import copy
 
 from CustomModels.RandomSubsetElasticNet import RandomSubsetElasticNet
 from Utilities.SafeCastUtil import SafeCastUtil
+from CustomModels.RecursiveBooleanPhrase import RecursiveBooleanPhrase
 
 
 class RandomSubsetElasticNetModelTest(unittest.TestCase):
@@ -80,6 +81,7 @@ class RandomSubsetElasticNetModelTest(unittest.TestCase):
         assert phrase.score > 0
 
     def testParameterValidationWorks(self):
+        bad_explicit_phrases = [RecursiveBooleanPhrase(5, 1, False, None)]
         self.assertInvalidParams([-1, 0, 1])
         self.assertInvalidParams([0, 1, "test"])
         self.assertInvalidParams(self.binary_feature_indices, alpha=-1)
@@ -91,16 +93,17 @@ class RandomSubsetElasticNetModelTest(unittest.TestCase):
         self.assertInvalidParams(self.binary_feature_indices, explicit_model_count=-2)
         self.assertInvalidParams(self.binary_feature_indices, max_boolean_generation_attempts=0)
         self.assertInvalidParams(self.binary_feature_indices, default_coverage_threshold=1.4)
+        self.assertInvalidParams(self.binary_feature_indices, explicit_phrases=bad_explicit_phrases)
 
     def assertInvalidParams(self, binary_feature_indices, alpha=1, l_one_ratio=2, upper_bound=0.5, lower_bound=0.1, p=0,
                             explicit_model_count=-1, max_boolean_generation_attempts=10,
-                            default_coverage_threshold=0.8):
+                            default_coverage_threshold=0.8, explicit_phrases=None):
         error = ""
         try:
             RandomSubsetElasticNet(alpha, l_one_ratio, binary_feature_indices, upper_bound=upper_bound,
                                    lower_bound=lower_bound, p=p, explicit_model_count=explicit_model_count,
                                    max_boolean_generation_attempts=max_boolean_generation_attempts,
-                                   coverage_threshold=default_coverage_threshold)
+                                   coverage_threshold=default_coverage_threshold, explicit_phrases=explicit_phrases)
         except AttributeError as attributeError:
             error = SafeCastUtil.safeCast(attributeError, str)
         assert "invalid parameters" in error

@@ -19,6 +19,8 @@ class AbstractModelTrainer(ABC):
 
     DEFAULT_MIN_SCORE = -10
 
+    ADDITIONAL_DATA = "additional_data"
+
     @abstractmethod
     def __init__(self, algorithm, hyperparameters, is_classifier):
         self.algorithm = algorithm
@@ -49,6 +51,9 @@ class AbstractModelTrainer(ABC):
     def fetchFeatureImportances(self, model, gene_list_combo):
         pass
 
+    def preserveNonHyperparamData(self, model_data, model):
+        pass
+
     def shouldProcessFeatureSet(self, feature_set):
         return True
 
@@ -73,6 +78,7 @@ class AbstractModelTrainer(ABC):
         model_data = {}
         for hyperparam_set in self.fetchAllHyperparamPermutations(hyperparams):
             model = self.train(relevant_results, features, hyperparam_set, feature_names)
+            self.preserveNonHyperparamData(model_data, model)
             current_model_score = self.fetchPredictionsAndScore(model, testing_matrix, results)
             self.setModelDataDictionary(model_data, hyperparam_set, current_model_score)
         return model_data
@@ -107,7 +113,12 @@ class AbstractModelTrainer(ABC):
             return self.DEFAULT_MIN_SCORE
         features, relevant_results = self.populateFeaturesAndResultsByCellLine(testing_matrix, results)
         predictions = model.predict(features)
-        score = model.score(features, relevant_results)
+        score = AbstractModelTrainer.DEFAULT_MIN_SCORE
+        try:
+            score = model.score(features, relevant_results)
+        except ValueError as valueError:
+            self.log.error(valueError)
+            model.score(features, relevant_results)
         if self.is_classifier:
             accuracy = accuracy_score(relevant_results, predictions)
         else:

@@ -21,6 +21,7 @@ from Trainers.ElasticNetTrainer import ElasticNetTrainer
 from Trainers.RidgeRegressionTrainer import RidgeRegressionTrainer
 from Trainers.LassoRegressionTrainer import LassoRegressionTrainer
 from Trainers.RandomSubsetElasticNetTrainer import RandomSubsetElasticNetTrainer
+from Trainers.AbstractModelTrainer import AbstractModelTrainer
 from Utilities.SafeCastUtil import SafeCastUtil
 
 
@@ -116,7 +117,7 @@ class MachineLearningService(object):
                 trainer = self.createTrainerFromTargetAlgorithm(is_classifier, target_algorithm)
                 for permutation in range(0, outer_monte_carlo_loops):
                     results = self.inputs.get(ArgumentProcessingService.RESULTS)
-                    formatted_data = self.formatData(self.inputs)
+                    formatted_data = self.formatData(self.inputs, True, True)
                     training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
                                                                   gene_list_combo, formatted_data)
                     testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, gene_list_combo,
@@ -127,8 +128,10 @@ class MachineLearningService(object):
                     model_score = trainer.fetchPredictionsAndScore(model, testing_matrix, results)
                     score = model_score[0]
                     accuracy = model_score[1]
-                    ordered_importances = self.averageAndSortImportances(trainer.fetchFeatureImportances(model, gene_list_combo),
-                                                                         outer_monte_carlo_loops)
+                    importances = trainer.fetchFeatureImportances(model, gene_list_combo)
+                    for key in importances.keys():
+                        importances[key] = [importances[key]]
+                    ordered_importances = self.averageAndSortImportances(importances, outer_monte_carlo_loops)
 
                     self.log.debug("Final score and accuracy of individual analysis for feature gene combo %s "
                                    "using algorithm %s: %s, %s", target_combo, target_algorithm, score, accuracy)
@@ -157,7 +160,8 @@ class MachineLearningService(object):
                 self.inputs.get(ArgumentProcessingService.RSEN_P_VAL) is not None:
             trainer = RandomSubsetElasticNetTrainer(is_classifier,
                                                     self.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX),
-                                                    self.inputs.get(ArgumentProcessingService.RSEN_P_VAL))
+                                                    self.inputs.get(ArgumentProcessingService.RSEN_P_VAL),
+                                                    self.inputs.get(ArgumentProcessingService.RSEN_K_VAL))
         else:
             raise ValueError("Unsupported Machine Learning algorithm for individual training: %s", target_algorithm)
         return trainer
@@ -218,7 +222,8 @@ class MachineLearningService(object):
         binary_cat_matrix = self.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
         if self.shouldTrainAlgorithm(rsen) and not is_classifier and binary_cat_matrix is not None:
             p_val = self.inputs.get(ArgumentProcessingService.RSEN_P_VAL)
-            rsen_trainer = RandomSubsetElasticNetTrainer(is_classifier, binary_cat_matrix, p_val)
+            k_val = self.inputs.get(ArgumentProcessingService.RSEN_K_VAL)
+            rsen_trainer = RandomSubsetElasticNetTrainer(is_classifier, binary_cat_matrix, p_val, k_val)
             rsen_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rsen, True),
                                             self.monteCarloPermsByAlgorithm(rsen, False),
                                             len(gene_list_combos))
@@ -303,7 +308,7 @@ class MachineLearningService(object):
         outer_perms = self.monteCarloPermsByAlgorithm(trainer.algorithm, True)
         for i in range(1, outer_perms + 1):
             gc.collect()
-            formatted_data = self.formatData(self.inputs)
+            formatted_data = self.formatData(self.inputs, True, True)
             training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set,
                                                           formatted_data)
             testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set,
@@ -368,8 +373,8 @@ class MachineLearningService(object):
                             feature_set_string += (file_key + ":" + gene_list_key + " ")
         return feature_set_string.strip()
 
-    def fetchOuterPermutationModelScore(self, feature_set, trainer, optimal_hyperparams,
-                                        testing_matrix, training_matrix):
+    def fetchOuterPermutationModelScore(self, feature_set, trainer, optimal_hyperparams, testing_matrix,
+                                        training_matrix):
         # TODO: Handle hyperparams with n
         results = self.inputs.get(ArgumentProcessingService.RESULTS)
         features, relevant_results = trainer.populateFeaturesAndResultsByCellLine(training_matrix, results)
@@ -397,7 +402,7 @@ class MachineLearningService(object):
         for j in range(1, inner_perms + 1):
             formatted_inputs = self.reformatInputsByTrainingMatrix(
                 formatted_data.get(DataFormattingService.TRAINING_MATRIX))
-            further_formatted_data = self.formatData(formatted_inputs)
+            further_formatted_data = self.formatData(formatted_inputs, False, False)
             inner_validation_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set,
                                                                   further_formatted_data)
             inner_train_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set,
@@ -411,9 +416,9 @@ class MachineLearningService(object):
                     inner_model_hyperparams[data] = [model_data[data]]
         return inner_model_hyperparams
 
-    def formatData(self, inputs):
+    def formatData(self, inputs, should_scale, should_one_hot_encode):
         data_formatting_service = DataFormattingService(inputs)
-        return data_formatting_service.formatData(True)
+        return data_formatting_service.formatData(should_scale, should_one_hot_encode)
 
     def reformatInputsByTrainingMatrix(self, training_matrix):
         new_inputs = {ArgumentProcessingService.FEATURES: {}, ArgumentProcessingService.RESULTS: []}
@@ -423,8 +428,7 @@ class MachineLearningService(object):
         for training_cell in training_matrix.keys():
             for input_cell in self.inputs.get(ArgumentProcessingService.FEATURES).keys():
                 if training_cell is input_cell:
-                    new_inputs[ArgumentProcessingService.FEATURES][training_cell] = \
-                        self.inputs.get(ArgumentProcessingService.FEATURES)[training_cell]
+                    new_inputs[ArgumentProcessingService.FEATURES][training_cell] = training_matrix.get(training_cell)
                     for result in self.inputs[ArgumentProcessingService.RESULTS]:
                         if result[0] is training_cell:
                             new_inputs[ArgumentProcessingService.RESULTS].append(result)
@@ -438,10 +442,15 @@ class MachineLearningService(object):
         highest_average = trainer.DEFAULT_MIN_SCORE
         best_hyperparam = None
         for hyperparam_set in inner_model_hyperparams.keys():
+            if hyperparam_set == AbstractModelTrainer.ADDITIONAL_DATA:
+                continue
             average = numpy.average([results[0] for results in inner_model_hyperparams[hyperparam_set]])  # raw score
             if average > highest_average:
-                best_hyperparam = hyperparam_set
+                best_hyperparam = SafeCastUtil.safeCast(hyperparam_set, list)
                 highest_average = average
+        additional_data = inner_model_hyperparams.get(AbstractModelTrainer.ADDITIONAL_DATA)
+        if additional_data:
+            best_hyperparam.append(additional_data)
         return best_hyperparam
 
     def trimMatrixByFeatureSet(self, matrix_type, gene_lists, formatted_inputs):

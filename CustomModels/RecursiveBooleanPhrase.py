@@ -40,3 +40,11 @@ class RecursiveBooleanPhrase:
         if self.nested_phrase is not None and self.nested_phrase is not None:
             return self.nested_phrase.equals(other_phrase.nested_phrase)
         return True
+
+    def isValid(self, binary_feature_indices):
+        if self.split is None and self.nested_phrase is None:
+            return True
+        is_valid = self.split in binary_feature_indices
+        if self.nested_phrase is not None:
+            return is_valid and self.nested_phrase.isValid(binary_feature_indices)
+        return is_valid

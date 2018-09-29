@@ -67,7 +67,7 @@ class MachineLearningServiceIT(unittest.TestCase):
         ml_service = MachineLearningService(self.formatRandomizedData(False))
         ml_service.log.setLevel(logging.DEBUG)
         binary_cat_matrix = ml_service.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
-        rsen_trainer = RandomSubsetElasticNetTrainer(False, binary_cat_matrix, 0)
+        rsen_trainer = RandomSubsetElasticNetTrainer(False, binary_cat_matrix, 0, 0.4)
 
         filtered_combos = self.fetchFilteredRSENCombos(ml_service, rsen_trainer)
 
@@ -95,7 +95,7 @@ class MachineLearningServiceIT(unittest.TestCase):
         ml_service = MachineLearningService(inputs)
         ml_service.log.setLevel(logging.DEBUG)
         binary_cat_matrix = ml_service.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
-        rsen_trainer = RandomSubsetElasticNetTrainer(False, binary_cat_matrix, 0)
+        rsen_trainer = RandomSubsetElasticNetTrainer(False, binary_cat_matrix, 0, 0.4)
         gene_list_combos = ml_service.determineGeneListCombos()
 
         combos = ml_service.fetchValidGeneListCombos(input_folder, gene_list_combos, rsen_trainer)
@@ -216,7 +216,7 @@ class MachineLearningServiceIT(unittest.TestCase):
                                                                                         hyperparams, input_folder))
         if algorithm is SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET:
             binary_categorical_matrix = ml_service.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
-            dummy_trainer = RandomSubsetElasticNetTrainer(False, binary_categorical_matrix, 0)
+            dummy_trainer = RandomSubsetElasticNetTrainer(False, binary_categorical_matrix, 0, 0.4)
             target_combo = self.fetchFilteredRSENCombos(ml_service, dummy_trainer)[0]
             target_combo_string = ml_service.generateFeatureSetString(target_combo)
             ml_service.inputs[ArgumentProcessingService.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO] = target_combo_string

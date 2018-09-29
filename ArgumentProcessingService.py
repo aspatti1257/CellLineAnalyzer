@@ -29,6 +29,7 @@ class ArgumentProcessingService(object):
     ALGORITHM_CONFIGS = "algorithm_configs"
     RECORD_DIAGNOSTICS = "record_diagnostics"
     RSEN_P_VAL = "rsen_p_val"
+    RSEN_K_VAL = "rsen_k_val"
     RSEN_COMBINE_GENE_LISTS = "rsen_combine_gene_lists"
     BINARY_CATEGORICAL_MATRIX = "binary_categorical_matrix"
 
@@ -78,6 +79,7 @@ class ArgumentProcessingService(object):
             self.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO), str, None),
             self.BINARY_CATEGORICAL_MATRIX: binary_cat_matrix,
             self.RSEN_P_VAL: self.fetchOrReturnDefault(arguments.get(self.RSEN_P_VAL), float, 0.0),
+            self.RSEN_K_VAL: self.fetchOrReturnDefault(arguments.get(self.RSEN_P_VAL), float, 0.1),
             self.RSEN_COMBINE_GENE_LISTS: self.fetchOrReturnDefault(arguments.get(self.RSEN_COMBINE_GENE_LISTS), bool, False)
         }
 

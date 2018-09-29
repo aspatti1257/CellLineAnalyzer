@@ -1,3 +1,5 @@
+import numpy
+
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
 from ArgumentProcessingService import ArgumentProcessingService
@@ -7,13 +9,14 @@ from CustomModels.RandomSubsetElasticNet import RandomSubsetElasticNet
 
 class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
 
-    def __init__(self, is_classifier, binary_categorical_matrix, p_val):
+    def __init__(self, is_classifier, binary_categorical_matrix, p_val, k_val):
         self.validateBinaryCategoricalMatrix(binary_categorical_matrix)
 
         self.binary_categorical_matrix = binary_categorical_matrix
         # TODO: Can potentially break here if "." is in feature file name.
         self.bin_cat_matrix_name = binary_categorical_matrix.get(ArgumentProcessingService.FEATURE_NAMES)[0].split(".")[0]
         self.p_val = p_val
+        self.k_val = k_val
         super().__init__(SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET,
                          self.initializeHyperParameters(), is_classifier)
 
@@ -36,6 +39,12 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
     def supportsHyperparams(self):
         return True
 
+    def preserveNonHyperparamData(self, model_data, model):
+        if model_data.get(self.ADDITIONAL_DATA) is None:
+            model_data[self.ADDITIONAL_DATA] = []
+        for model_phrase in model.models_by_phrase:
+            model_data[self.ADDITIONAL_DATA].append(model_phrase)
+
     def initializeHyperParameters(self):
         return {
             "alpha": [0.01, 0.1, 1, 10],
@@ -51,11 +60,32 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
             if self.bin_cat_matrix_name in feature_names[i]:
                 binary_feature_indices.append(i)
 
-        model = RandomSubsetElasticNet(hyperparams[0], hyperparams[1], binary_feature_indices, p=self.p_val)
+        model = RandomSubsetElasticNet(hyperparams[0], hyperparams[1], binary_feature_indices, p=self.p_val,
+                                       explicit_phrases=self.determineExplicitPhrases(hyperparams))
 
         model.fit(features, results)
         self.log.debug("Successful creation of Random Subset Elastic Net model: %s\n", model)
         return model
+
+    def determineExplicitPhrases(self, hyperparams):
+        if len(hyperparams) < 3:
+            return None
+        phrase_sets = hyperparams[2]
+        all_phrases_and_r2_scores = []
+        for phrase_set in phrase_sets:
+            for model_phrase in phrase_set:
+                phrase_exists = False
+                for existing_phrase in all_phrases_and_r2_scores:
+                    if existing_phrase.phrase.equals(model_phrase.phrase):
+                        phrase_exists = True
+                        if model_phrase.score > existing_phrase.score:
+                            existing_phrase.score = model_phrase.score
+                if not phrase_exists:
+                    all_phrases_and_r2_scores.append(model_phrase)
+        ordered_phrases = sorted(all_phrases_and_r2_scores, key=lambda phrase: phrase.score, reverse=True)
+        cutoff = numpy.max([SafeCastUtil.safeCast(len(ordered_phrases) * self.k_val, int), 1])
+
+        return [model_phrase.phrase for model_phrase in ordered_phrases[:cutoff]]
 
     def setModelDataDictionary(self, model_data, hyperparam_set, current_model_score):
         model_data[hyperparam_set[0], hyperparam_set[1]] = current_model_score
