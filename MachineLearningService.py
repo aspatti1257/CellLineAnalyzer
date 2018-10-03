@@ -131,7 +131,7 @@ class MachineLearningService(object):
                     importances = trainer.fetchFeatureImportances(model, gene_list_combo)
                     for key in importances.keys():
                         importances[key] = [importances[key]]
-                    ordered_importances = self.averageAndSortImportances(importances, outer_monte_carlo_loops)
+                    ordered_importances = self.averageAndSortImportances(importances, 1)
 
                     numbered_combo = target_combo + " RUN " + SafeCastUtil.safeCast(permutation, str)
                     self.log.debug("Final score and accuracy of individual analysis for feature gene combo %s "

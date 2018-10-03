@@ -69,7 +69,7 @@ class RandomSubsetElasticNetModelTest(unittest.TestCase):
             explicit_count = phrase_count
         while (not at_least and num_phrases != phrase_count) or (at_least and num_phrases < phrase_count):
 
-            model = RandomSubsetElasticNet(1, 2, self.binary_feature_indices, upper_bound=0.5, lower_bound=0, p=0,
+            model = RandomSubsetElasticNet(1, 0.5, self.binary_feature_indices, upper_bound=0.5, lower_bound=0, p=0,
                                            explicit_model_count=(explicit_count - 1))
             model.fit(self.train_features, self.train_results)
             num_phrases = len(model.models_by_phrase)

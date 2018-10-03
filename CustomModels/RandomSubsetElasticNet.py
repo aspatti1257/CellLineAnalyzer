@@ -67,7 +67,7 @@ class RandomSubsetElasticNet:
         self.explicit_phrases = explicit_phrases
 
         self.models_by_phrase = []
-        self.fallback_model = None
+        self.fallback_model = None #TODO: Kill this.
 
     def validateParams(self, alpha, l_one_ratio, binary_feature_indices, upper_bound, lower_bound, p,
                        explicit_model_count, max_boolean_generation_attempts, default_coverage_threshold,
