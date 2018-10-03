@@ -20,11 +20,12 @@ of the results file, which machine learning models to create, etc.
 All of these files should be in the same folder. This program will accept one argument, a path to that folder (it can
 either be passed as a parameter on the command line, or entered at the prompt after running it). The outputs will be
 .CSV files called RandomForestAnalysis.csv, LinearSVMAnalysis.csv, RadialBasisFunctionSVMAnalysis.csv,
-ElasticNetAnalysis.csv, RidgeRegressionAnalysis.csv or/and LassoRegressionAnalysis depending on which machine learning modules you opt to use.
+ElasticNetAnalysis.csv, RidgeRegressionAnalysis.csv or/and LassoRegressionAnalysis depending on which machine learning
+modules you opt to use.
 
 This program will also generate a HTML document summarizing how well each analysis performed and giving an overview
-of the data submitted. Please use Google Chrome in order to see quantitative information when hovering over the respective
-plots.
+of the data submitted. Please use Google Chrome in order to see quantitative information when hovering over the
+respective plots.
 
 Also part of this program is the option to generate a series of .CSVs from MATLAB files.
 
@@ -199,6 +200,10 @@ individual_train_algorithm=ElasticNetAnalysis
 individual_train_combo=features_1int:significant_gene_list
 individual_train_hyperparams=0.1,0.1
 ```
+Note: If an individual combo is trained, each line in the Analysis file will be the R^2 score for that permutation,
+not one line representing an average number of permutations. Therefore in the example above, the resulting output would
+be an ElasticNetAnalysis.csv file with 20 lines, each with a different R^2 score for each outer_monte_carlo_permutation
+all for the same gene list/feature file combo.
 
 
 ### Example of all files in the directory:

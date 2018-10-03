@@ -133,9 +133,10 @@ class MachineLearningService(object):
                         importances[key] = [importances[key]]
                     ordered_importances = self.averageAndSortImportances(importances, outer_monte_carlo_loops)
 
+                    numbered_combo = target_combo + " RUN " + SafeCastUtil.safeCast(permutation, str)
                     self.log.debug("Final score and accuracy of individual analysis for feature gene combo %s "
-                                   "using algorithm %s: %s, %s", target_combo, target_algorithm, score, accuracy)
-                    line = numpy.concatenate([[target_combo, score, accuracy], ordered_importances])
+                                   "using algorithm %s: %s, %s", numbered_combo, target_algorithm, score, accuracy)
+                    line = numpy.concatenate([[numbered_combo, score, accuracy], ordered_importances])
                     self.writeToCSVInLock(line, input_folder, target_algorithm, outer_monte_carlo_loops)
                 return
         self.log.info("Gene list feature file %s combo not found in current dataset.", target_combo)
