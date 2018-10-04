@@ -67,7 +67,6 @@ class RandomSubsetElasticNet:
         self.explicit_phrases = explicit_phrases
 
         self.models_by_phrase = []
-        self.fallback_model = None #TODO: Kill this.
 
     def validateParams(self, alpha, l_one_ratio, binary_feature_indices, upper_bound, lower_bound, p,
                        explicit_model_count, max_boolean_generation_attempts, default_coverage_threshold,
@@ -117,8 +116,8 @@ class RandomSubsetElasticNet:
 
     def determineBinCatFeatureIndices(self, binary_feature_indices):
         bin_cat_features = {}
-        for i in range(0, len(binary_feature_indices)):
-            bin_cat_features[i] = []  # Filled in at fitting time.
+        for index in binary_feature_indices:
+            bin_cat_features[index] = []  # Filled in at fitting time.
         return bin_cat_features
 
     def fit(self, features, results):
@@ -191,11 +190,13 @@ class RandomSubsetElasticNet:
                 if i in list(self.feature_indices_to_values.keys()) and feature_set[i] not in \
                         self.feature_indices_to_values[i]:
                     self.feature_indices_to_values[i].append(feature_set[i])
-                    if len(self.feature_indices_to_values[i]) > 2:
-                        self.log.error("Non-binary feature detected during training at index %s. Values found: %s", i,
-                                       str(self.feature_indices_to_values[i]))
-                        raise ValueError("Non-binary feature detected during training at index " + str(i) +
-                                         ". Values found: " + str(self.feature_indices_to_values[i]) + ".")
+
+        for key in list(self.feature_indices_to_values.keys()):
+            if len(self.feature_indices_to_values[key]) > 2:
+                self.log.error("Non-binary feature detected during training at index %s. Values found: %s", key,
+                               str(self.feature_indices_to_values[key]))
+                raise ValueError("Non-binary feature detected during training at index " + str(key) +
+                                 ". Values found: " + str(self.feature_indices_to_values[key]) + ".")
 
     def generatePhrase(self, current_phrase, feature_to_split_on, min_count, selected_pool):
         value_to_split_on = random.choice(self.feature_indices_to_values[feature_to_split_on])
