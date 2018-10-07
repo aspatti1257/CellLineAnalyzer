@@ -281,7 +281,8 @@ class MachineLearningServiceIT(unittest.TestCase):
         assert sorted_importances1[2] == "geneD --- 0.17"
         assert sorted_importances1[3] == "geneA --- 0.14"
         assert sorted_importances1[4] == "geneC --- 0.13"
-        assert numpy.sum([SafeCastUtil.safeCast(imp.split(DELIMITER)[1], float) for imp in sorted_importances1]) == 1.0
+        assert numpy.sum([SafeCastUtil.safeCast(imp.split(DELIMITER)[1], float) for imp in sorted_importances1
+                          if imp is not ""]) == 1.0
 
         sorted_importances2 = ml_service.averageAndSortImportances(importances, 6)
         assert len(sorted_importances1) == len(sorted_importances1)
@@ -289,17 +290,22 @@ class MachineLearningServiceIT(unittest.TestCase):
             split1 = sorted_importances1[i].split(DELIMITER)
             split2 = sorted_importances2[i].split(DELIMITER)
             assert split1[0] == split2[0]
+            if split1 == split2:
+                continue
             assert SafeCastUtil.safeCast(split1[1], float) > SafeCastUtil.safeCast(split2[1], float)
-        assert numpy.sum([SafeCastUtil.safeCast(imp.split(DELIMITER)[1], float) for imp in sorted_importances2]) < 1.0
+        assert numpy.sum([SafeCastUtil.safeCast(imp.split(DELIMITER)[1], float) for imp in sorted_importances2
+                          if imp is not ""]) < 1.0
 
         # 6 columns. Now all the others are missing one.
         importances["geneF"] = [0, 0, 0, 0, 0, 1.0]  # total == 1.0
         sorted_importances3 = ml_service.averageAndSortImportances(importances, 6)
-        assert len(sorted_importances3) > len(sorted_importances1)
+        assert len([imp for imp in sorted_importances3 if imp != ""]) > len([imp for imp in sorted_importances1 if imp != ""])
         assert math.isclose(
-            numpy.sum([SafeCastUtil.safeCast(imp.split(DELIMITER)[1], float) for imp in sorted_importances3]), 1.0)
+            numpy.sum([SafeCastUtil.safeCast(imp.split(DELIMITER)[1], float) for imp in sorted_importances3
+                       if imp is not ""]), 1.0)
 
         importances["geneG"] = [0, 0, 0, 0, 0, 0, 2.0]  # total == 2.0
         sorted_importances4 = ml_service.averageAndSortImportances(importances, 7)
-        assert len(sorted_importances4) > len(sorted_importances3)
-        assert numpy.sum([SafeCastUtil.safeCast(imp.split(DELIMITER)[1], float) for imp in sorted_importances4]) > 1.0
+        assert len([imp for imp in sorted_importances4 if imp != ""]) > len([imp for imp in sorted_importances3 if imp != ""])
+        assert numpy.sum([SafeCastUtil.safeCast(imp.split(DELIMITER)[1], float) for imp in sorted_importances4
+                          if imp is not ""]) > 1.0
