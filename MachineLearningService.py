@@ -132,11 +132,13 @@ class MachineLearningService(object):
                     for key in importances.keys():
                         importances[key] = [importances[key]]
                     ordered_importances = self.averageAndSortImportances(importances, 1)
+                    ordered_phrases = self.averageAndSortImportantRSENPhrases(
+                                                            trainer.fetchModelPhrases(model, gene_list_combo), trainer)
 
                     numbered_combo = target_combo + " RUN " + SafeCastUtil.safeCast(permutation, str)
                     self.log.debug("Final score and accuracy of individual analysis for feature gene combo %s "
                                    "using algorithm %s: %s, %s", numbered_combo, target_algorithm, score, accuracy)
-                    line = numpy.concatenate([[numbered_combo, score, accuracy], ordered_importances])
+                    line = numpy.concatenate([[numbered_combo, score, accuracy], ordered_importances, ordered_phrases])
                     self.writeToCSVInLock(line, input_folder, target_algorithm, outer_monte_carlo_loops)
                 return
         self.log.info("Gene list feature file %s combo not found in current dataset.", target_combo)
@@ -401,21 +403,36 @@ class MachineLearningService(object):
             if len(importances[key]) != outer_loops:
                 self.log.warning("Different amount of importances for feature %s than expected. Should be %s but is "
                                  "instead %s.", key, outer_loops, len(importances[key]))
-        ordered_imps = []
-        [ordered_imps.append({"feature": key, "importance": numpy.sum(importances[key]) / outer_loops}) for key in
+        ordered = []
+        [ordered.append({"feature": key, "importance": numpy.sum(importances[key]) / outer_loops}) for key in
          importances.keys()]
-        ordered_imps = sorted(ordered_imps, key=lambda k: k["importance"], reverse=True)
-        final_imps = ordered_imps[:self.MAXIMUM_FEATURES_RECORDED]
+        ordered = sorted(ordered, key=lambda k: k["importance"], reverse=True)
+        trimmed = ordered[:self.MAXIMUM_FEATURES_RECORDED]
 
-        return [imp.get("feature") + " --- " + SafeCastUtil.safeCast(imp.get("importance"), str) for imp in final_imps]
+        final_imps = []
+        for i in range(0, self.MAXIMUM_FEATURES_RECORDED):
+            if i < len(trimmed):
+                summary = trimmed[i].get("feature") + " --- " + SafeCastUtil.safeCast(trimmed[i].get("importance"), str)
+                final_imps.append(summary)
+            else:
+                final_imps.append("")
+        return final_imps
 
     def averageAndSortImportantRSENPhrases(self, important_rsen_phrases, trainer):
         if trainer.algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET:
             ordered_phrases = []
-            [ordered_phrases.append({"feature": key, "importance": numpy.average(important_rsen_phrases[key])}) for key
+            [ordered_phrases.append({"phrase": key, "score": numpy.average(important_rsen_phrases[key])}) for key
              in important_rsen_phrases.keys()]
-            ordered_phrases = sorted(ordered_phrases, key=lambda k: k["importance"], reverse=True)
-            return ordered_phrases[:self.MAXIMUM_FEATURES_RECORDED]
+            ordered_phrases = sorted(ordered_phrases, key=lambda k: k["score"], reverse=True)
+            trimmed = ordered_phrases[:self.MAXIMUM_FEATURES_RECORDED]
+            final_phrases = []
+            for i in range(0, self.MAXIMUM_FEATURES_RECORDED):
+                if i < len(trimmed):
+                    summary = trimmed[i].get("phrase") + " --- " + SafeCastUtil.safeCast(trimmed[i].get("score"), str)
+                    final_phrases.append(summary)
+                else:
+                    final_phrases.append("")
+            return final_phrases
         else:
             return []
 
@@ -549,12 +566,11 @@ class MachineLearningService(object):
         for i in range(1, MachineLearningService.MAXIMUM_FEATURES_RECORDED + 1):
             suffix = MachineLearningService.generateNumericalSuffix(i)
             header.append(SafeCastUtil.safeCast(i, str) + suffix + feature_analysis)
-        # TODO: Format this intelligently or make it so that there are empty spaces in the printed lines.
-        # if ml_algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET:
-        #     phrase_analysis = " most significant boolean phrase"
-        #     for i in range(1, MachineLearningService.MAXIMUM_FEATURES_RECORDED + 1):
-        #         suffix = MachineLearningService.generateNumericalSuffix(i)
-        #         header.append(SafeCastUtil.safeCast(i, str) + suffix + phrase_analysis)
+        if ml_algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET:
+            phrase_analysis = " most significant boolean phrase"
+            for i in range(1, MachineLearningService.MAXIMUM_FEATURES_RECORDED + 1):
+                suffix = MachineLearningService.generateNumericalSuffix(i)
+                header.append(SafeCastUtil.safeCast(i, str) + suffix + phrase_analysis)
         return header
 
     @staticmethod
