@@ -57,6 +57,9 @@ class AbstractModelTrainer(ABC):
     def shouldProcessFeatureSet(self, feature_set):
         return True
 
+    def fetchModelPhrases(self, model, gene_list_combo):
+        return {}
+
     def logTrainingMessage(self, outer_monte_carlo_perms, inner_monte_carlo_perms, num_gene_list_combos):
         num_models = self.determineNumModelsToCreate(outer_monte_carlo_perms, inner_monte_carlo_perms, num_gene_list_combos)
         self.log.info("Running permutations on %s different combinations of features. Requires creation of %s "

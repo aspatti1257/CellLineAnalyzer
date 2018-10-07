@@ -307,6 +307,8 @@ class MachineLearningService(object):
         importances = {}
         feature_set_as_string = self.generateFeatureSetString(feature_set)
         outer_perms = self.monteCarloPermsByAlgorithm(trainer.algorithm, True)
+        important_rsen_phrases = {}
+
         for i in range(1, outer_perms + 1):
             gc.collect()
             formatted_data = self.formatData(self.inputs, True, True)
@@ -333,14 +335,23 @@ class MachineLearningService(object):
                     importances[importance].append(prediction_data[2].get(importance))
                 else:
                     importances[importance] = [prediction_data[2].get(importance)]
+            if len(prediction_data) == 4 and trainer.algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET:
+                for phrase in prediction_data[3].keys():
+                    if important_rsen_phrases.get(phrase) is not None:
+                        important_rsen_phrases[phrase].append(prediction_data[3].get(phrase))
+                    else:
+                        important_rsen_phrases[phrase] = [prediction_data[3].get(phrase)]
 
         average_score = numpy.mean(scores)
         average_accuracy = numpy.mean(accuracies)
         ordered_importances = self.averageAndSortImportances(importances, outer_perms)
 
+        ordered_phrases = self.averageAndSortImportantRSENPhrases(important_rsen_phrases, trainer)
+
         self.log.debug("Average score and accuracy of all Monte Carlo runs for %s: %s, %s",
                        feature_set_as_string, average_score, average_accuracy)
-        line = numpy.concatenate([[feature_set_as_string, average_score, average_accuracy], ordered_importances])
+        line = numpy.concatenate([[feature_set_as_string, average_score, average_accuracy], ordered_importances,
+                                  ordered_phrases])
         self.writeToCSVInLock(line, input_folder, trainer.algorithm, num_combos)
         self.saveOutputToTxtFile(scores, accuracies, feature_set_as_string, input_folder, trainer.algorithm)
 
@@ -382,7 +393,8 @@ class MachineLearningService(object):
         feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
         model = trainer.train(relevant_results, features, optimal_hyperparams, feature_names)
         score, accuracy = trainer.fetchPredictionsAndScore(model, testing_matrix, results)
-        return [score, accuracy, trainer.fetchFeatureImportances(model, feature_set)]
+        return [score, accuracy, trainer.fetchFeatureImportances(model, feature_set),
+                trainer.fetchModelPhrases(model, feature_set)]
 
     def averageAndSortImportances(self, importances, outer_loops):
         for key in importances.keys():
@@ -396,6 +408,16 @@ class MachineLearningService(object):
         final_imps = ordered_imps[:self.MAXIMUM_FEATURES_RECORDED]
 
         return [imp.get("feature") + " --- " + SafeCastUtil.safeCast(imp.get("importance"), str) for imp in final_imps]
+
+    def averageAndSortImportantRSENPhrases(self, important_rsen_phrases, trainer):
+        if trainer.algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET:
+            ordered_phrases = []
+            [ordered_phrases.append({"feature": key, "importance": numpy.average(important_rsen_phrases[key])}) for key
+             in important_rsen_phrases.keys()]
+            ordered_phrases = sorted(ordered_phrases, key=lambda k: k["importance"], reverse=True)
+            return ordered_phrases[:self.MAXIMUM_FEATURES_RECORDED]
+        else:
+            return []
 
     def determineInnerHyperparameters(self, feature_set, formatted_data, trainer):
         inner_model_hyperparams = {}
@@ -524,19 +546,27 @@ class MachineLearningService(object):
             return header
 
         feature_analysis = " most important feature"
-        if ml_algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET:
-            feature_analysis = " most significant boolean phrase"
         for i in range(1, MachineLearningService.MAXIMUM_FEATURES_RECORDED + 1):
-            if i == 1:
-                suffix = "st"
-            elif i == 2:
-                suffix = "nd"
-            elif i == 3:
-                suffix = "rd"
-            else:
-                suffix = "th"
+            suffix = MachineLearningService.generateNumericalSuffix(i)
             header.append(SafeCastUtil.safeCast(i, str) + suffix + feature_analysis)
+        # TODO: Format this intelligently or make it so that there are empty spaces in the printed lines.
+        # if ml_algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET:
+        #     phrase_analysis = " most significant boolean phrase"
+        #     for i in range(1, MachineLearningService.MAXIMUM_FEATURES_RECORDED + 1):
+        #         suffix = MachineLearningService.generateNumericalSuffix(i)
+        #         header.append(SafeCastUtil.safeCast(i, str) + suffix + phrase_analysis)
         return header
+
+    @staticmethod
+    def generateNumericalSuffix(i):
+        if i == 1 and i != 11:
+            return "st"
+        elif i == 2 and i != 12:
+            return "nd"
+        elif i == 3 and i != 13:
+            return "rd"
+        else:
+            return "th"
 
     def logPercentDone(self, total_lines, num_combos, ml_algorithm):
         percent_done = numpy.round((total_lines / num_combos) * 100, 1)

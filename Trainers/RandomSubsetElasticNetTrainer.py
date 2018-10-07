@@ -1,4 +1,6 @@
 import numpy
+import copy
+from collections import OrderedDict
 
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
@@ -55,17 +57,20 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
         return super().loopThroughHyperparams(self.initializeHyperParameters(), training_matrix, testing_matrix, results)
 
     def train(self, results, features, hyperparams, feature_names):
-        binary_feature_indices = []
-        for i in range(0, len(feature_names)):
-            if self.bin_cat_matrix_name in feature_names[i]:
-                binary_feature_indices.append(i)
-
+        binary_feature_indices = self.fetchBinaryFeatureIndices(feature_names)
         model = RandomSubsetElasticNet(hyperparams[0], hyperparams[1], binary_feature_indices, p=self.p_val,
                                        explicit_phrases=self.determineExplicitPhrases(hyperparams))
 
         model.fit(features, results)
         self.log.debug("Successful creation of Random Subset Elastic Net model: %s\n", model)
         return model
+
+    def fetchBinaryFeatureIndices(self, feature_names):
+        binary_feature_indices = []
+        for i in range(0, len(feature_names)):
+            if self.bin_cat_matrix_name in feature_names[i]:
+                binary_feature_indices.append(i)
+        return binary_feature_indices
 
     def determineExplicitPhrases(self, hyperparams):
         if len(hyperparams) < 3:
@@ -113,7 +118,42 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
         return uses_bin_cat_matrix and uses_other_feature_file
 
     def fetchFeatureImportances(self, model, gene_list_combo):
+        features_in_order = [feature for feature in super().generateFeaturesInOrder(gene_list_combo)
+                             if self.bin_cat_matrix_name not in feature]
+        importances_map = OrderedDict()
+        for model_phrase in model.models_by_phrase:
+            if hasattr(model_phrase.model, "coef_") and len(features_in_order) == len(model_phrase.model.coef_):
+                for i in range(0, len(features_in_order)):
+                    weighted_score = model_phrase.model.coef_[i] * model_phrase.score
+                    if importances_map.get(features_in_order[i]) is None:
+                        importances_map[features_in_order[i]] = [weighted_score]
+                    else:
+                        importances_map[features_in_order[i]].append(weighted_score)
+
+        feature_names = SafeCastUtil.safeCast(importances_map.keys(), list)
+        average_coefficients = [numpy.sum(imps) / len(features_in_order) for imps in
+                                SafeCastUtil.safeCast(importances_map.values(), list)]
+        return super().normalizeCoefficients(average_coefficients, feature_names)
+
+    def fetchModelPhrases(self, model, gene_list_combo):
+        features_in_order = super().generateFeaturesInOrder(gene_list_combo)
+        bin_cat_feature_indices = self.fetchBinaryFeatureIndices(features_in_order)
+        index_to_feature_map = {}
+        for index in bin_cat_feature_indices:
+            index_to_feature_map[index] = features_in_order[index]
+        return self.summarizeModelPhrases(index_to_feature_map, model)
+
+    def summarizeModelPhrases(self, index_to_feature_map, model):
         scores_by_string = {}
         for model_phrase in model.models_by_phrase:
-            scores_by_string[model_phrase.phrase.toSummaryString()] = model_phrase.score
+            formatted_phrase = self.recursivelyFormatPhrase(copy.deepcopy(model_phrase.phrase), index_to_feature_map)
+            scores_by_string[formatted_phrase.toSummaryString()] = model_phrase.score
         return scores_by_string
+
+    def recursivelyFormatPhrase(self, phrase, index_to_feature_map):
+        if phrase.split is None:
+            return phrase
+        phrase.split = index_to_feature_map[phrase.split]
+        if phrase.nested_phrase is not None:
+            self.recursivelyFormatPhrase(phrase.nested_phrase, index_to_feature_map)
+        return phrase
