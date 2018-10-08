@@ -290,7 +290,7 @@ file combo.
   best, the results will be nonsensical, at worst, it will error when attempting to create a proper machine learning
   model.
 
-- This program also requires installation of the following packages: scipy, numpy, pandas, joblib, sklearn
+- This program also requires installation of the following packages: scipy, numpy, pandas, joblib, sklearn, psutil
   Make sure all of these packages are installed for python 3.6. If you don't have them, you can install them with pip
   from the command line:
   `pip install PACKAGE_NAME` where PACKAGE_NAME is scipy, sklearn, etc.
@@ -308,7 +308,7 @@ file combo.
   regression models (RidgeRegression, LassoRegression and ElasticNet), but the algorithms applied in the CLA have much tuning
   implemented so that some coefficients are set to zero.
 
-The Python package installer pip should come standard on unix bases operating systems. For Windows, you'll need to use
+The Python package installer pip should come standard on unix bases operating systems. For Windows, you may need to use
 Powershell to install both python and pip.
 
 

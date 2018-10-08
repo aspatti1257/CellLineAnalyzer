@@ -5,6 +5,7 @@ import multiprocessing
 import numpy
 import os
 import threading
+import psutil
 
 from joblib import Parallel, delayed
 from collections import OrderedDict
@@ -440,6 +441,7 @@ class MachineLearningService(object):
         inner_model_hyperparams = {}
         inner_perms = self.monteCarloPermsByAlgorithm(trainer.algorithm, False)
         for j in range(1, inner_perms + 1):
+            self.logMemoryUsage()
             formatted_inputs = self.reformatInputsByTrainingMatrix(
                 formatted_data.get(DataFormattingService.TRAINING_MATRIX))
             further_formatted_data = self.formatData(formatted_inputs, False, False)
@@ -455,6 +457,14 @@ class MachineLearningService(object):
                 else:
                     inner_model_hyperparams[data] = [model_data[data]]
         return inner_model_hyperparams
+
+    def logMemoryUsage(self):
+        processes = psutil.Process()
+        procs = [processes] + processes.children(recursive=True)
+        for process in procs:
+            rss = process.memory_info().rss
+            memory_usage_mb = numpy.round(rss / 1e6, 2)
+            self.log.debug("Memory usage for PID %s: %s: MB", process.pid, memory_usage_mb)
 
     def formatData(self, inputs, should_scale, should_one_hot_encode):
         data_formatting_service = DataFormattingService(inputs)
