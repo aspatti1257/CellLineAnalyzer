@@ -1,0 +1,37 @@
+Pseudocode:
+	for cell line in matrix:
+	    - Remove cell line from trainable data
+        for drug in remaining matrix (1 column):
+            - Get best performing ML Algo (this includes feature/gene list combo, hyperparams, and actual algorithm).
+            - Train best model with best hyperparams.
+            - Save model.
+        - Predict for hold out cell line with all models.
+        - Match best scoring drugs to ACTUAL VALUES.
+        - Record overall predictive score.
+
+
+Sample input folder:
+    CellLine X Drug matrix.
+    All "X-data" - Master matrix of all cell lines and USED features (used == mentioned in a gene list). (created at runtime)
+    DrugFolderForCLA (Gemcitabine) (lots of these == training data == X values):
+        inputs:
+        - results.csv
+        - arguments.csv
+        - mut.csv //Feature files
+        - gex.csv
+        - cnum.csv
+        - gene_list1.csv //gene lists
+        - gene_list2.csv
+        outputs:
+        - RandomForestAnalysis.csv
+        - LinearSVMAnalysis.csv...etc.
+        - FullResultsSummary.txt
+        - SummaryReport.html
+        - Diagnostics.txt
+    
+    output:
+        - FinalResults.csv == recommended drugs and recommendation score for each cell line.
+            - This include diagnostics
+                - Diagnostics == "model used: RandomForest, with 20 trees, and 15 nodes, and gene list feature file combo   
+                                  gene_list1/gex"
+                - 
