@@ -33,6 +33,7 @@ class MachineLearningService(object):
     log.setLevel(logging.INFO)
 
     MAXIMUM_FEATURES_RECORDED = 20
+    DELIMITER = " --- "
 
     def __init__(self, data):
         self.inputs = data
@@ -139,11 +140,20 @@ class MachineLearningService(object):
                     numbered_combo = target_combo + " RUN " + SafeCastUtil.safeCast(permutation, str)
                     self.log.debug("Final score and accuracy of individual analysis for feature gene combo %s "
                                    "using algorithm %s: %s, %s", numbered_combo, target_algorithm, score, accuracy)
-                    line = numpy.concatenate([[numbered_combo, score, accuracy], ordered_importances, ordered_phrases])
-                    self.writeToCSVInLock(line, input_folder, target_algorithm, outer_monte_carlo_loops)
+                    score_and_hyperparam = [self.generateScoreAndHyperParam(score, hyperparams)]
+                    line = self.generateLine(accuracy, numbered_combo, ordered_importances, ordered_phrases, score,
+                                             score_and_hyperparam)
+                    self.writeToCSVInLock(line, input_folder, target_algorithm, outer_monte_carlo_loops, 1)
                 return
         self.log.info("Gene list feature file %s combo not found in current dataset.", target_combo)
         return
+
+    def generateLine(self, accuracy, combo, ordered_importances, ordered_phrases, score, score_and_hyperparam):
+        return numpy.concatenate([[combo, score, accuracy], score_and_hyperparam,
+                                  ordered_importances, ordered_phrases])
+
+    def generateScoreAndHyperParam(self, score, hyperparam):
+        return SafeCastUtil.safeCast(score, str) + self.DELIMITER + SafeCastUtil.safeCast(hyperparam, str)
 
     def createTrainerFromTargetAlgorithm(self, is_classifier, target_algorithm):
         if target_algorithm == SupportedMachineLearningAlgorithms.RANDOM_FOREST:
@@ -311,6 +321,7 @@ class MachineLearningService(object):
         feature_set_as_string = self.generateFeatureSetString(feature_set)
         outer_perms = self.monteCarloPermsByAlgorithm(trainer.algorithm, True)
         important_rsen_phrases = {}
+        scores_and_hyperparams = []
 
         for i in range(1, outer_perms + 1):
             gc.collect()
@@ -338,24 +349,26 @@ class MachineLearningService(object):
                     importances[importance].append(prediction_data[2].get(importance))
                 else:
                     importances[importance] = [prediction_data[2].get(importance)]
-            if len(prediction_data) == 4 and trainer.algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET:
+            if len(prediction_data) == 4 and \
+                    trainer.algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET:
                 for phrase in prediction_data[3].keys():
                     if important_rsen_phrases.get(phrase) is not None:
                         important_rsen_phrases[phrase].append(prediction_data[3].get(phrase))
                     else:
                         important_rsen_phrases[phrase] = [prediction_data[3].get(phrase)]
+            scores_and_hyperparams.append(self.generateScoreAndHyperParam(prediction_data[0], optimal_hyperparams))
 
         average_score = numpy.mean(scores)
         average_accuracy = numpy.mean(accuracies)
+        self.log.debug("Average score and accuracy of all Monte Carlo runs for %s: %s, %s",
+                       feature_set_as_string, average_score, average_accuracy)
         ordered_importances = self.averageAndSortImportances(importances, outer_perms)
 
         ordered_phrases = self.averageAndSortImportantRSENPhrases(important_rsen_phrases, trainer)
 
-        self.log.debug("Average score and accuracy of all Monte Carlo runs for %s: %s, %s",
-                       feature_set_as_string, average_score, average_accuracy)
-        line = numpy.concatenate([[feature_set_as_string, average_score, average_accuracy], ordered_importances,
-                                  ordered_phrases])
-        self.writeToCSVInLock(line, input_folder, trainer.algorithm, num_combos)
+        line = self.generateLine(average_accuracy, feature_set_as_string, ordered_importances, ordered_phrases,
+                                 average_score, scores_and_hyperparams)
+        self.writeToCSVInLock(line, input_folder, trainer.algorithm, num_combos, outer_perms)
         self.saveOutputToTxtFile(scores, accuracies, feature_set_as_string, input_folder, trainer.algorithm)
 
     def generateFeatureSetString(self, feature_set):
@@ -413,7 +426,8 @@ class MachineLearningService(object):
         final_imps = []
         for i in range(0, self.MAXIMUM_FEATURES_RECORDED):
             if i < len(trimmed):
-                summary = trimmed[i].get("feature") + " --- " + SafeCastUtil.safeCast(trimmed[i].get("importance"), str)
+                summary = trimmed[i].get("feature") + self.DELIMITER + \
+                          SafeCastUtil.safeCast(trimmed[i].get("importance"), str)
                 final_imps.append(summary)
             else:
                 final_imps.append("")
@@ -429,7 +443,8 @@ class MachineLearningService(object):
             final_phrases = []
             for i in range(0, self.MAXIMUM_FEATURES_RECORDED):
                 if i < len(trimmed):
-                    summary = trimmed[i].get("phrase") + " --- " + SafeCastUtil.safeCast(trimmed[i].get("score"), str)
+                    summary = trimmed[i].get("phrase") + self.DELIMITER + \
+                              SafeCastUtil.safeCast(trimmed[i].get("score"), str)
                     final_phrases.append(summary)
                 else:
                     final_phrases.append("")
@@ -526,7 +541,7 @@ class MachineLearningService(object):
             trimmed_matrix[cell_line] = new_cell_line_features
         return trimmed_matrix
 
-    def writeToCSVInLock(self, line, input_folder, ml_algorithm, num_combos):
+    def writeToCSVInLock(self, line, input_folder, ml_algorithm, num_combos, outer_perms):
         lock = threading.Lock()
         lock.acquire(True)
         self.lockThreadMessage()
@@ -539,7 +554,8 @@ class MachineLearningService(object):
             try:
                 writer = csv.writer(csv_file)
                 if write_action == "w":
-                    writer.writerow(self.getCSVFileHeader(self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER), ml_algorithm))
+                    writer.writerow(self.getCSVFileHeader(self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER),
+                                                          ml_algorithm, outer_perms))
                 writer.writerow(line)
             except ValueError as error:
                 self.log.error("Error writing to file %s. %s", file_name, error)
@@ -561,7 +577,7 @@ class MachineLearningService(object):
         lock.release()
 
     @staticmethod
-    def getCSVFileHeader(is_classifier, ml_algorithm):
+    def getCSVFileHeader(is_classifier, ml_algorithm, outer_perms):
         header = ["feature file: gene list combo"]
         if is_classifier:
             header.append("percentage accurate predictions")
@@ -569,9 +585,10 @@ class MachineLearningService(object):
         else:
             header.append("R^2 score")
             header.append("mean squared error")
+        for i in range(1, outer_perms + 1):
+            header.append("score and optimal hyperparams for outer perm " + SafeCastUtil.safeCast(i, str))
         if ml_algorithm == SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM:
             return header
-
         feature_analysis = " most important feature"
         for i in range(1, MachineLearningService.MAXIMUM_FEATURES_RECORDED + 1):
             suffix = MachineLearningService.generateNumericalSuffix(i)
@@ -619,8 +636,9 @@ class MachineLearningService(object):
             write_action = "a"
         with open(input_folder + "/" + file_name, write_action) as output_file:
             try:
-                output_file.write(algorithm + " --- " + feature_set_as_string + " --- " +
-                                  SafeCastUtil.safeCast(scores, str) + " --- " + SafeCastUtil.safeCast(accuracies, str)
+                output_file.write(algorithm + MachineLearningService.DELIMITER + feature_set_as_string +
+                                  MachineLearningService.DELIMITER + SafeCastUtil.safeCast(scores, str) +
+                                  MachineLearningService.DELIMITER + SafeCastUtil.safeCast(accuracies, str)
                                   + "\n")
             except ValueError as error:
                 self.log.error("Error saving output of %s analysis to memory: %s", algorithm, error)

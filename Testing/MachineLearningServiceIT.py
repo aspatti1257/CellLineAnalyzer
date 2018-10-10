@@ -26,6 +26,9 @@ class MachineLearningServiceIT(unittest.TestCase):
 
     THRESHOLD_OF_SIGNIFICANCE = 0.60
 
+    MONTE_CARLO_PERMS = 2
+    INDIVIDUAL_MONTE_CARLO_PERMS = 10
+
     def setUp(self):
         self.current_working_dir = os.getcwd()  # Should be this package.
 
@@ -115,7 +118,7 @@ class MachineLearningServiceIT(unittest.TestCase):
         self.assertResults(target_dir, trainer, num_gene_list_combos + 1, trainer.is_classifier)
 
     def formatRandomizedData(self, is_classifier):
-        RandomizedDataGenerator.generateRandomizedFiles(3, 1000, 150, is_classifier, 2, .8)
+        RandomizedDataGenerator.generateRandomizedFiles(3, 1000, 150, is_classifier, self.MONTE_CARLO_PERMS, .8)
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         argument_processing_service = ArgumentProcessingService(input_folder)
         return argument_processing_service.handleInputFolder()
@@ -132,7 +135,8 @@ class MachineLearningServiceIT(unittest.TestCase):
                     num_lines += 1
                     line_split = line.strip().split(",")
                     if line_index == 0:
-                        assert line_split == MachineLearningService.getCSVFileHeader(is_classifier, trainer.algorithm)
+                        assert line_split == MachineLearningService.getCSVFileHeader(is_classifier, trainer.algorithm,
+                                                                                     self.MONTE_CARLO_PERMS)
                         continue
                     feature_gene_list_combo = line_split[0]
                     assert ":" in feature_gene_list_combo
@@ -225,7 +229,8 @@ class MachineLearningServiceIT(unittest.TestCase):
         self.assertResultsForIndividualCombo(input_folder, algorithm, 11, is_classifier)
 
     def formatRandomizedDataForIndividualCombo(self, is_classifier, algorithm, hyperparams, input_folder):
-        RandomizedDataGenerator.generateRandomizedFiles(3, 1000, 150, is_classifier, 10, .8, algorithm, hyperparams)
+        RandomizedDataGenerator.generateRandomizedFiles(3, 1000, 150, is_classifier, self.INDIVIDUAL_MONTE_CARLO_PERMS,
+                                                        .8, algorithm, hyperparams)
         argument_processing_service = ArgumentProcessingService(input_folder)
         return argument_processing_service.handleInputFolder()
 
@@ -239,7 +244,7 @@ class MachineLearningServiceIT(unittest.TestCase):
                     num_lines += 1
                     line_split = line.strip().split(",")
                     if line_index == 0:
-                        assert line_split == MachineLearningService.getCSVFileHeader(is_classifier, algorithm)
+                        assert line_split == MachineLearningService.getCSVFileHeader(is_classifier, algorithm, 1)
                         continue
                     feature_gene_list_combo = line_split[0]
                     assert ":" in feature_gene_list_combo
@@ -264,7 +269,7 @@ class MachineLearningServiceIT(unittest.TestCase):
         assert len(trimmed_combos) == (len(gene_list_combos) - 1)
 
     def testSortingByFeatureImportances(self):
-        DELIMITER = " --- "
+        delimiter = MachineLearningService.DELIMITER
         ml_service = MachineLearningService(None)
         # All columns add up to 1. Equal number of importances for each feature.
         importances = {
@@ -281,19 +286,19 @@ class MachineLearningServiceIT(unittest.TestCase):
         assert sorted_importances1[2] == "geneD --- 0.17"
         assert sorted_importances1[3] == "geneA --- 0.14"
         assert sorted_importances1[4] == "geneC --- 0.13"
-        assert numpy.sum([SafeCastUtil.safeCast(imp.split(DELIMITER)[1], float) for imp in sorted_importances1
+        assert numpy.sum([SafeCastUtil.safeCast(imp.split(delimiter)[1], float) for imp in sorted_importances1
                           if imp is not ""]) == 1.0
 
         sorted_importances2 = ml_service.averageAndSortImportances(importances, 6)
         assert len(sorted_importances1) == len(sorted_importances1)
         for i in range(0, len(sorted_importances2)):
-            split1 = sorted_importances1[i].split(DELIMITER)
-            split2 = sorted_importances2[i].split(DELIMITER)
+            split1 = sorted_importances1[i].split(delimiter)
+            split2 = sorted_importances2[i].split(delimiter)
             assert split1[0] == split2[0]
             if split1 == split2:
                 continue
             assert SafeCastUtil.safeCast(split1[1], float) > SafeCastUtil.safeCast(split2[1], float)
-        assert numpy.sum([SafeCastUtil.safeCast(imp.split(DELIMITER)[1], float) for imp in sorted_importances2
+        assert numpy.sum([SafeCastUtil.safeCast(imp.split(delimiter)[1], float) for imp in sorted_importances2
                           if imp is not ""]) < 1.0
 
         # 6 columns. Now all the others are missing one.
@@ -301,11 +306,11 @@ class MachineLearningServiceIT(unittest.TestCase):
         sorted_importances3 = ml_service.averageAndSortImportances(importances, 6)
         assert len([imp for imp in sorted_importances3 if imp != ""]) > len([imp for imp in sorted_importances1 if imp != ""])
         assert math.isclose(
-            numpy.sum([SafeCastUtil.safeCast(imp.split(DELIMITER)[1], float) for imp in sorted_importances3
+            numpy.sum([SafeCastUtil.safeCast(imp.split(delimiter)[1], float) for imp in sorted_importances3
                        if imp is not ""]), 1.0)
 
         importances["geneG"] = [0, 0, 0, 0, 0, 0, 2.0]  # total == 2.0
         sorted_importances4 = ml_service.averageAndSortImportances(importances, 7)
         assert len([imp for imp in sorted_importances4 if imp != ""]) > len([imp for imp in sorted_importances3 if imp != ""])
-        assert numpy.sum([SafeCastUtil.safeCast(imp.split(DELIMITER)[1], float) for imp in sorted_importances4
+        assert numpy.sum([SafeCastUtil.safeCast(imp.split(delimiter)[1], float) for imp in sorted_importances4
                           if imp is not ""]) > 1.0
