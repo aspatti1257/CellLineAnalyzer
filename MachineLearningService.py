@@ -324,7 +324,6 @@ class MachineLearningService(object):
         scores_and_hyperparams = []
 
         for i in range(1, outer_perms + 1):
-            gc.collect()
             formatted_data = self.formatData(self.inputs, True, True)
             training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set,
                                                           formatted_data)
@@ -357,6 +356,8 @@ class MachineLearningService(object):
                     else:
                         important_rsen_phrases[phrase] = [prediction_data[3].get(phrase)]
             scores_and_hyperparams.append(self.generateScoreAndHyperParam(prediction_data[0], optimal_hyperparams))
+
+            self.logMemoryUsageAndGarbageCollect()
 
         average_score = numpy.mean(scores)
         average_accuracy = numpy.mean(accuracies)
@@ -456,7 +457,7 @@ class MachineLearningService(object):
         inner_model_hyperparams = {}
         inner_perms = self.monteCarloPermsByAlgorithm(trainer.algorithm, False)
         for j in range(1, inner_perms + 1):
-            self.logMemoryUsage()
+            self.logMemoryUsageAndGarbageCollect()
             formatted_inputs = self.reformatInputsByTrainingMatrix(
                 formatted_data.get(DataFormattingService.TRAINING_MATRIX))
             further_formatted_data = self.formatData(formatted_inputs, False, False)
@@ -473,13 +474,14 @@ class MachineLearningService(object):
                     inner_model_hyperparams[data] = [model_data[data]]
         return inner_model_hyperparams
 
-    def logMemoryUsage(self):
+    def logMemoryUsageAndGarbageCollect(self):
         processes = psutil.Process()
         procs = [processes] + processes.children(recursive=True)
         for process in procs:
             rss = process.memory_info().rss
             memory_usage_mb = numpy.round(rss / 1e6, 2)
-            self.log.debug("Memory usage for PID %s: %s: MB", process.pid, memory_usage_mb)
+            self.log.info("Memory usage for PID %s: %s: MB", process.pid, memory_usage_mb)
+        gc.collect()
 
     def formatData(self, inputs, should_scale, should_one_hot_encode):
         data_formatting_service = DataFormattingService(inputs)
