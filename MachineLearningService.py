@@ -259,6 +259,7 @@ class MachineLearningService(object):
         Parallel(n_jobs=nodes_to_use)(delayed(self.runMonteCarloSelection)(feature_set, trainer, input_folder,
                                                                            len(valid_combos))
                                       for feature_set in valid_combos)
+        self.logMemoryUsageAndGarbageCollect()
 
     def fetchValidGeneListCombos(self, input_folder, gene_list_combos, trainer):
         valid_combos = [feature_set for feature_set in gene_list_combos if trainer.shouldProcessFeatureSet(feature_set)]
@@ -480,7 +481,7 @@ class MachineLearningService(object):
         for process in procs:
             rss = process.memory_info().rss
             memory_usage_mb = numpy.round(rss / 1e6, 2)
-            self.log.info("Memory usage for PID %s: %s: MB", process.pid, memory_usage_mb)
+            self.log.debug("Memory usage for PID %s: %s: MB", process.pid, memory_usage_mb)
         gc.collect()
 
     def formatData(self, inputs, should_scale, should_one_hot_encode):
