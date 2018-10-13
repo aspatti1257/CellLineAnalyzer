@@ -48,10 +48,10 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
             model_data[self.ADDITIONAL_DATA].append(model_phrase)
 
     def initializeHyperParameters(self):
-        return {
-            "alpha": [0.01, 0.1, 1, 10],
-            "l_one_ratio": [0, 0.1, 0.5, 0.9, 1]
-        }
+        hyperparams = OrderedDict()
+        hyperparams["alpha"] = [0.01, 0.1, 1, 10]
+        hyperparams["l_one_ratio"] = [0, 0.1, 0.5, 0.9, 1]
+        return hyperparams
 
     def hyperparameterize(self, training_matrix, testing_matrix, results):
         return super().loopThroughHyperparams(self.initializeHyperParameters(), training_matrix, testing_matrix, results)

@@ -1,4 +1,5 @@
 from sklearn import svm
+from collections import OrderedDict
 
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
@@ -15,9 +16,8 @@ class LinearSVMTrainer(AbstractModelTrainer):
         return True
 
     def initializeHyperParameters(self, is_classifier):
-        hyperparams = {
-            "c_val": [10E-2, 10E-1, 10E0]
-        }
+        hyperparams = OrderedDict()
+        hyperparams["c_val"] = [10E-2, 10E-1, 10E0]
         if not is_classifier:
             hyperparams["epsilon"] = [0.01, 0.05, 0.1, 0.15, 0.2]
         return hyperparams

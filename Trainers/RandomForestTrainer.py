@@ -1,4 +1,5 @@
 import numpy
+from collections import OrderedDict
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestRegressor
 
@@ -16,10 +17,10 @@ class RandomForestTrainer(AbstractModelTrainer):
         return True
 
     def initializeHyperParameters(self, n, p):
-        return {
-            "max_depth": [0.05 * n, 0.1 * n, 0.2 * n, 0.3 * n, 0.4 * n, 0.5 * n, 0.75 * n, 1 * n],
-            "m_val": [1, (1 + numpy.sqrt(p)) / 2, numpy.sqrt(p), (numpy.sqrt(p) + p) / 2, p]
-        }
+        hyperparams = OrderedDict()
+        hyperparams["max_depth"] = [0.05 * n, 0.1 * n, 0.2 * n, 0.3 * n, 0.4 * n, 0.5 * n, 0.75 * n, 1 * n]
+        hyperparams["m_val"] = [1, (1 + numpy.sqrt(p)) / 2, numpy.sqrt(p), (numpy.sqrt(p) + p) / 2, p]
+        return hyperparams
 
     def hyperparameterize(self, training_matrix, testing_matrix, results):
         n = len(SafeCastUtil.safeCast(training_matrix.keys(), list))  # number of samples

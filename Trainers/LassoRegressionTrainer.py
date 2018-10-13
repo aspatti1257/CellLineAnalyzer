@@ -1,4 +1,5 @@
 from sklearn.linear_model import Lasso
+from collections import OrderedDict
 
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
@@ -15,7 +16,9 @@ class LassoRegressionTrainer(AbstractModelTrainer):
         return True
 
     def initializeHyperParameters(self):
-        return {"alpha": [0.001, 0.01, 0.1, 1, 10]}
+        hyperparams = OrderedDict()
+        hyperparams["alpha"] = [0.001, 0.01, 0.1, 1, 10]
+        return hyperparams
 
     def hyperparameterize(self, training_matrix, testing_matrix, results):
         return super().loopThroughHyperparams(self.initializeHyperParameters(), training_matrix,

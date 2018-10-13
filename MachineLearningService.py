@@ -140,7 +140,7 @@ class MachineLearningService(object):
                     numbered_combo = target_combo + " RUN " + SafeCastUtil.safeCast(permutation, str)
                     self.log.debug("Final score and accuracy of individual analysis for feature gene combo %s "
                                    "using algorithm %s: %s, %s", numbered_combo, target_algorithm, score, accuracy)
-                    score_and_hyperparam = [self.generateScoreAndHyperParam(score, hyperparams)]
+                    score_and_hyperparam = [self.generateScoreAndHyperParam(score, hyperparams, trainer)]
                     line = self.generateLine(accuracy, numbered_combo, ordered_importances, ordered_phrases, score,
                                              score_and_hyperparam)
                     self.writeToCSVInLock(line, input_folder, target_algorithm, outer_monte_carlo_loops, 1)
@@ -152,8 +152,15 @@ class MachineLearningService(object):
         return numpy.concatenate([[combo, score, accuracy], score_and_hyperparam,
                                   ordered_importances, ordered_phrases])
 
-    def generateScoreAndHyperParam(self, score, hyperparam):
-        return SafeCastUtil.safeCast(score, str) + self.DELIMITER + SafeCastUtil.safeCast(hyperparam, str)
+    def generateScoreAndHyperParam(self, score, hyperparam, trainer):
+        hyperparam_string = ""
+        keys = SafeCastUtil.safeCast(trainer.hyperparameters.keys(), list)
+        for i in range(0, len(keys)):
+            hyperparam_string += (keys[i] + ": " + SafeCastUtil.safeCast(hyperparam[i], str))
+            if i < len(keys) - 1:
+                hyperparam_string += ", "
+
+        return SafeCastUtil.safeCast(score, str) + self.DELIMITER + hyperparam_string
 
     def createTrainerFromTargetAlgorithm(self, is_classifier, target_algorithm):
         if target_algorithm == SupportedMachineLearningAlgorithms.RANDOM_FOREST:
@@ -356,7 +363,8 @@ class MachineLearningService(object):
                         important_rsen_phrases[phrase].append(prediction_data[3].get(phrase))
                     else:
                         important_rsen_phrases[phrase] = [prediction_data[3].get(phrase)]
-            scores_and_hyperparams.append(self.generateScoreAndHyperParam(prediction_data[0], optimal_hyperparams))
+            scores_and_hyperparams.append(self.generateScoreAndHyperParam(prediction_data[0], optimal_hyperparams,
+                                                                          trainer))
 
             self.logMemoryUsageAndGarbageCollect()
 
