@@ -186,3 +186,10 @@ class RandomizedDataGenerator(object):
             if individual_hyperparams is not None:
                 args_file.write('individual_train_hyperparams=' + individual_hyperparams + '\n')
         args_file.close()
+
+    @staticmethod
+    def generateAnalysisRowForCombo(combo):
+        # TODO: Flesh this out such that it can generate a list of scores for outer monte carlo perms and their
+        # hyperparams. Significant feature_importances are not necessary but optimal boolean phrases for RSEN will need
+        # to be addressed as well.
+        return [combo, random.random()]
