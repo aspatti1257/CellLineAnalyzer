@@ -32,7 +32,7 @@ class RecommendationsServiceIT(unittest.TestCase):
     def testRecommendations(self):
         ml_service = MachineLearningService(self.formatRandomizedData(False))
         combos = [ml_service.generateFeatureSetString(combo) for combo in ml_service.determineGeneListCombos()]
-        self.setupDrugData(combos)
+        self.setupDrugData(combos, ml_service)
         pass
 
     def formatRandomizedData(self, is_classifier):
@@ -41,7 +41,7 @@ class RecommendationsServiceIT(unittest.TestCase):
         argument_processing_service = ArgumentProcessingService(input_folder)
         return argument_processing_service.handleInputFolder()
 
-    def setupDrugData(self, combos):
+    def setupDrugData(self, combos, ml_service):
         randomized_data_path = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         for i in range(1, 11):
             drug_name = self.DRUG_DIRECTORY + SafeCastUtil.safeCast(i, str)
@@ -51,8 +51,11 @@ class RecommendationsServiceIT(unittest.TestCase):
             for algo in SupportedMachineLearningAlgorithms.fetchAlgorithms():
                 file_name = drug_path + "/" + algo + ".csv"
                 with open(file_name, 'w', newline='') as feature_file:
-                    writer = csv.writer(feature_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                    writer = csv.writer(feature_file)
+                    header = ml_service.getCSVFileHeader(ml_service.inputs.get(ArgumentProcessingService.IS_CLASSIFIER),
+                                                         algo, ml_service.inputs.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS))
+                    writer.writerow(header)
                     for combo in combos:
-                        row = RandomizedDataGenerator.generateAnalysisRowForCombo(combo)
+                        row = RandomizedDataGenerator.generateAnalysisRowForCombo(ml_service, combo, algo)
                         writer.writerow(row)
                     feature_file.close()

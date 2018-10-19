@@ -188,8 +188,15 @@ class RandomizedDataGenerator(object):
         args_file.close()
 
     @staticmethod
-    def generateAnalysisRowForCombo(combo):
+    def generateAnalysisRowForCombo(ml_service, combo, algo):
+        is_classifier = ml_service.inputs.get(ArgumentProcessingService.IS_CLASSIFIER)
+        perms = ml_service.inputs.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS)
+        trainer = ml_service.createTrainerFromTargetAlgorithm(is_classifier, algo)
+
         # TODO: Flesh this out such that it can generate a list of scores for outer monte carlo perms and their
-        # hyperparams. Significant feature_importances are not necessary but optimal boolean phrases for RSEN will need
-        # to be addressed as well.
-        return [combo, random.random()]
+        # hyperparams. Optimal boolean phrases for RSEN will need to be addressed as well.
+        row = [combo, random.random(), random.random()]
+        for i in range(0, perms):
+            hyperparams = [random.choice(params) for params in trainer.hyperparameters.values()]
+            row.append(ml_service.generateScoreAndHyperParam(random.random(), hyperparams, trainer))
+        return row

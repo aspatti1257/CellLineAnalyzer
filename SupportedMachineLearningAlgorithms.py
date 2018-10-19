@@ -14,4 +14,4 @@ class SupportedMachineLearningAlgorithms:
     @staticmethod
     def fetchAlgorithms():
         class_members = inspect.getmembers(SupportedMachineLearningAlgorithms, lambda a: not (inspect.isroutine(a)))
-        return [algorithm[1] for algorithm in class_members if type(algorithm[1]) is str]
+        return [field[1] for field in class_members if type(field[1]) is str and "__" not in field[0]]
