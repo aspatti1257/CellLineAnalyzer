@@ -2,6 +2,7 @@ import unittest
 import os
 import csv
 
+from RecommendationsService import RecommendationsService
 from Utilities.RandomizedDataGenerator import RandomizedDataGenerator
 from Utilities.SafeCastUtil import SafeCastUtil
 from ArgumentProcessingService import ArgumentProcessingService
@@ -29,11 +30,19 @@ class RecommendationsServiceIT(unittest.TestCase):
                 else:
                     os.remove(current_path)
 
+    # Run this IT and put a breakpoint in recs_service.recommendByHoldout() to see what variables you have to work with.
     def testRecommendations(self):
-        ml_service = MachineLearningService(self.formatRandomizedData(False))
+        inputs = self.formatRandomizedData(False)
+        self.instantiateMLServiceAndSetupDrugData(inputs)
+
+        recs_service = RecommendationsService(inputs)
+        recs_service.recommendByHoldout(self.current_working_dir)
+
+    # These methods below are just setup methods to create a dummy dataset.
+    def instantiateMLServiceAndSetupDrugData(self, inputs):
+        ml_service = MachineLearningService(inputs)
         combos = [ml_service.generateFeatureSetString(combo) for combo in ml_service.determineGeneListCombos()]
         self.setupDrugData(combos, ml_service)
-        pass
 
     def formatRandomizedData(self, is_classifier):
         RandomizedDataGenerator.generateRandomizedFiles(3, 1000, 150, is_classifier, 2, .8)

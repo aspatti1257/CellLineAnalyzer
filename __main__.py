@@ -89,8 +89,9 @@ def writeHTMLSummaryFile(input_folder, is_classifier):
 
 
 def fetchRecommendations(input_folder):
-    recs_service = RecommendationsService(input_folder)
-    recs_service.recommend()
+    valid_inputs = handleInputFolderProcessing(input_folder)
+    recs_service = RecommendationsService(valid_inputs)
+    recs_service.recommendByHoldout(input_folder)
 
 
 if __name__ == "__main__":
