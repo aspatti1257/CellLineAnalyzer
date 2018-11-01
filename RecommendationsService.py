@@ -74,6 +74,7 @@ class RecommendationsService(object):
     def presciption_from_prediction(viability_acceptance, druglist, celline_viabilities):
         # celline_viabilities has two columns: column 1 is a drugname, column 2 its (predicted) viability
         # viability_acceptance is a user-defined threshold: include all drugs whose performance is >= viability_acceptance*best_viability
+        # druglist is a lists the drugs for which viability of this cell line was predicted
         best = np.argmax(celline_viabilities[:, 1])
         bestdrug = celline_viabilities[best, 0]
         bestviab = celline_viabilities[best, 1]
