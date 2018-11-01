@@ -70,3 +70,16 @@ class RecommendationsService(object):
         #       # train model with optimal_hyperparams and return it.
         # return None
         pass
+
+    def presciption_from_prediction(viability_acceptance, druglist, celline_viabilities):
+        # celline_viabilities has two columns: column 1 is a drugname, column 2 its (predicted) viability
+        # viability_acceptance is a user-defined threshold: include all drugs whose performance is >= viability_acceptance*best_viability
+        best = np.argmax(celline_viabilities[:, 1])
+        bestdrug = celline_viabilities[best, 0]
+        bestviab = celline_viabilities[best, 1]
+        viab_threshold = viability_acceptance * bestviab
+        prescription = [bestdrug]
+        for d in range(len(celline_viabilities[:, 1])):
+            if celline_viabilities[d, 1] >= viab_threshold and celline_viabilities[d, 0] not in prescription:
+                prescription.append(celline_viabilities[d, 0])
+        return prescription
