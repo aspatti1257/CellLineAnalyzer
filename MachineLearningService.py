@@ -72,7 +72,11 @@ class MachineLearningService(object):
                     feature_strings.append([file_name + "." + gene for gene in gene_list if len(gene.strip()) > 0])
             if len(feature_strings) > 0:
                 gene_list_combos.append(feature_strings)
-
+        expected_combo_length = (len(gene_list_keys) ** len(file_keys)) - 1
+        actual_combo_length = len(gene_list_combos)
+        if actual_combo_length != expected_combo_length:
+            self.log.warning("Unexpected number of combos detected, should be %s but instead created %s.\n%s",
+                             expected_combo_length, actual_combo_length, gene_list_combos)
         return gene_list_combos
 
     def generateNumericalPermutations(self, gene_lists, gene_sets_across_files):
@@ -191,7 +195,6 @@ class MachineLearningService(object):
         return self.inputs.get(ArgumentProcessingService.ALGORITHM_CONFIGS).get(algorithm)[0]
 
     def analyzeAllGeneListCombos(self, gene_list_combos, input_folder, is_classifier):
-
         enet = SupportedMachineLearningAlgorithms.ELASTIC_NET
         rig_reg = SupportedMachineLearningAlgorithms.RIDGE_REGRESSION
         las_reg = SupportedMachineLearningAlgorithms.LASSO_REGRESSION
