@@ -85,8 +85,9 @@ class MachineLearningService(object):
         all_arrays = self.fetchAllArrayPermutations((num_gene_lists - 1), num_files)
         required_permutations = num_gene_lists ** num_files
         created_permutations = len(all_arrays)
-        self.log.debug("Should have created %s permutations, created %s permutations", required_permutations,
-                       created_permutations)
+        if required_permutations != created_permutations:
+            self.log.warning("Should have created %s permutations, instead created %s permutations",
+                             required_permutations, created_permutations)
         return all_arrays
 
     def fetchAllArrayPermutations(self, max_depth, num_files):
