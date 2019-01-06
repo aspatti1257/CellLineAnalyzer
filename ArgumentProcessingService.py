@@ -52,7 +52,7 @@ class ArgumentProcessingService(object):
         if is_classifier is None or results_file is None:
             return None
         results_list = self.validateAndExtractResults(results_file, is_classifier)
-        gene_lists = self.extractGeneList()
+        gene_lists = self.extractGeneLists()
 
         write_diagnostics = self.fetchOrReturnDefault(arguments.get(self.RECORD_DIAGNOSTICS), bool, False)
         feature_files = [file for file in os.listdir(self.input_folder) if self.fileIsFeatureFile(file, results_file)]
@@ -131,7 +131,7 @@ class ArgumentProcessingService(object):
                 data_file.close()
         return sample_list
 
-    def extractGeneList(self):
+    def extractGeneLists(self):
         gene_lists = {"null_gene_list": []}
         files = os.listdir(self.input_folder)
         for file in [f for f in files if self.GENE_LISTS in f]:
@@ -140,7 +140,10 @@ class ArgumentProcessingService(object):
                 genes = gene_list_file.read().strip().split(",")
                 genes_deduped = []
                 [genes_deduped.append(g.strip()) for g in genes if g not in genes_deduped and len(g.strip()) > 0]
-                gene_lists[file.split(".csv")[0]] = genes_deduped
+                if len(genes_deduped) > 0:
+                    gene_lists[file.split(".csv")[0]] = genes_deduped
+                else:
+                    self.log.warning("No genes found in gene list %s, will not process.", file)
 
         return gene_lists
 

@@ -5,6 +5,7 @@ import os
 
 from ArgumentProcessingService import ArgumentProcessingService
 from Utilities.RandomizedDataGenerator import RandomizedDataGenerator
+from Utilities.SafeCastUtil import SafeCastUtil
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 
 
@@ -85,6 +86,14 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
         enet = SupportedMachineLearningAlgorithms.ELASTIC_NET
         assert arguments.get(ArgumentProcessingService.ALGORITHM_CONFIGS).get(rf) == [True, 5, 5]
         assert arguments.get(ArgumentProcessingService.ALGORITHM_CONFIGS).get(enet) == [False, 0, 0]
+
+    def testEmptyGeneListsNotProcessed(self):
+        input_folder = self.current_working_dir + "/SampleClassifierDataFolder"
+        argument_processing_service = ArgumentProcessingService(input_folder)
+        arguments = argument_processing_service.handleInputFolder()
+        gene_lists = SafeCastUtil.safeCast(arguments.get(ArgumentProcessingService.GENE_LISTS).keys(), list)
+        assert len(gene_lists) == 2
+        assert "empty_gene_list" not in gene_lists
 
     def processAndValidateArguments(self, input_folder, is_classifier):
         argument_processing_service = ArgumentProcessingService(input_folder)
