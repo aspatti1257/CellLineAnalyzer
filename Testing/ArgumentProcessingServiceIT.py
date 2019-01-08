@@ -92,15 +92,24 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
         argument_processing_service = ArgumentProcessingService(input_folder)
         arguments = argument_processing_service.handleInputFolder()
         gene_lists = SafeCastUtil.safeCast(arguments.get(ArgumentProcessingService.GENE_LISTS).keys(), list)
-        assert len(gene_lists) == 2
+        assert len(gene_lists) == 3
         assert "empty_gene_list" not in gene_lists
+
+    def testSpecificCombosProperlyProcessed(self):
+        input_folder = self.current_working_dir + "/SampleClassifierDataFolder"
+        argument_processing_service = ArgumentProcessingService(input_folder)
+        arguments = argument_processing_service.handleInputFolder()
+        combos = arguments.get(ArgumentProcessingService.SPECIFIC_COMBOS)
+        assert len(combos) == 2
+        for combo in combos:
+            assert "\"" not in combo
 
     def processAndValidateArguments(self, input_folder, is_classifier):
         argument_processing_service = ArgumentProcessingService(input_folder)
         arguments = argument_processing_service.handleInputFolder()
         features = arguments.get(argument_processing_service.FEATURES)
         assert arguments is not None
-        assert len(arguments) == 17
+        assert len(arguments) == 18
         assert (len(arguments.get(argument_processing_service.RESULTS)) + 1) == len(features.keys())
         assert arguments.get(argument_processing_service.IS_CLASSIFIER) == is_classifier
         assert len(features.get(argument_processing_service.FEATURE_NAMES)) < self.total_features_in_files

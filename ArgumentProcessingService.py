@@ -32,6 +32,7 @@ class ArgumentProcessingService(object):
     RSEN_K_VAL = "rsen_k_val"
     RSEN_COMBINE_GENE_LISTS = "rsen_combine_gene_lists"
     BINARY_CATEGORICAL_MATRIX = "binary_categorical_matrix"
+    SPECIFIC_COMBOS = "specific_combos"
 
     INDIVIDUAL_TRAIN_ALGORITHM = "individual_train_algorithm"
     INDIVIDUAL_TRAIN_HYPERPARAMS = "individual_train_hyperparams"
@@ -80,7 +81,8 @@ class ArgumentProcessingService(object):
             self.BINARY_CATEGORICAL_MATRIX: binary_cat_matrix,
             self.RSEN_P_VAL: self.fetchOrReturnDefault(arguments.get(self.RSEN_P_VAL), float, 0.0),
             self.RSEN_K_VAL: self.fetchOrReturnDefault(arguments.get(self.RSEN_P_VAL), float, 0.1),
-            self.RSEN_COMBINE_GENE_LISTS: self.fetchOrReturnDefault(arguments.get(self.RSEN_COMBINE_GENE_LISTS), bool, False)
+            self.RSEN_COMBINE_GENE_LISTS: self.fetchOrReturnDefault(arguments.get(self.RSEN_COMBINE_GENE_LISTS), bool, False),
+            self.SPECIFIC_COMBOS: self.determineSpecificCombos(arguments.get(self.SPECIFIC_COMBOS))
         }
 
     def validateDirectoryContents(self, directory_contents):
@@ -315,3 +317,9 @@ class ArgumentProcessingService(object):
             return SafeCastUtil.safeCast(field, to_type)
         else:
             return default
+
+    def determineSpecificCombos(self, combos):
+        if combos is None:
+            return []
+        return [combo.strip().replace("\"", "") for combo in combos.split(",")]
+

@@ -176,6 +176,13 @@ ones that aren't are marked with a star (*).
 
 `rsen_p_val`*: Optionally set the "p" value for RandomSubsetElasticNet analysis. Determines how predictions are scored.
 
+`specific_combos`*: Optionally include the feature file:gene list combos you specifically want to analyze. This will
+                    skip all combos which don't match what are explicitly specified. A colon should separate the feature
+                    file and gene list in the combo name. Combo names should be in double quotes and separated by commas
+                    and not include any periods or spaces. For combos which include multiple feature files and gene
+                    lists, the order of the which pair of feature file:gene list does not matter. See the example below
+                    or reference a completed "Analysis.csv" file to get a sense of how these combos are expressed.
+
 Any .csv file in this path that is not the a gene list file, or the results.csv file, will be interpreted as a features
 file.
 
@@ -188,6 +195,7 @@ inner_monte_carlo_permutations=5
 outer_monte_carlo_permutations=20
 data_split=0.8
 RandomForestAnalysis=True,10,5
+specific_combos="features:gene_list2 categorical:gene_list1", "features:gene_list1"
 ```
 
 ### Example of a completed argument.txt with proper syntax for individual ML algorithm training:

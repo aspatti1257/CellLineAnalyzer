@@ -314,3 +314,39 @@ class MachineLearningServiceIT(unittest.TestCase):
         assert len([imp for imp in sorted_importances4 if imp != ""]) > len([imp for imp in sorted_importances3 if imp != ""])
         assert numpy.sum([SafeCastUtil.safeCast(imp.split(delimiter)[1], float) for imp in sorted_importances4
                           if imp is not ""]) > 1.0
+
+    def testSpecifiedCombosAreSelectedProperly(self):
+        arguments = self.formatRandomizedData(False)
+        file_names = []
+        for feature in arguments.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES):
+            file_name = feature.split(".")[0]
+            if file_name not in file_names:
+                file_names.append(file_name)
+
+        gene_lists = SafeCastUtil.safeCast(arguments.get(ArgumentProcessingService.GENE_LISTS).keys(), list)
+
+        self.assertSpecificComboGeneration(arguments, self.generateSpecificCombos(file_names, gene_lists, False))
+        self.assertSpecificComboGeneration(arguments, self.generateSpecificCombos(file_names, gene_lists, True))
+
+    def generateSpecificCombos(self, file_names, gene_lists, flip_order):
+        specific_combos = []
+        if len(file_names) > 1 and len(gene_lists) > 1:
+            if flip_order:
+                specific_combos.append(file_names[0] + ":" + gene_lists[1] + " " + file_names[1] + ":" + gene_lists[1])
+            else:
+                specific_combos.append(file_names[1] + ":" + gene_lists[1] + " " + file_names[0] + ":" + gene_lists[1])
+
+        for file in file_names:
+            for gene_list in gene_lists:
+                if gene_list is not "null_gene_list":
+                    specific_combos.append(file + ":" + gene_list)
+                    if len(specific_combos) > 4:
+                        return specific_combos
+        return specific_combos
+
+    def assertSpecificComboGeneration(self, arguments, specific_combos):
+        arguments[ArgumentProcessingService.SPECIFIC_COMBOS] = specific_combos
+        ml_service = MachineLearningService(arguments)
+        gene_list_combos = ml_service.determineGeneListCombos()
+        filtered_combos = ml_service.determineSpecificCombos(gene_list_combos)
+        assert len(filtered_combos) == len(specific_combos)

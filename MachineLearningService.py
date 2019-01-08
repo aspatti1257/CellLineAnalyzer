@@ -45,8 +45,10 @@ class MachineLearningService(object):
         if self.inputs.get(ArgumentProcessingService.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO) is not None\
                 and self.inputs.get(ArgumentProcessingService.INDIVIDUAL_TRAIN_ALGORITHM) is not None:
             self.analyzeIndividualGeneListCombo(gene_list_combos, input_folder, is_classifier)
+        elif self.inputs.get(ArgumentProcessingService.SPECIFIC_COMBOS) is not None:
+            self.analyzeGeneListCombos(self.determineSpecificCombos(gene_list_combos), input_folder, is_classifier)
         else:
-            self.analyzeAllGeneListCombos(gene_list_combos, input_folder, is_classifier)
+            self.analyzeGeneListCombos(gene_list_combos, input_folder, is_classifier)
 
     def determineGeneListCombos(self):
         gene_lists = self.inputs.get(ArgumentProcessingService.GENE_LISTS)
@@ -195,7 +197,28 @@ class MachineLearningService(object):
     def shouldTrainAlgorithm(self, algorithm):
         return self.inputs.get(ArgumentProcessingService.ALGORITHM_CONFIGS).get(algorithm)[0]
 
-    def analyzeAllGeneListCombos(self, gene_list_combos, input_folder, is_classifier):
+    def determineSpecificCombos(self, all_combos):
+        specific_combos = self.inputs.get(ArgumentProcessingService.SPECIFIC_COMBOS)
+        selected_combos = {}
+        for specific_combo in specific_combos:
+            for combo in all_combos:
+                combo_string = self.generateFeatureSetString(combo)
+                if specific_combo == combo_string and selected_combos.get(combo_string) is None:
+                    selected_combos[combo_string] = combo
+                else:
+                    this_sorted_combo = sorted(combo_string.split(" "))
+                    specific_sorted_combo = sorted(specific_combo.split(" "))
+                    if this_sorted_combo == specific_sorted_combo and selected_combos.get(combo_string) is None:
+                        selected_combos[combo_string] = combo
+        selected_combo_names = SafeCastUtil.safeCast(selected_combos.keys(), list)
+        if len(selected_combo_names) < len(specific_combos):
+            self.log.warning("Not all specified combos were available in this data folder.\n"
+                             "Specified combos: %s\n Selected combos: %s", specific_combos, selected_combo_names)
+        else:
+            self.log.info("Only running analysis on following combos:\n %s", selected_combo_names)
+        return SafeCastUtil.safeCast(selected_combos.values(), list)
+
+    def analyzeGeneListCombos(self, gene_list_combos, input_folder, is_classifier):
         enet = SupportedMachineLearningAlgorithms.ELASTIC_NET
         rig_reg = SupportedMachineLearningAlgorithms.RIDGE_REGRESSION
         las_reg = SupportedMachineLearningAlgorithms.LASSO_REGRESSION
