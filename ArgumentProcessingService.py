@@ -296,7 +296,7 @@ class ArgumentProcessingService(object):
                 configs[algo] = [True, default_inner_perms, default_outer_perms]
             else:
                 config_split = [param.strip() for param in algo_config.split(",")]
-                if len(config_split) == 3:
+                if len(config_split) >= 3:
                     configs[algo] = [config_split[0] == 'True',
                                      SafeCastUtil.safeCast(config_split[1], int),
                                      SafeCastUtil.safeCast(config_split[2], int)]

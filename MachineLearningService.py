@@ -195,7 +195,8 @@ class MachineLearningService(object):
         return trainer
 
     def shouldTrainAlgorithm(self, algorithm):
-        return self.inputs.get(ArgumentProcessingService.ALGORITHM_CONFIGS).get(algorithm)[0]
+        configs = self.inputs.get(ArgumentProcessingService.ALGORITHM_CONFIGS)
+        return configs is not None and configs.get(algorithm) is not None and configs.get(algorithm)[0]
 
     def determineSpecificCombos(self, all_combos):
         specific_combos = self.inputs.get(ArgumentProcessingService.SPECIFIC_COMBOS)
