@@ -34,7 +34,7 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
                     counter_dictionary[value] += 1
         is_valid = len(SafeCastUtil.safeCast(counter_dictionary.keys(), list)) == 2
         if is_valid:
-            self.log.info("Valid binary categorical matrix.")
+            self.log.debug("Valid binary categorical matrix.")
         else:
             raise ValueError("Invalid binary categorical matrix.")
 

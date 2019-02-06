@@ -1,8 +1,15 @@
 from ArgumentProcessingService import ArgumentProcessingService
+from Utilities.GeneListComboUtility import GeneListComboUtility
 import os
 import collections
+import logging
+
 
 class RecommendationsService(object):
+
+    log = logging.getLogger(__name__)
+    logging.basicConfig()
+    log.setLevel(logging.INFO)
 
     def __init__(self, inputs):
         self.inputs = inputs
@@ -11,7 +18,7 @@ class RecommendationsService(object):
         # See self.inputs.get(ArgumentProcessingService.FEATURES). This contains a map representing all cell lines and
         # their features, along with a set of "featureNames".
 
-        # combos = self.determineGeneListCombos()
+        combos = self.determineGeneListCombos()
 
         # cell_line_map = self.inputs.get(ArgumentProcessingService.FEATURES);
         # for cell_line in cell_line_map.keys():
@@ -27,9 +34,16 @@ class RecommendationsService(object):
         pass
 
     def determineGeneListCombos(self):
-        # reference the function in MachineLearningService. Ideally remove it from that and put it in a new utility
-        # class. e.g. GeneListComboUtility, which can handle generating the gene list combos. Then anywhere in the code
-        # base which references this can go through this common utility.
+        gene_lists = self.inputs.get(ArgumentProcessingService.GENE_LISTS)
+        feature_names = self.inputs.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES)
+
+        combos, expected_length = GeneListComboUtility.determineGeneListCombos(gene_lists, feature_names)
+
+        if len(combos) != expected_length:
+            self.log.warning("Unexpected number of combos detected, should be %s but instead created %s.\n%s",
+                             expected_length, len(combos), combos)
+        return combos
+
 
         # Create a dict for gene list combos and a dict for hyperparameters, where the keys are EN, RF and SVM.
         # In George's repository the analysis_files_folder is Repository/Runs/Analysis_files/
@@ -67,10 +81,10 @@ class RecommendationsService(object):
         #             genelists[model][type] = 'nan'
         # Find best hyperparameters for the given gene list combos
         # First make for each algo a list with the hyperparameters that were optimal for a MC run with this algorithm
-        hyperparams = collections.defaultdict(dict)
-        hyperparam_MClist_EN = {}
-        hyperparam_MClist_RF = {}
-        hyperparam_MClist_SVM = {}
+        # hyperparams = collections.defaultdict(dict)
+        # hyperparam_MClist_EN = {}
+        # hyperparam_MClist_RF = {}
+        # hyperparam_MClist_SVM = {}
         # with open(analysis_files_folder + '/' + drug + '_analysis/' + drug + '_diagnostics.txt', 'r') as fr:
         #     EN = 0
         #     RF = 0

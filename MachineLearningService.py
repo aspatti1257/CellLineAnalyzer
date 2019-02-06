@@ -23,6 +23,7 @@ from Trainers.RidgeRegressionTrainer import RidgeRegressionTrainer
 from Trainers.LassoRegressionTrainer import LassoRegressionTrainer
 from Trainers.RandomSubsetElasticNetTrainer import RandomSubsetElasticNetTrainer
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
+from Utilities.GeneListComboUtility import GeneListComboUtility
 from Utilities.SafeCastUtil import SafeCastUtil
 
 
@@ -52,66 +53,14 @@ class MachineLearningService(object):
 
     def determineGeneListCombos(self):
         gene_lists = self.inputs.get(ArgumentProcessingService.GENE_LISTS)
-        gene_sets_across_files = {}
         feature_names = self.inputs.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES)
-        for feature in feature_names:
-            split = feature.split(".")
-            if gene_sets_across_files.get(split[0]) is not None:
-                gene_sets_across_files[split[0]].append(feature)
-            else:
-                gene_sets_across_files[split[0]] = [feature]
 
-        numerical_permutations = self.generateNumericalPermutations(gene_lists, gene_sets_across_files)
-        gene_list_keys = SafeCastUtil.safeCast(gene_lists.keys(), list)
-        file_keys = SafeCastUtil.safeCast(gene_sets_across_files.keys(), list)
-        gene_list_combos = []
-        for perm in numerical_permutations:
-            feature_strings = []
-            for i in range(0, len(perm)):
-                file_name = file_keys[i]
-                gene_list = gene_lists[gene_list_keys[SafeCastUtil.safeCast(perm[i], int)]]
-                if len(gene_list) > 0:
-                    feature_strings.append([file_name + "." + gene for gene in gene_list if len(gene.strip()) > 0])
-            if len(feature_strings) > 0:
-                gene_list_combos.append(feature_strings)
-        expected_combo_length = (len(gene_list_keys) ** len(file_keys)) - 1
-        actual_combo_length = len(gene_list_combos)
-        if actual_combo_length != expected_combo_length:
+        combos, expected_length = GeneListComboUtility.determineGeneListCombos(gene_lists, feature_names)
+
+        if len(combos) != expected_length:
             self.log.warning("Unexpected number of combos detected, should be %s but instead created %s.\n%s",
-                             expected_combo_length, actual_combo_length, gene_list_combos)
-        return gene_list_combos
-
-    def generateNumericalPermutations(self, gene_lists, gene_sets_across_files):
-        num_gene_lists = len(gene_lists)
-        num_files = len(gene_sets_across_files)
-        all_arrays = self.fetchAllArrayPermutations((num_gene_lists - 1), num_files)
-        required_permutations = num_gene_lists ** num_files
-        created_permutations = len(all_arrays)
-        if required_permutations != created_permutations:
-            self.log.warning("Should have created %s permutations, instead created %s permutations",
-                             required_permutations, created_permutations)
-        return all_arrays
-
-    def fetchAllArrayPermutations(self, max_depth, num_files):
-        all_arrays = []
-        current_array = self.blankArray(num_files)
-        target_index = num_files - 1
-        while target_index >= 0:
-            if current_array not in all_arrays:
-                clone_array = current_array[:]
-                all_arrays.append(clone_array)
-            if current_array[target_index] < max_depth:
-                current_array[target_index] += 1
-                while len(current_array) > target_index + 1 and current_array[target_index + 1] < max_depth:
-                    target_index += 1
-            else:
-                target_index -= 1
-                for subsequent_index in range(target_index, len(current_array) - 1):
-                    current_array[subsequent_index + 1] = 0
-        return all_arrays
-
-    def blankArray(self, length):
-        return SafeCastUtil.safeCast(numpy.zeros(length, dtype=numpy.int), list)
+                             expected_length, len(combos), combos)
+        return combos
 
     def analyzeIndividualGeneListCombo(self, gene_list_combos, input_folder, is_classifier):
         target_combo = self.inputs.get(ArgumentProcessingService.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO)
