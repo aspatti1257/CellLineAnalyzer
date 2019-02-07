@@ -3,6 +3,7 @@ from Utilities.GeneListComboUtility import GeneListComboUtility
 import os
 import collections
 import logging
+import copy
 
 
 class RecommendationsService(object):
@@ -20,17 +21,19 @@ class RecommendationsService(object):
 
         combos = self.determineGeneListCombos()
 
-        # cell_line_map = self.inputs.get(ArgumentProcessingService.FEATURES);
-        # for cell_line in cell_line_map.keys():
-        #    trimmed_cell_lines = self.removeFromCellLinesMap(cell_line, cell_line_map)
-        #    recs = []
-        #    for drug in self.getDrugFolders():
-        #       best_model = determineAndTrainBestModel(drug, input_folder, trimmed_cell_lines, combos);
-        #       recs.append(best_model.predict(cell_line_map[cell_line]))
-        #
-        #    See which drug prediction comes closest to actual R^2 score.
-        #    See self.inputs.get(ArgumentProcessingService.RESULTS) for this value.
-        #    Record to FinalResults.csv
+        cell_line_map = self.inputs.get(ArgumentProcessingService.FEATURES)
+        for cell_line in cell_line_map.keys():
+            if cell_line == ArgumentProcessingService.FEATURE_NAMES:
+                continue
+            trimmed_cell_lines = self.removeFromCellLinesMap(cell_line, cell_line_map)
+            recs = []
+            for drug in self.getDrugFolders(input_folder):
+                best_model = self.determineAndTrainBestModel(drug, input_folder, trimmed_cell_lines, combos)
+                # recs.append(best_model.predict(cell_line_map[cell_line]))
+
+           # See which drug prediction comes closest to actual R^2 score.
+           # See self.inputs.get(ArgumentProcessingService.RESULTS) for this value.
+           # Record to FinalResults.csv
         pass
 
     def determineGeneListCombos(self):
@@ -184,41 +187,39 @@ class RecommendationsService(object):
         # return genelists, hyperparams
 
     def removeFromCellLinesMap(self, cell_line, features_map):
-        # return a clone of this object with the cell line removed from the dictionary.
-        # Make sure to not edit the original. Make sure to skip the "featureNames" attribute.
-        # clone = self
-        # clone.train_data =
-        # clone.prescribe_cellline_data =
-        #
-        pass
+        cloned_features = copy.deepcopy(features_map)
+        del cloned_features[ArgumentProcessingService.FEATURE_NAMES]
+        del cloned_features[cell_line]
+        return cloned_features
 
     def getDrugFolders(self, input_folder):
         # search for and return all drug folders in the input_folder.
-        # In George's repository the analysis_files_folder is Repository/Runs/Analysis_files/
         folders = os.listdir(input_folder)
-        drug_folders = [f for f in folders if '_analysis' in f]
+        # TODO: Figure out required phrase to mark it as a drug folder
+        drug_folders = [f for f in folders if 'Analysis' in f]
         return drug_folders
 
     def determineAndTrainBestModel(self, drug, analysis_files_folder, trimmed_cell_lines, combos):
-        # best_scoring_algo = None
-        # best_scoring_combo = None
-        # optimal_hyperparams = None
-        # top_score = 0
-        # for analysis_file in self.fetchAnalysisFiles(drug, input_folder):
-        #     for row in analysis_file: # need to open the .csv here and read them in.
-        #         for monte_carlo_perm in row: # find the elements in the row reflecting outer monte carlo loops
-        #             if monte_carlo_perm.score() > top_score:
-        #                 top_score = monte_carlo_perm.score()
-        #                 best_scoring_algo = analysis_file # trim the .csv part.
-        #                 best_scoring_combo = monte_carlo_perm.combo()
-        #                 optimal_hyperparams = monte_carlo_perm.hyperparams()
+        best_scoring_algo = None
+        best_scoring_combo = None
+        optimal_hyperparams = None
+        top_score = 0
+        for analysis_file in self.fetchAnalysisFiles(drug, analysis_files_folder):
+            return None
+            # for row in analysis_file: # need to open the .csv here and read them in.
+            #     for monte_carlo_perm in row: # find the elements in the row reflecting outer monte carlo loops
+            #         if monte_carlo_perm.score() > top_score:
+            #             top_score = monte_carlo_perm.score()
+            #             best_scoring_algo = analysis_file # trim the .csv part.
+            #             best_scoring_combo = monte_carlo_perm.combo()
+            #             optimal_hyperparams = monte_carlo_perm.hyperparams()
 
-        # return trainBestModel(best_scoring_algo, best_scoring_combo, optimal_hyperparams, combos)
-        pass
+        return self.trainBestModel(best_scoring_algo, best_scoring_combo, optimal_hyperparams, combos)
 
     def fetchAnalysisFiles(self, drug, input_folder):
         # return all "...Analysis.csv" files in path of input_folder/drug.
-        pass
+        files = os.listdir(input_folder + "/" + drug)
+        return [file for file in files if "Analysis.csv" in file]
 
     def trainBestModel(self, best_scoring_algo, best_scoring_combo, optimal_hyperparams, combos):
         # for combo in combos:

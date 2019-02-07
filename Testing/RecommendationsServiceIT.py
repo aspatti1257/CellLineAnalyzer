@@ -36,7 +36,7 @@ class RecommendationsServiceIT(unittest.TestCase):
         self.instantiateMLServiceAndSetupDrugData(inputs)
 
         recs_service = RecommendationsService(inputs)
-        recs_service.recommendByHoldout(self.current_working_dir)
+        recs_service.recommendByHoldout(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER)
 
     # These methods below are just setup methods to create a dummy dataset.
     def instantiateMLServiceAndSetupDrugData(self, inputs):
