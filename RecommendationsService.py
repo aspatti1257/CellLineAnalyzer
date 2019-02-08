@@ -28,6 +28,7 @@ class RecommendationsService(object):
             if cell_line == ArgumentProcessingService.FEATURE_NAMES:
                 continue
             trimmed_cell_lines = self.removeFromCellLinesMap(cell_line, cell_line_map)
+            #XMB AUC/IC50 list
             recs = []
             for drug in self.getDrugFolders(input_folder):
                 best_model = self.determineAndTrainBestModel(drug, input_folder, trimmed_cell_lines, combos)
@@ -207,8 +208,23 @@ class RecommendationsService(object):
         optimal_hyperparams = None
         top_score = 0
         for analysis_file in self.fetchAnalysisFiles(drug, analysis_files_folder):
-            return None
-            # for row in analysis_file: # need to open the .csv here and read them in.
+            with open(analysis_files_folder+'/'+analysis_file,'r') as f:
+                next(f)
+                # for row in analysis_file:
+                #     splitrow = row.split(',')
+                #     for i in range(len(splitrow),3,-1):
+                #         if 'outer perm' in splitrow[i]:
+                #             num_monte_carlo_perms = i-3
+                #             break
+                for row in analysis_file:
+                    monte_carlo_results = self.getMonteCarloResults(row)
+                    for mc_perm in monte_carlo_results:
+                        
+                    if float(splitrow[1]) > top_score:
+                        top_score = float(split_row[1])
+                        best_scoring_algo = analysis_file.rstrip('Analysis.csv')
+                        best_scoring_combo = splitrow[0]
+                        optimal_hyperparams = #XMB write a separate thingy for this
             #     for monte_carlo_perm in row: # find the elements in the row reflecting outer monte carlo loops
             #         if monte_carlo_perm.score() > top_score:
             #             top_score = monte_carlo_perm.score()
@@ -218,10 +234,22 @@ class RecommendationsService(object):
 
         return self.trainBestModel(best_scoring_algo, best_scoring_combo, optimal_hyperparams, combos)
 
+    def getMonteCarloResults(self,row):
+        monte_carlo_perms = row.split('","') #@AP the separator is , but also the hyperparams are separated by ,. I made a workaround, though this isn't too elegant
+        monte_carlo_perms[0] = monte_carlo_perms[0].split(',"')[1]
+        monte_carlo_perms[-1] = monte_carlo_perms[-1].rstrip('"\n')
+        return monte_carlo_perms
+
     def fetchAnalysisFiles(self, drug, input_folder):
         # return all "...Analysis.csv" files in path of input_folder/drug.
         files = os.listdir(input_folder + "/" + drug)
         return [file for file in files if "Analysis.csv" in file]
+
+    def fetchBestHyperparams(self, best_scoring_algo, row):
+        row_relevant = row.split('---')[1]
+        if best_scoring_algo == 'ElasticNet':
+            row_relevant.split(',')[:1]
+        return hyperparams
 
     def trainBestModel(self, best_scoring_algo, best_scoring_combo, optimal_hyperparams, combos):
         # for combo in combos:
