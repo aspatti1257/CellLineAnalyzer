@@ -24,11 +24,12 @@ class RecommendationsService(object):
         # A dictionary of cell lines to their features, with the feature names also in there as one of the keys.
         # Both the features and the feature names are presented as an ordered list, all of them have the same length.
         cell_line_map = self.inputs.get(ArgumentProcessingService.FEATURES)
+        # get results map
         for cell_line in cell_line_map.keys():
             if cell_line == ArgumentProcessingService.FEATURE_NAMES:
                 continue
             trimmed_cell_lines = self.removeFromCellLinesMap(cell_line, cell_line_map)
-            #XMB AUC/IC50 list
+            # remove cell line from results
             recs = []
             for drug in self.getDrugFolders(input_folder):
                 best_model = self.determineAndTrainBestModel(drug, input_folder, trimmed_cell_lines, combos)
@@ -203,53 +204,46 @@ class RecommendationsService(object):
         return drug_folders
 
     def determineAndTrainBestModel(self, drug, analysis_files_folder, trimmed_cell_lines, combos):
-        best_scoring_algo = None
+        best_scoring_algo = None #TODO: ultimately we'd want to use multiple algorithms, and make an ensemble prediction/prescription. But for now, let's stick with one algorithm.
         best_scoring_combo = None
         optimal_hyperparams = None
         top_score = 0
         for analysis_file in self.fetchAnalysisFiles(drug, analysis_files_folder):
             with open(analysis_files_folder+'/'+analysis_file,'r') as f:
                 next(f)
-                # for row in analysis_file:
-                #     splitrow = row.split(',')
-                #     for i in range(len(splitrow),3,-1):
-                #         if 'outer perm' in splitrow[i]:
-                #             num_monte_carlo_perms = i-3
-                #             break
                 for row in analysis_file:
-                    monte_carlo_results = self.getMonteCarloResults(row)
-                    for mc_perm in monte_carlo_results:
-                        
                     if float(splitrow[1]) > top_score:
-                        top_score = float(split_row[1])
                         best_scoring_algo = analysis_file.rstrip('Analysis.csv')
                         best_scoring_combo = splitrow[0]
-                        optimal_hyperparams = #XMB write a separate thingy for this
-            #     for monte_carlo_perm in row: # find the elements in the row reflecting outer monte carlo loops
-            #         if monte_carlo_perm.score() > top_score:
-            #             top_score = monte_carlo_perm.score()
-            #             best_scoring_algo = analysis_file # trim the .csv part.
-            #             best_scoring_combo = monte_carlo_perm.combo()
-            #             optimal_hyperparams = monte_carlo_perm.hyperparams()
-
+                        top_score = float(split_row[1])
+                        optimal_hyperparams = self.fetchBestHyperparams(row)
+        if top_score == 0:
+            print('Error: no method found an R2 higher than 0.') # @AP: here I'd like DrS to just stop working on the current drug and write this sentence to a log file. How can we do that?
         return self.trainBestModel(best_scoring_algo, best_scoring_combo, optimal_hyperparams, combos)
 
+    def fetchBestHyperparams(self,row)
+        monte_carlo_results = self.getMonteCarloResults(row)
+        best_hyps = None
+        top_score = 0
+        for num, mc_perm in enumerate(monte_carlo_results):
+            if mc_perm[0] > top_score:
+                best_hyps = mc_perm[1]
+        return best_hyps
+
     def getMonteCarloResults(self,row):
-        monte_carlo_perms = row.split('","') #@AP the separator is , but also the hyperparams are separated by ,. I made a workaround, though this isn't too elegant
+        monte_carlo_perms = row.split('","')
         monte_carlo_perms[0] = monte_carlo_perms[0].split(',"')[1]
         monte_carlo_perms[-1] = monte_carlo_perms[-1].rstrip('"\n')
-        return monte_carlo_perms
+        monte_carlo_results = {}
+        for num, mc_perm in enumerate(monte_carlo_perms):
+            hyps = mc_perm.split(' --- ')[1].split(',')
+            monte_carlo_results[num] = [float(mc_perm.split(' --- ')[0]), [float(h.split(': ')[1]) for h in hyps]]
+        return monte_carlo_results
 
     def fetchAnalysisFiles(self, drug, input_folder):
         # return all "...Analysis.csv" files in path of input_folder/drug.
         files = os.listdir(input_folder + "/" + drug)
         return [file for file in files if "Analysis.csv" in file]
-
-    def fetchBestHyperparams(self, best_scoring_algo, row):
-        row_relevant = row.split('---')[1]
-        if best_scoring_algo == 'ElasticNet':
-            row_relevant.split(',')[:1]
-        return hyperparams
 
     def trainBestModel(self, best_scoring_algo, best_scoring_combo, optimal_hyperparams, combos):
         # for combo in combos:
