@@ -21,6 +21,8 @@ class RecommendationsService(object):
 
         combos = self.determineGeneListCombos()
 
+        # A dictionary of cell lines to their features, with the feature names also in there as one of the keys.
+        # Both the features and the feature names are presented as an ordered list, all of them have the same length.
         cell_line_map = self.inputs.get(ArgumentProcessingService.FEATURES)
         for cell_line in cell_line_map.keys():
             if cell_line == ArgumentProcessingService.FEATURE_NAMES:
