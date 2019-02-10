@@ -4,9 +4,10 @@ from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithm
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
 from Utilities.GeneListComboUtility import GeneListComboUtility
 import os
-import collections
 import logging
 import copy
+import csv
+import numpy
 
 from Utilities.SafeCastUtil import SafeCastUtil
 
@@ -219,25 +220,27 @@ class RecommendationsService(object):
         top_score = AbstractModelTrainer.DEFAULT_MIN_SCORE
         for analysis_file_name in self.fetchAnalysisFiles(drug, analysis_files_folder):
             file = analysis_files_folder + "/" + drug + "/" + analysis_file_name
-            with open(file) as analysis_file:
+            with open(file, 'rt') as analysis_file:
+                reader = csv.reader(analysis_file)
                 try:
                     header = []
-                    num_outer_loops = 0
-                    for line_index, row in enumerate(analysis_file):
-                        fields = row.split(",")
+                    indices_of_outer_loops = []
+                    line_index = -1
+                    for row in reader:
+                        line_index += 1
                         if line_index == 0:
-                            header = fields
-                            num_outer_loops = len([field for field in fields if
-                                                   MachineLearningService.SCORE_AND_HYPERPARAM_PHRASE in field])
+                            header = row
+                            for i in range(0, len(row)):
+                                if MachineLearningService.SCORE_AND_HYPERPARAM_PHRASE in row[i]:
+                                    indices_of_outer_loops.append(i)
                             continue
-
-                        string_combo = fields[header.index(MachineLearningService.FEATURE_FILE_GENE_LIST_COMBO)]
-                        score = SafeCastUtil.safeCast(fields[header.index(self.scorePhrase())], float)
+                        string_combo = row[header.index(MachineLearningService.FEATURE_FILE_GENE_LIST_COMBO)]
+                        score = SafeCastUtil.safeCast(row[header.index(self.scorePhrase())], float)
                         if score is not None and score > top_score:
                             best_scoring_algo = analysis_file_name.split(".")[0]
                             best_scoring_combo = string_combo
                             top_score = score
-                            optimal_hyperparams = self.fetchBestHyperparams(row, num_outer_loops)
+                            optimal_hyperparams = self.fetchBestHyperparams(row, indices_of_outer_loops)
                 except ValueError as valueError:
                     self.log.error(valueError)
                 finally:
@@ -255,28 +258,28 @@ class RecommendationsService(object):
             return MachineLearningService.PERCENT_ACCURATE_PREDICTIONS
         return MachineLearningService.R_SQUARED_SCORE
 
-    def fetchBestHyperparams(self, row, num_outer_loops):
-        monte_carlo_results = self.getMonteCarloResults(row, num_outer_loops)
+    def fetchBestHyperparams(self, row, indices_of_outer_loops):
+        monte_carlo_results = self.getMonteCarloResults(row, indices_of_outer_loops)
         best_hyps = None
         top_score = AbstractModelTrainer.DEFAULT_MIN_SCORE
-        # for num, mc_perm in enumerate(monte_carlo_results):
-        #     if mc_perm[0] > top_score:
-        #         best_hyps = mc_perm[1]
+        for hyperparam in SafeCastUtil.safeCast(monte_carlo_results.keys(), list):
+            average_of_scores = numpy.average(monte_carlo_results.get(hyperparam))
+            if average_of_scores > top_score:
+                top_score = average_of_scores
+                best_hyps = hyperparam
         return best_hyps
 
-    def getMonteCarloResults(self, row, num_outer_loops):
-        # TODO-Andrew: Careful here - there's commas in the score + hyperparam cells we need to be aware of. Will figure
-        # out best way to extract these values.
-        monte_carlo_perms = row.split('","')
-        # TODO - Andrew: IT falls over here. Need to investigate.
-        return None
-        # monte_carlo_perms[0] = monte_carlo_perms[0].split(',"')[1]
-        # monte_carlo_perms[-1] = monte_carlo_perms[-1].rstrip('"\n')
-        # monte_carlo_results = {}
-        # for num, mc_perm in enumerate(monte_carlo_perms):
-        #     hyps = mc_perm.split(' --- ')[1].split(',')
-        #     monte_carlo_results[num] = [float(mc_perm.split(' --- ')[0]), [float(h.split(': ')[1]) for h in hyps]]
-        # return monte_carlo_results
+    def getMonteCarloResults(self, row, indices_of_outer_loops):
+        hyperparams_to_scores = {}
+        for i in range(0, len(row)):
+            if i in indices_of_outer_loops:
+                score_and_hyperparam = row[i].split(MachineLearningService.DELIMITER)
+                score = SafeCastUtil.safeCast(score_and_hyperparam[0], float)
+                if hyperparams_to_scores.get(score_and_hyperparam[1]) is not None:
+                    hyperparams_to_scores[score_and_hyperparam[1]].append(score)
+                else:
+                    hyperparams_to_scores[score_and_hyperparam[1]] = [score]
+        return hyperparams_to_scores
 
     def fetchAnalysisFiles(self, drug, input_folder):
         # return all "...Analysis.csv" files in path of input_folder/drug.
