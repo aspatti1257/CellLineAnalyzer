@@ -36,6 +36,12 @@ class MachineLearningService(object):
     MAXIMUM_FEATURES_RECORDED = 20
     DELIMITER = " --- "
 
+    #TODO: consider extracting these to a helper class.
+    SCORE_AND_HYPERPARAM_PHRASE = "score and optimal hyperparams for outer perm "
+    FEATURE_FILE_GENE_LIST_COMBO = "feature file: gene list combo"
+    R_SQUARED_SCORE = "R^2 score"
+    PERCENT_ACCURATE_PREDICTIONS = "percentage accurate predictions"
+
     def __init__(self, data):
         self.inputs = data
 
@@ -566,15 +572,15 @@ class MachineLearningService(object):
 
     @staticmethod
     def getCSVFileHeader(is_classifier, ml_algorithm, outer_perms):
-        header = ["feature file: gene list combo"]
+        header = [MachineLearningService.FEATURE_FILE_GENE_LIST_COMBO]
         if is_classifier:
-            header.append("percentage accurate predictions")
+            header.append(MachineLearningService.PERCENT_ACCURATE_PREDICTIONS)
             header.append("accuracy score")
         else:
-            header.append("R^2 score")
+            header.append(MachineLearningService.R_SQUARED_SCORE)
             header.append("mean squared error")
         for i in range(1, outer_perms + 1):
-            header.append("score and optimal hyperparams for outer perm " + SafeCastUtil.safeCast(i, str))
+            header.append(MachineLearningService.SCORE_AND_HYPERPARAM_PHRASE + SafeCastUtil.safeCast(i, str))
         if ml_algorithm == SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM:
             return header
         feature_analysis = " most important feature"

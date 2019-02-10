@@ -1,9 +1,14 @@
 from ArgumentProcessingService import ArgumentProcessingService
+from MachineLearningService import MachineLearningService
+from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
+from Trainers.AbstractModelTrainer import AbstractModelTrainer
 from Utilities.GeneListComboUtility import GeneListComboUtility
 import os
 import collections
 import logging
 import copy
+
+from Utilities.SafeCastUtil import SafeCastUtil
 
 
 class RecommendationsService(object):
@@ -33,6 +38,8 @@ class RecommendationsService(object):
             recs = []
             for drug in self.getDrugFolders(input_folder):
                 best_model = self.determineAndTrainBestModel(drug, input_folder, trimmed_cell_lines, combos)
+                if best_model is None:
+                    continue
                 # recs.append(best_model.predict(cell_line_map[cell_line]))
 
            # See which drug prediction comes closest to actual R^2 score.
@@ -204,41 +211,72 @@ class RecommendationsService(object):
         return drug_folders
 
     def determineAndTrainBestModel(self, drug, analysis_files_folder, trimmed_cell_lines, combos):
-        best_scoring_algo = None #TODO: ultimately we'd want to use multiple algorithms, and make an ensemble prediction/prescription. But for now, let's stick with one algorithm.
+        # TODO: ultimately we'd want to use multiple algorithms, and make an ensemble prediction/prescription.
+        # But for now, let's stick with one algorithm.
         best_scoring_combo = None
+        best_scoring_algo = None
         optimal_hyperparams = None
-        top_score = 0
-        for analysis_file in self.fetchAnalysisFiles(drug, analysis_files_folder):
-            with open(analysis_files_folder+'/'+analysis_file,'r') as f:
-                next(f)
-                for row in analysis_file:
-                    if float(splitrow[1]) > top_score:
-                        best_scoring_algo = analysis_file.rstrip('Analysis.csv')
-                        best_scoring_combo = splitrow[0]
-                        top_score = float(split_row[1])
-                        optimal_hyperparams = self.fetchBestHyperparams(row)
-        if top_score == 0:
-            print('Error: no method found an R2 higher than 0.') # @AP: here I'd like DrS to just stop working on the current drug and write this sentence to a log file. How can we do that?
+        top_score = AbstractModelTrainer.DEFAULT_MIN_SCORE
+        for analysis_file_name in self.fetchAnalysisFiles(drug, analysis_files_folder):
+            file = analysis_files_folder + "/" + drug + "/" + analysis_file_name
+            with open(file) as analysis_file:
+                try:
+                    header = []
+                    num_outer_loops = 0
+                    for line_index, row in enumerate(analysis_file):
+                        fields = row.split(",")
+                        if line_index == 0:
+                            header = fields
+                            num_outer_loops = len([field for field in fields if
+                                                   MachineLearningService.SCORE_AND_HYPERPARAM_PHRASE in field])
+                            continue
+
+                        string_combo = fields[header.index(MachineLearningService.FEATURE_FILE_GENE_LIST_COMBO)]
+                        score = SafeCastUtil.safeCast(fields[header.index(self.scorePhrase())], float)
+                        if score is not None and score > top_score:
+                            best_scoring_algo = analysis_file_name.split(".")[0]
+                            best_scoring_combo = string_combo
+                            top_score = score
+                            optimal_hyperparams = self.fetchBestHyperparams(row, num_outer_loops)
+                except ValueError as valueError:
+                    self.log.error(valueError)
+                finally:
+                    self.log.debug("Closing file %s", analysis_file)
+                    analysis_file.close()
+        if top_score <= 0:
+            # TODO - Consider writing this to an explicit diagnostic file via extracting to first class service,
+            # not just the process error log.
+            self.log.error('Error: no method found an R2 higher than 0 for drug: %s.', drug)
+            return None
         return self.trainBestModel(best_scoring_algo, best_scoring_combo, optimal_hyperparams, combos)
 
-    def fetchBestHyperparams(self,row)
-        monte_carlo_results = self.getMonteCarloResults(row)
+    def scorePhrase(self):
+        if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
+            return MachineLearningService.PERCENT_ACCURATE_PREDICTIONS
+        return MachineLearningService.R_SQUARED_SCORE
+
+    def fetchBestHyperparams(self, row, num_outer_loops):
+        monte_carlo_results = self.getMonteCarloResults(row, num_outer_loops)
         best_hyps = None
-        top_score = 0
-        for num, mc_perm in enumerate(monte_carlo_results):
-            if mc_perm[0] > top_score:
-                best_hyps = mc_perm[1]
+        top_score = AbstractModelTrainer.DEFAULT_MIN_SCORE
+        # for num, mc_perm in enumerate(monte_carlo_results):
+        #     if mc_perm[0] > top_score:
+        #         best_hyps = mc_perm[1]
         return best_hyps
 
-    def getMonteCarloResults(self,row):
+    def getMonteCarloResults(self, row, num_outer_loops):
+        # TODO-Andrew: Careful here - there's commas in the score + hyperparam cells we need to be aware of. Will figure
+        # out best way to extract these values.
         monte_carlo_perms = row.split('","')
-        monte_carlo_perms[0] = monte_carlo_perms[0].split(',"')[1]
-        monte_carlo_perms[-1] = monte_carlo_perms[-1].rstrip('"\n')
-        monte_carlo_results = {}
-        for num, mc_perm in enumerate(monte_carlo_perms):
-            hyps = mc_perm.split(' --- ')[1].split(',')
-            monte_carlo_results[num] = [float(mc_perm.split(' --- ')[0]), [float(h.split(': ')[1]) for h in hyps]]
-        return monte_carlo_results
+        # TODO - Andrew: IT falls over here. Need to investigate.
+        return None
+        # monte_carlo_perms[0] = monte_carlo_perms[0].split(',"')[1]
+        # monte_carlo_perms[-1] = monte_carlo_perms[-1].rstrip('"\n')
+        # monte_carlo_results = {}
+        # for num, mc_perm in enumerate(monte_carlo_perms):
+        #     hyps = mc_perm.split(' --- ')[1].split(',')
+        #     monte_carlo_results[num] = [float(mc_perm.split(' --- ')[0]), [float(h.split(': ')[1]) for h in hyps]]
+        # return monte_carlo_results
 
     def fetchAnalysisFiles(self, drug, input_folder):
         # return all "...Analysis.csv" files in path of input_folder/drug.
