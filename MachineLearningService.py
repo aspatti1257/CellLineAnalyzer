@@ -133,7 +133,7 @@ class MachineLearningService(object):
                                                                  formatted_data)
                     features, relevant_results = trainer.populateFeaturesAndResultsByCellLine(training_matrix, results)
                     feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
-                    model = trainer.train(relevant_results, features, casted_params, feature_names)
+                    model = trainer.buildModel(relevant_results, features, casted_params, feature_names)
                     model_score = trainer.fetchPredictionsAndScore(model, testing_matrix, results)
                     score = model_score[0]
                     accuracy = model_score[1]
@@ -445,7 +445,7 @@ class MachineLearningService(object):
         results = self.inputs.get(ArgumentProcessingService.RESULTS)
         features, relevant_results = trainer.populateFeaturesAndResultsByCellLine(training_matrix, results)
         feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
-        model = trainer.train(relevant_results, features, optimal_hyperparams, feature_names)
+        model = trainer.buildModel(relevant_results, features, optimal_hyperparams, feature_names)
         score, accuracy = trainer.fetchPredictionsAndScore(model, testing_matrix, results)
         return [score, accuracy, trainer.fetchFeatureImportances(model, feature_set),
                 trainer.fetchModelPhrases(model, feature_set)]
@@ -496,7 +496,8 @@ class MachineLearningService(object):
         for j in range(1, inner_perms + 1):
             self.logMemoryUsageAndGarbageCollect()
             formatted_inputs = self.reformatInputsByTrainingMatrix(
-                formatted_data.get(DataFormattingService.TRAINING_MATRIX))
+                formatted_data.get(DataFormattingService.TRAINING_MATRIX),
+                formatted_data.get(ArgumentProcessingService.FEATURE_NAMES))
             further_formatted_data = self.formatData(formatted_inputs, False, False)
             inner_validation_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set,
                                                                   further_formatted_data)
@@ -524,11 +525,10 @@ class MachineLearningService(object):
         data_formatting_service = DataFormattingService(inputs)
         return data_formatting_service.formatData(should_scale, should_one_hot_encode)
 
-    def reformatInputsByTrainingMatrix(self, training_matrix):
+    def reformatInputsByTrainingMatrix(self, training_matrix, feature_names):
         new_inputs = {ArgumentProcessingService.FEATURES: {}, ArgumentProcessingService.RESULTS: []}
 
-        new_inputs[ArgumentProcessingService.FEATURES][ArgumentProcessingService.FEATURE_NAMES] = \
-            self.inputs[ArgumentProcessingService.FEATURES][ArgumentProcessingService.FEATURE_NAMES]
+        new_inputs[ArgumentProcessingService.FEATURES][ArgumentProcessingService.FEATURE_NAMES] = feature_names
         for training_cell in training_matrix.keys():
             for input_cell in self.inputs.get(ArgumentProcessingService.FEATURES).keys():
                 if training_cell is input_cell:
@@ -539,6 +539,7 @@ class MachineLearningService(object):
                             break
                     break
         new_inputs[ArgumentProcessingService.DATA_SPLIT] = self.inputs[ArgumentProcessingService.DATA_SPLIT]
+        new_inputs[ArgumentProcessingService.SPEARMAN_CORR] = False
         return new_inputs
 
     def determineOptimalHyperparameters(self, feature_set, formatted_data, trainer):
@@ -564,7 +565,7 @@ class MachineLearningService(object):
         }
 
         important_indices = []
-        feature_names = self.inputs.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES)
+        feature_names = formatted_inputs.get(ArgumentProcessingService.FEATURE_NAMES)
         for i in range(0, len(feature_names)):
             for gene_list in gene_lists:
                 for gene in gene_list:

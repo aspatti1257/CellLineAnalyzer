@@ -178,7 +178,8 @@ class RandomizedDataGenerator(object):
                         'outer_monte_carlo_permutations=' + SafeCastUtil.safeCast(monte_carlo_permutations, str) + '\n'
                         'data_split=' + SafeCastUtil.safeCast(data_split, str) + '\n'
                         'record_diagnostics=True\n' +
-                        'binary_categorical_matrix=features_1' + RandomizedDataGenerator.BINARY_CATEGORICAL_SUFFIX + '.csv\n')
+                        'binary_categorical_matrix=features_1' + RandomizedDataGenerator.BINARY_CATEGORICAL_SUFFIX + '.csv\n' +
+                        'spearman_corr=true\n')
         if individual_algorithm is not None and important_features is not None:
             args_file.write('individual_train_algorithm=' + individual_algorithm + '\n'
                             'individual_train_combo=' + important_features + ":" +

@@ -183,6 +183,9 @@ ones that aren't are marked with a star (*).
                     lists, the order of the which pair of feature file:gene list does not matter. See the example below
                     or reference a completed "Analysis.csv" file to get a sense of how these combos are expressed.
 
+`spearman_corr`*: Optionally filter out any features that are determined to be insignificant in influencing the results
+                  as determined by the Spearman's Rank Order Correlation. Defaults to true.
+
 Any .csv file in this path that is not the a gene list file, or the results.csv file, will be interpreted as a features
 file.
 
@@ -196,6 +199,7 @@ outer_monte_carlo_permutations=20
 data_split=0.8
 RandomForestAnalysis=True,10,5
 specific_combos="features:gene_list2 categorical:gene_list1", "features:gene_list1"
+spearman_corr=False
 ```
 
 ### Example of a completed argument.txt with proper syntax for individual ML algorithm training:

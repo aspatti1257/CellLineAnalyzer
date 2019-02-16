@@ -1,12 +1,14 @@
 import numpy as np
 import pandas as pd
-from sklearn import preprocessing
-from sklearn.model_selection import train_test_split
+import math
 import logging
-
+from sklearn import preprocessing
+from scipy.stats import spearmanr
+from sklearn.model_selection import train_test_split
 from collections import OrderedDict
+
 from ArgumentProcessingService import ArgumentProcessingService
-from Utilities import SafeCastUtil
+from Utilities.SafeCastUtil import SafeCastUtil
 
 
 class DataFormattingService(object):
@@ -18,33 +20,42 @@ class DataFormattingService(object):
     TRAINING_MATRIX = "trainingMatrix"
     TESTING_MATRIX = "testingMatrix"  # Will either be outer testing or inner validation matrix
 
+    P_VALUE_CUTOFF = 0.05
+
     def __init__(self, inputs):
         self.inputs = inputs
 
     def formatData(self, should_scale, should_one_hot_encode=True):
         features_df = pd.DataFrame.from_dict(self.inputs[ArgumentProcessingService.FEATURES], orient='index')
+        columns = self.inputs.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES)
+        features_df.columns = columns
         features_df = features_df.drop(ArgumentProcessingService.FEATURE_NAMES)
+
         if should_one_hot_encode:
             features_oh_df = self.oneHot(features_df)
         else:
             features_oh_df = features_df
 
-        x_train, x_test, y_train, y_test = self.testTrainSplit(features_oh_df,
+        if self.inputs.get(ArgumentProcessingService.SPEARMAN_CORR):
+            correlated_df = self.filterCorrelatedFeatures(features_oh_df, columns)
+        else:
+            correlated_df = features_oh_df
+
+        x_train, x_test, y_train, y_test = self.testTrainSplit(correlated_df,
                                                                self.inputs[ArgumentProcessingService.RESULTS],
                                                                self.inputs[ArgumentProcessingService.DATA_SPLIT])
 
         outputs = OrderedDict()
         outputs[self.TRAINING_MATRIX] = self.maybeScaleFeatures(x_train, should_scale)
         outputs[self.TESTING_MATRIX] = self.maybeScaleFeatures(x_test, should_scale)
-        outputs[ArgumentProcessingService.FEATURE_NAMES] =\
-                self.inputs[ArgumentProcessingService.FEATURES][ArgumentProcessingService.FEATURE_NAMES]
+        outputs[ArgumentProcessingService.FEATURE_NAMES] = SafeCastUtil.safeCast(correlated_df.columns, list)
         return outputs
 
     def maybeScaleFeatures(self, data_frame, should_scale):
         as_dict = data_frame.transpose().to_dict('list')
         maybe_scaled_dict = OrderedDict()
 
-        keys_as_list = SafeCastUtil.SafeCastUtil.safeCast(as_dict.keys(), list)
+        keys_as_list = SafeCastUtil.safeCast(as_dict.keys(), list)
         for key in keys_as_list:
             maybe_scaled_dict[key] = []
 
@@ -75,7 +86,6 @@ class DataFormattingService(object):
 
     # Binary one hot encoding
     def binaryOneHot(self, dataframe):
-
         dataframe_binary_pd = pd.get_dummies(dataframe)
         return dataframe_binary_pd
 
@@ -90,3 +100,16 @@ class DataFormattingService(object):
         x_test, x_validate, y_test, y_validate = train_test_split(x_split, y_split, test_size=0.5, random_state=42,
                                                                   stratify=x_split.iloc[:, -1])
         return x_train,  x_validate, x_test, y_train, y_validate, y_test
+
+    def filterCorrelatedFeatures(self, df, feature_names):
+        results = [result[1] for result in self.inputs.get(ArgumentProcessingService.RESULTS)]
+        filtered_df = df
+
+        for feature_name in feature_names:
+            spearman_corr = spearmanr(filtered_df.get(feature_name), results)
+            p_val = spearman_corr[1]
+
+            if math.isnan(p_val) or (p_val / len(feature_names)) > self.P_VALUE_CUTOFF:
+                filtered_df = filtered_df.drop(feature_name, axis=1)
+
+        return filtered_df

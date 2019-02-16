@@ -62,12 +62,29 @@ class DataFormattingServiceIT(unittest.TestCase):
         self.validateOutput(self.formatRandomizedData(False))
 
     def formatRandomizedData(self, is_classifier):
+        arguments = self.processArguments(is_classifier)
+        data_formatting_service = DataFormattingService(arguments)
+        return data_formatting_service.formatData(True)
+
+    def processArguments(self, is_classifier):
         RandomizedDataGenerator.generateRandomizedFiles(5, 50, 150, is_classifier, 10, .8)
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         argument_processing_service = ArgumentProcessingService(input_folder)
         arguments = argument_processing_service.handleInputFolder()
+        return arguments
+
+    def testSpearmanRTrimmingDoesNotTrimSignificantFeatures(self):
+        significant_prefix = RandomizedDataGenerator.SIGNIFICANT_FEATURE_PREFIX
+        arguments = self.processArguments(True)
+        orig_features = arguments.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES)
+        orig_sig_features = [feature for feature in orig_features if significant_prefix in feature]
         data_formatting_service = DataFormattingService(arguments)
-        return data_formatting_service.formatData(True)
+        output = data_formatting_service.formatData(True)
+        trimmed_features = output.get(ArgumentProcessingService.FEATURE_NAMES)
+        trimmed_sig_features = [feature for feature in trimmed_features if significant_prefix in feature]
+
+        assert len(orig_features) > len(trimmed_features)
+        assert len(orig_sig_features) == len(trimmed_sig_features)
 
     @staticmethod
     def validateOutput(output):
@@ -110,6 +127,7 @@ class DataFormattingServiceIT(unittest.TestCase):
 
     def testFeatureOrderIsPreserved(self):
         original_input = self.data_formatting_service.inputs.get(ArgumentProcessingService.FEATURES)
+        self.data_formatting_service.inputs[ArgumentProcessingService.SPEARMAN_CORR] = False  # don't attempt trimming
         formatted_output = self.data_formatting_service.formatData(False, False)
         self.validateMatrixOrderHasNotChanged(formatted_output, original_input, DataFormattingService.TESTING_MATRIX)
         self.validateMatrixOrderHasNotChanged(formatted_output, original_input, DataFormattingService.TRAINING_MATRIX)

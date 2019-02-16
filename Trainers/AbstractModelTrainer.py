@@ -80,11 +80,19 @@ class AbstractModelTrainer(ABC):
 
         model_data = {}
         for hyperparam_set in self.fetchAllHyperparamPermutations(hyperparams):
-            model = self.train(relevant_results, features, hyperparam_set, feature_names)
+            model = self.buildModel(relevant_results, features, hyperparam_set, feature_names)
             self.preserveNonHyperparamData(model_data, model)
             current_model_score = self.fetchPredictionsAndScore(model, testing_matrix, results)
             self.setModelDataDictionary(model_data, hyperparam_set, current_model_score)
         return model_data
+
+    def buildModel(self, relevant_results, features, hyperparam_set, feature_names):
+        model = None
+        try:
+            model = self.train(relevant_results, features, hyperparam_set, feature_names)
+        except ValueError as valueError:
+            self.log.error(valueError)
+        return model
 
     def fetchAllHyperparamPermutations(self, hyperparams):
         all_perms = []

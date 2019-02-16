@@ -33,6 +33,7 @@ class ArgumentProcessingService(object):
     RSEN_COMBINE_GENE_LISTS = "rsen_combine_gene_lists"
     BINARY_CATEGORICAL_MATRIX = "binary_categorical_matrix"
     SPECIFIC_COMBOS = "specific_combos"
+    SPEARMAN_CORR = "spearman_corr"
 
     INDIVIDUAL_TRAIN_ALGORITHM = "individual_train_algorithm"
     INDIVIDUAL_TRAIN_HYPERPARAMS = "individual_train_hyperparams"
@@ -82,7 +83,8 @@ class ArgumentProcessingService(object):
             self.RSEN_P_VAL: self.fetchOrReturnDefault(arguments.get(self.RSEN_P_VAL), float, 0.0),
             self.RSEN_K_VAL: self.fetchOrReturnDefault(arguments.get(self.RSEN_P_VAL), float, 0.1),
             self.RSEN_COMBINE_GENE_LISTS: self.fetchOrReturnDefault(arguments.get(self.RSEN_COMBINE_GENE_LISTS), bool, False),
-            self.SPECIFIC_COMBOS: self.determineSpecificCombos(arguments.get(self.SPECIFIC_COMBOS))
+            self.SPECIFIC_COMBOS: self.determineSpecificCombos(arguments.get(self.SPECIFIC_COMBOS)),
+            self.SPEARMAN_CORR: self.fetchOrReturnDefault(arguments.get(self.SPEARMAN_CORR), bool, True)
         }
 
     def validateDirectoryContents(self, directory_contents):
