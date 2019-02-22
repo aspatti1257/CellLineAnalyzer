@@ -76,6 +76,7 @@ class DataFormattingServiceIT(unittest.TestCase):
     def testSpearmanRTrimmingDoesNotTrimSignificantFeatures(self):
         significant_prefix = RandomizedDataGenerator.SIGNIFICANT_FEATURE_PREFIX
         arguments = self.processArguments(True)
+        arguments[ArgumentProcessingService.SPEARMAN_CORR] = True
         orig_features = arguments.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES)
         orig_sig_features = [feature for feature in orig_features if significant_prefix in feature]
         data_formatting_service = DataFormattingService(arguments)

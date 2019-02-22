@@ -36,19 +36,19 @@ class DataFormattingService(object):
         else:
             features_oh_df = features_df
 
-        if self.inputs.get(ArgumentProcessingService.SPEARMAN_CORR):
-            correlated_df = self.filterCorrelatedFeatures(features_oh_df, columns)
-        else:
-            correlated_df = features_oh_df
-
-        x_train, x_test, y_train, y_test = self.testTrainSplit(correlated_df,
+        x_train, x_test, y_train, y_test = self.testTrainSplit(features_oh_df,
                                                                self.inputs[ArgumentProcessingService.RESULTS],
                                                                self.inputs[ArgumentProcessingService.DATA_SPLIT])
 
+        if self.inputs.get(ArgumentProcessingService.SPEARMAN_CORR):
+            x_train_corr, x_test_corr = self.filterCorrelatedFeatures(x_train, x_test, columns, y_train)
+        else:
+            x_train_corr, x_test_corr = x_train, x_test
+
         outputs = OrderedDict()
-        outputs[self.TRAINING_MATRIX] = self.maybeScaleFeatures(x_train, should_scale)
-        outputs[self.TESTING_MATRIX] = self.maybeScaleFeatures(x_test, should_scale)
-        outputs[ArgumentProcessingService.FEATURE_NAMES] = SafeCastUtil.safeCast(correlated_df.columns, list)
+        outputs[self.TRAINING_MATRIX] = self.maybeScaleFeatures(x_train_corr, should_scale)
+        outputs[self.TESTING_MATRIX] = self.maybeScaleFeatures(x_test_corr, should_scale)
+        outputs[ArgumentProcessingService.FEATURE_NAMES] = SafeCastUtil.safeCast(x_train_corr.columns, list)
         return outputs
 
     def maybeScaleFeatures(self, data_frame, should_scale):
@@ -101,15 +101,17 @@ class DataFormattingService(object):
                                                                   stratify=x_split.iloc[:, -1])
         return x_train,  x_validate, x_test, y_train, y_validate, y_test
 
-    def filterCorrelatedFeatures(self, df, feature_names):
-        results = [result[1] for result in self.inputs.get(ArgumentProcessingService.RESULTS)]
-        filtered_df = df
+    def filterCorrelatedFeatures(self, train_df, test_df, feature_names, train_results):
+        results = [result[1] for result in train_results]
+        filtered_train_df = train_df
+        filtered_test_df = test_df
 
         for feature_name in feature_names:
-            spearman_corr = spearmanr(filtered_df.get(feature_name), results)
+            spearman_corr = spearmanr(filtered_train_df.get(feature_name), results)
             p_val = spearman_corr[1]
 
             if math.isnan(p_val) or (p_val / len(feature_names)) > self.P_VALUE_CUTOFF:
-                filtered_df = filtered_df.drop(feature_name, axis=1)
+                filtered_train_df = filtered_train_df.drop(feature_name, axis=1)
+                filtered_test_df = filtered_test_df.drop(feature_name, axis=1)
 
-        return filtered_df
+        return filtered_train_df, filtered_test_df

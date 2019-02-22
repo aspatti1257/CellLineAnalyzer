@@ -184,7 +184,9 @@ ones that aren't are marked with a star (*).
                     or reference a completed "Analysis.csv" file to get a sense of how these combos are expressed.
 
 `spearman_corr`*: Optionally filter out any features that are determined to be insignificant in influencing the results
-                  as determined by the Spearman's Rank Order Correlation. Defaults to true.
+                  as determined by the Spearman's Rank Order Correlation. Running the program in this mode will not
+                  combine all the files into gene lists, but instead look at all features collectively. Defaults to
+                  false.
 
 Any .csv file in this path that is not the a gene list file, or the results.csv file, will be interpreted as a features
 file.

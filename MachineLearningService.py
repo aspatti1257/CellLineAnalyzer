@@ -58,6 +58,9 @@ class MachineLearningService(object):
             self.analyzeGeneListCombos(gene_list_combos, input_folder, is_classifier)
 
     def determineGeneListCombos(self):
+        if self.inputs.get(ArgumentProcessingService.SPEARMAN_CORR):
+            all_features = self.inputs.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES)
+            return [[all_features]]
         gene_lists = self.inputs.get(ArgumentProcessingService.GENE_LISTS)
         feature_names = self.inputs.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES)
 
@@ -392,6 +395,8 @@ class MachineLearningService(object):
                                 same_list = False
                         if same_list:
                             feature_set_string += (file_key + ":" + gene_list_key + " ")
+        if feature_set_string == "" and self.inputs.get(ArgumentProcessingService.SPEARMAN_CORR):
+            return "all_features"  # TODO: This is a bit lazy, do it smarter.
         return feature_set_string.strip()
 
     def fetchOuterPermutationModelScore(self, feature_set, trainer, optimal_hyperparams, testing_matrix,
