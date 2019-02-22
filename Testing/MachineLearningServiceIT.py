@@ -111,10 +111,12 @@ class MachineLearningServiceIT(unittest.TestCase):
         ml_service = MachineLearningService(self.formatRandomizedData(trainer.is_classifier))
         ml_service.log.setLevel(logging.DEBUG)
         num_gene_list_combos = 8
+        self.analyzeAndAssertResults(ml_service, num_gene_list_combos, trainer)
+
+    def analyzeAndAssertResults(self, ml_service, num_gene_list_combos, trainer):
         gene_list_combos_shortened = ml_service.determineGeneListCombos()[0:num_gene_list_combos]
         target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         ml_service.handleParallellization(gene_list_combos_shortened, target_dir, trainer)
-
         self.assertResults(target_dir, trainer, num_gene_list_combos + 1, trainer.is_classifier)
 
     def formatRandomizedData(self, is_classifier):
@@ -350,3 +352,38 @@ class MachineLearningServiceIT(unittest.TestCase):
         gene_list_combos = ml_service.determineGeneListCombos()
         filtered_combos = ml_service.determineSpecificCombos(gene_list_combos)
         assert len(filtered_combos) == len(specific_combos)
+
+    def testFullAnalysisSansGeneListRandomForestRegressor(self):
+        self.evaluateModelFullAnalysisSansGeneList(RandomForestTrainer(False))
+
+    def testFullAnalysisSansGeneListRandomForestClassifier(self):
+        self.evaluateModelFullAnalysisSansGeneList(RandomForestTrainer(True))
+
+    def testFullAnalysisSansGeneListLinearSVMRegressor(self):
+        self.evaluateModelFullAnalysisSansGeneList(LinearSVMTrainer(False))
+
+    def testFullAnalysisSansGeneListLinearSVMClassifier(self):
+        self.evaluateModelFullAnalysisSansGeneList(LinearSVMTrainer(True))
+
+    def testFullAnalysisSansGeneListRadialBasisFunctionSVMRegressor(self):
+        self.evaluateModelFullAnalysisSansGeneList(RadialBasisFunctionSVMTrainer(False))
+
+    def testFullAnalysisSansGeneListRadialBasisFunctionSVMClassifier(self):
+        self.evaluateModelFullAnalysisSansGeneList(RadialBasisFunctionSVMTrainer(True))
+
+    def testFullAnalysisSansGeneListElasticNetRegressor(self):
+        self.evaluateModelFullAnalysisSansGeneList(ElasticNetTrainer(False))
+
+    def testFullAnalysisSansGeneListRidgeRegressor(self):
+        self.evaluateModelFullAnalysisSansGeneList(RidgeRegressionTrainer(False))
+
+    def testFullAnalysisSansGeneListLassoRegressor(self):
+        self.evaluateModelFullAnalysisSansGeneList(LassoRegressionTrainer(False))
+
+    def evaluateModelFullAnalysisSansGeneList(self, trainer):
+        processed_args = self.formatRandomizedData(trainer.is_classifier)
+        processed_args[ArgumentProcessingService.SPEARMAN_CORR] = True
+        ml_service = MachineLearningService(processed_args)
+
+        self.analyzeAndAssertResults(ml_service, 1, trainer)
+

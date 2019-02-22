@@ -51,19 +51,26 @@ class ArgumentProcessingService(object):
         arguments = self.fetchArguments(self.input_folder + "/" + self.ARGUMENTS_FILE)
         results_file = arguments.get(self.RESULTS)
         is_classifier = SafeCastUtil.safeCast(arguments.get(self.IS_CLASSIFIER), int) == 1
+        analyze_all = self.fetchOrReturnDefault(arguments.get(self.SPEARMAN_CORR), bool, False)
+
         if is_classifier is None or results_file is None:
             return None
         results_list = self.validateAndExtractResults(results_file, is_classifier)
-        gene_lists = self.extractGeneLists()
+
+        gene_lists = self.extractGeneLists(analyze_all)
 
         write_diagnostics = self.fetchOrReturnDefault(arguments.get(self.RECORD_DIAGNOSTICS), bool, False)
         feature_files = [file for file in os.listdir(self.input_folder) if self.fileIsFeatureFile(file, results_file)]
-        feature_map = self.createAndValidateFeatureMatrix(results_list, gene_lists, write_diagnostics, feature_files)
-        binary_cat_matrix = self.fetchBinaryCatMatrixIfApplicable(arguments, gene_lists, results_list)
+        if analyze_all:
+            feature_map = self.createAndValidateFullFeatureMatrix(results_list, feature_files)
+        else:
+            feature_map = self.createAndValidateFeatureMatrix(results_list, gene_lists, write_diagnostics, feature_files)
+        binary_cat_matrix = self.fetchBinaryCatMatrixIfApplicable(arguments, gene_lists, results_list, analyze_all)
 
         algorithm_configs = self.handleAlgorithmConfigs(arguments)
-        if not feature_map or not gene_lists or not results_list:
+        if not feature_map or not results_list:
             return None
+        # TODO: Turn this dictionary into a class.
         return {
             self.RESULTS: results_list,
             self.IS_CLASSIFIER: is_classifier,
@@ -84,7 +91,7 @@ class ArgumentProcessingService(object):
             self.RSEN_K_VAL: self.fetchOrReturnDefault(arguments.get(self.RSEN_P_VAL), float, 0.1),
             self.RSEN_COMBINE_GENE_LISTS: self.fetchOrReturnDefault(arguments.get(self.RSEN_COMBINE_GENE_LISTS), bool, False),
             self.SPECIFIC_COMBOS: self.determineSpecificCombos(arguments.get(self.SPECIFIC_COMBOS)),
-            self.SPEARMAN_CORR: self.fetchOrReturnDefault(arguments.get(self.SPEARMAN_CORR), bool, True)
+            self.SPEARMAN_CORR: analyze_all
         }
 
     def validateDirectoryContents(self, directory_contents):
@@ -135,7 +142,7 @@ class ArgumentProcessingService(object):
                 data_file.close()
         return sample_list
 
-    def extractGeneLists(self):
+    def extractGeneLists(self, analyze_all):
         gene_lists = {"null_gene_list": []}
         files = os.listdir(self.input_folder)
         for file in [f for f in files if self.GENE_LISTS in f]:
@@ -150,6 +157,38 @@ class ArgumentProcessingService(object):
                     self.log.warning("No genes found in gene list %s, will not process.", file)
 
         return gene_lists
+
+    def createAndValidateFullFeatureMatrix(self, results_list, feature_files):
+        feature_matrix = {self.FEATURE_NAMES: []}
+        for cell_line in results_list:
+            feature_matrix[cell_line[0]] = []
+        for file in feature_files:
+            file_name = file.split(".")[0]
+            features_path = self.input_folder + "/" + file
+            with open(features_path) as feature_file:
+                num_features = 0
+                try:
+                    for line_index, line in enumerate(feature_file):
+                        line_split = line.split(",")
+                        if line_index == 0:
+                            feature_names = [file_name + "." + name.strip() for name in line_split if len(name.strip()) > 0]
+                            feature_matrix[self.FEATURE_NAMES] += feature_names
+                            num_features = len(feature_names)
+                            continue
+                        for i in range(0, num_features):
+                            feature = line_split[i] if line_split[i] is not None else self.UNFILLED_VALUE_PLACEHOLDER
+                            feature_as_float = SafeCastUtil.safeCast(feature, float)
+                            if feature_as_float is not None:
+                                feature_matrix[results_list[line_index - 1][0]].append(feature_as_float)
+                            else:
+                                feature_matrix[results_list[line_index - 1][0]].append(feature.strip())
+
+                except ValueError as valueError:
+                    self.log.error(valueError)
+                finally:
+                    self.log.debug("Closing file %s", feature_file)
+                    feature_file.close()
+        return feature_matrix
 
     def createAndValidateFeatureMatrix(self, results_list, gene_lists, write_diagnostics, feature_files):
         incomplete_features = []
@@ -304,11 +343,12 @@ class ArgumentProcessingService(object):
                                      SafeCastUtil.safeCast(config_split[2], int)]
         return configs
 
-    def fetchBinaryCatMatrixIfApplicable(self, arguments, gene_lists, results_list):
+    def fetchBinaryCatMatrixIfApplicable(self, arguments, gene_lists, results_list, analyze_all):
         binary_matrix_file = arguments.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
         if binary_matrix_file is not None:
-            return self.createAndValidateFeatureMatrix(results_list, gene_lists, False,
-                                                                    [binary_matrix_file])
+            if analyze_all:
+                return self.createAndValidateFullFeatureMatrix(results_list, [binary_matrix_file])
+            return self.createAndValidateFeatureMatrix(results_list, gene_lists, False, [binary_matrix_file])
         else:
             return None
 

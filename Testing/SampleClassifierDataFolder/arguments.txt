@@ -12,4 +12,4 @@ ElasticNetAnalysis=False,0,0
 RandomForestAnalysis=True,5,5
 binary_categorical_matrix=categorical.csv
 specific_combos="features:gene_list2 categorical:gene_list1",  "features:gene_list1"
-spearman_corr=True
+spearman_corr=False
