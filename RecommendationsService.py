@@ -22,14 +22,14 @@ class RecommendationsService(object):
         self.inputs = inputs
 
     def recommendByHoldout(self, input_folder):
-        # See self.inputs.get(ArgumentProcessingService.FEATURES). This contains a map representing all cell lines and
+        # See self.inputs.features. This contains a map representing all cell lines and
         # their features, along with a set of "featureNames".
 
         combos = self.determineGeneListCombos()
 
         # A dictionary of cell lines to their features, with the feature names also in there as one of the keys.
         # Both the features and the feature names are presented as an ordered list, all of them have the same length.
-        cell_line_map = self.inputs.get(ArgumentProcessingService.FEATURES)
+        cell_line_map = self.inputs.features
         # get results map
         for cell_line in cell_line_map.keys():
             if cell_line == ArgumentProcessingService.FEATURE_NAMES:
@@ -44,13 +44,13 @@ class RecommendationsService(object):
                 # recs.append(best_model.predict(cell_line_map[cell_line]))
 
            # See which drug prediction comes closest to actual R^2 score.
-           # See self.inputs.get(ArgumentProcessingService.RESULTS) for this value.
+           # See self.inputs.results for this value.
            # Record to FinalResults.csv
         pass
 
     def determineGeneListCombos(self):
-        gene_lists = self.inputs.get(ArgumentProcessingService.GENE_LISTS)
-        feature_names = self.inputs.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES)
+        gene_lists = self.inputs.gene_lists
+        feature_names = self.inputs.features.get(ArgumentProcessingService.FEATURE_NAMES)
 
         combos, expected_length = GeneListComboUtility.determineGeneListCombos(gene_lists, feature_names)
 
@@ -254,7 +254,7 @@ class RecommendationsService(object):
         return self.trainBestModel(best_scoring_algo, best_scoring_combo, optimal_hyperparams, combos)
 
     def scorePhrase(self):
-        if self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER):
+        if self.inputs.is_classifier:
             return MachineLearningService.PERCENT_ACCURATE_PREDICTIONS
         return MachineLearningService.R_SQUARED_SCORE
 

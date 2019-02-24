@@ -69,14 +69,14 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
                 csv_file.close()
         argument_processing_service = ArgumentProcessingService(input_folder)
         arguments = argument_processing_service.handleInputFolder()
-        assert bogus_gene in arguments.get(argument_processing_service.GENE_LISTS).get(gene_list.split(".")[0])
+        assert bogus_gene in arguments.gene_lists.get(gene_list.split(".")[0])
 
     def testCommentsInArgumentsFileAllowed(self):
         input_folder = self.current_working_dir + "/SampleClassifierDataFolder"
         argument_processing_service = ArgumentProcessingService(input_folder)
         arguments = argument_processing_service.handleInputFolder()
-        assert arguments.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS) == 10
-        assert arguments.get(ArgumentProcessingService.INNER_MONTE_CARLO_PERMUTATIONS) == 10
+        assert arguments.outer_monte_carlo_permutations == 10
+        assert arguments.inner_monte_carlo_permutations == 10
 
     def testArgumentsByAlgorithm(self):
         input_folder = self.current_working_dir + "/SampleClassifierDataFolder"
@@ -84,14 +84,14 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
         arguments = argument_processing_service.handleInputFolder()
         rf = SupportedMachineLearningAlgorithms.RANDOM_FOREST
         enet = SupportedMachineLearningAlgorithms.ELASTIC_NET
-        assert arguments.get(ArgumentProcessingService.ALGORITHM_CONFIGS).get(rf) == [True, 5, 5]
-        assert arguments.get(ArgumentProcessingService.ALGORITHM_CONFIGS).get(enet) == [False, 0, 0]
+        assert arguments.algorithm_configs.get(rf) == [True, 5, 5]
+        assert arguments.algorithm_configs.get(enet) == [False, 0, 0]
 
     def testEmptyGeneListsNotProcessed(self):
         input_folder = self.current_working_dir + "/SampleClassifierDataFolder"
         argument_processing_service = ArgumentProcessingService(input_folder)
         arguments = argument_processing_service.handleInputFolder()
-        gene_lists = SafeCastUtil.safeCast(arguments.get(ArgumentProcessingService.GENE_LISTS).keys(), list)
+        gene_lists = SafeCastUtil.safeCast(arguments.gene_lists.keys(), list)
         assert len(gene_lists) == 3
         assert "empty_gene_list" not in gene_lists
 
@@ -99,7 +99,7 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
         input_folder = self.current_working_dir + "/SampleClassifierDataFolder"
         argument_processing_service = ArgumentProcessingService(input_folder)
         arguments = argument_processing_service.handleInputFolder()
-        combos = arguments.get(ArgumentProcessingService.SPECIFIC_COMBOS)
+        combos = arguments.specific_combos
         assert len(combos) == 2
         for combo in combos:
             assert "\"" not in combo
@@ -107,12 +107,10 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
     def processAndValidateArguments(self, input_folder, is_classifier):
         argument_processing_service = ArgumentProcessingService(input_folder)
         arguments = argument_processing_service.handleInputFolder()
-        features = arguments.get(argument_processing_service.FEATURES)
         assert arguments is not None
-        assert len(arguments) == 19
-        assert (len(arguments.get(argument_processing_service.RESULTS)) + 1) == len(features.keys())
-        assert arguments.get(argument_processing_service.IS_CLASSIFIER) == is_classifier
-        assert len(features.get(argument_processing_service.FEATURE_NAMES)) < self.total_features_in_files
-        feature_names = arguments.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES)
-        for cell_line_feature_set in arguments.get(ArgumentProcessingService.FEATURES).values():
+        assert (len(arguments.results) + 1) == len(arguments.features.keys())
+        assert arguments.is_classifier == is_classifier
+        assert len(arguments.features.get(argument_processing_service.FEATURE_NAMES)) < self.total_features_in_files
+        feature_names = arguments.features.get(ArgumentProcessingService.FEATURE_NAMES)
+        for cell_line_feature_set in arguments.features.values():
             assert len(cell_line_feature_set) == len(feature_names)

@@ -55,7 +55,7 @@ def runMainCellLineAnalysis(input_folder):
     valid_inputs = handleInputFolderProcessing(input_folder)
     if valid_inputs is not None:
         performMachineLearning(valid_inputs, input_folder)
-        is_classifier = valid_inputs.get(ArgumentProcessingService.IS_CLASSIFIER)
+        is_classifier = valid_inputs.is_classifier
         writeHTMLSummaryFile(input_folder, is_classifier)
 
 

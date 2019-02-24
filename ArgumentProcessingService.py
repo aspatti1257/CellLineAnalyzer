@@ -1,10 +1,13 @@
+import logging
 import multiprocessing
 import os
-import logging
 import re
 
-from Utilities.SafeCastUtil import SafeCastUtil
+from ArgumentConfig.IndividualTrainConfig import IndividualTrainConfig
+from ArgumentConfig.ProcessedArguments import ProcessedArguments
+from ArgumentConfig.RSENConfig import RSENConfig
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
+from Utilities.SafeCastUtil import SafeCastUtil
 
 
 class ArgumentProcessingService(object):
@@ -70,29 +73,18 @@ class ArgumentProcessingService(object):
         algorithm_configs = self.handleAlgorithmConfigs(arguments)
         if not feature_map or not results_list:
             return None
-        # TODO: Turn this dictionary into a class.
-        return {
-            self.RESULTS: results_list,
-            self.IS_CLASSIFIER: is_classifier,
-            self.FEATURES: feature_map,
-            self.GENE_LISTS: gene_lists,
-            self.INNER_MONTE_CARLO_PERMUTATIONS: self.fetchOrReturnDefault(arguments.get(self.INNER_MONTE_CARLO_PERMUTATIONS), int, 10),
-            self.OUTER_MONTE_CARLO_PERMUTATIONS: self.fetchOrReturnDefault(arguments.get(self.OUTER_MONTE_CARLO_PERMUTATIONS), int, 10),
-            self.DATA_SPLIT: self.fetchOrReturnDefault(arguments.get(self.DATA_SPLIT), float, 0.8),
-            self.ALGORITHM_CONFIGS: algorithm_configs,
-            self.NUM_THREADS: self.fetchOrReturnDefault(arguments.get(self.NUM_THREADS), int,
-                                                        multiprocessing.cpu_count()),
-            self.RECORD_DIAGNOSTICS: write_diagnostics,
-            self.INDIVIDUAL_TRAIN_ALGORITHM: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_ALGORITHM), str, None),
-            self.INDIVIDUAL_TRAIN_HYPERPARAMS: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_HYPERPARAMS), str, ""),
-            self.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO: self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO), str, None),
-            self.BINARY_CATEGORICAL_MATRIX: binary_cat_matrix,
-            self.RSEN_P_VAL: self.fetchOrReturnDefault(arguments.get(self.RSEN_P_VAL), float, 0.0),
-            self.RSEN_K_VAL: self.fetchOrReturnDefault(arguments.get(self.RSEN_P_VAL), float, 0.1),
-            self.RSEN_COMBINE_GENE_LISTS: self.fetchOrReturnDefault(arguments.get(self.RSEN_COMBINE_GENE_LISTS), bool, False),
-            self.SPECIFIC_COMBOS: self.determineSpecificCombos(arguments.get(self.SPECIFIC_COMBOS)),
-            self.SPEARMAN_CORR: analyze_all
-        }
+        inner_monte_carlo_perms = self.fetchOrReturnDefault(arguments.get(self.INNER_MONTE_CARLO_PERMUTATIONS), int, 10)
+        outer_monte_carlo_perms = self.fetchOrReturnDefault(arguments.get(self.OUTER_MONTE_CARLO_PERMUTATIONS), int, 10)
+        data_split = self.fetchOrReturnDefault(arguments.get(self.DATA_SPLIT), float, 0.8)
+        num_threads = self.fetchOrReturnDefault(arguments.get(self.NUM_THREADS), int, multiprocessing.cpu_count())
+
+        individual_train_config = self.createIndividualTrainConfig(arguments)
+        rsen_config = self.createRSENConfig(arguments, binary_cat_matrix)
+        specific_combos = self.determineSpecificCombos(arguments.get(self.SPECIFIC_COMBOS))
+
+        return ProcessedArguments(results_list, is_classifier, feature_map, gene_lists, inner_monte_carlo_perms,
+                                  outer_monte_carlo_perms, data_split, algorithm_configs, num_threads,
+                                  write_diagnostics, individual_train_config, rsen_config, specific_combos, analyze_all)
 
     def validateDirectoryContents(self, directory_contents):
         return self.ARGUMENTS_FILE in directory_contents
@@ -342,6 +334,25 @@ class ArgumentProcessingService(object):
                                      SafeCastUtil.safeCast(config_split[1], int),
                                      SafeCastUtil.safeCast(config_split[2], int)]
         return configs
+
+    def createRSENConfig(self, arguments, binary_cat_matrix):
+        rsen_p_val = self.fetchOrReturnDefault(arguments.get(self.RSEN_P_VAL), float, 0.0)
+        rsen_k_val = self.fetchOrReturnDefault(arguments.get(self.RSEN_P_VAL), float, 0.1)
+        rsen_combine_gene_lists = self.fetchOrReturnDefault(arguments.get(self.RSEN_COMBINE_GENE_LISTS), bool, False)
+        rsen_config = RSENConfig(binary_cat_matrix, rsen_p_val, rsen_k_val, rsen_combine_gene_lists)
+        return rsen_config
+
+    def createIndividualTrainConfig(self, arguments):
+        individual_train_algorithm = self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_ALGORITHM), str,
+                                                               None)
+        individual_train_hyperparams = self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_HYPERPARAMS), str,
+                                                                 "")
+        individual_train_feature_gene_list_combo = self.fetchOrReturnDefault(
+            arguments.get(self.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO),
+            str, None)
+        individual_train_config = IndividualTrainConfig(individual_train_algorithm, individual_train_hyperparams,
+                                                        individual_train_feature_gene_list_combo)
+        return individual_train_config
 
     def fetchBinaryCatMatrixIfApplicable(self, arguments, gene_lists, results_list, analyze_all):
         binary_matrix_file = arguments.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)

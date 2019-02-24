@@ -69,7 +69,7 @@ class MachineLearningServiceIT(unittest.TestCase):
     def testRandomSubsetElasticNet(self):
         ml_service = MachineLearningService(self.formatRandomizedData(False))
         ml_service.log.setLevel(logging.DEBUG)
-        binary_cat_matrix = ml_service.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
+        binary_cat_matrix = ml_service.inputs.rsen_config.binary_cat_matrix
         rsen_trainer = RandomSubsetElasticNetTrainer(False, binary_cat_matrix, 0, 0.4)
 
         filtered_combos = self.fetchFilteredRSENCombos(ml_service, rsen_trainer)
@@ -94,10 +94,10 @@ class MachineLearningServiceIT(unittest.TestCase):
     def testRandomSubsetElasticNetWithCombinedGeneLists(self):
         inputs = self.formatRandomizedData(False)
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
-        inputs[ArgumentProcessingService.RSEN_COMBINE_GENE_LISTS] = True
+        inputs.rsen_config.combine_gene_lists = True
         ml_service = MachineLearningService(inputs)
         ml_service.log.setLevel(logging.DEBUG)
-        binary_cat_matrix = ml_service.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
+        binary_cat_matrix = ml_service.inputs.rsen_config.binary_cat_matrix
         rsen_trainer = RandomSubsetElasticNetTrainer(False, binary_cat_matrix, 0, 0.4)
         gene_list_combos = ml_service.determineGeneListCombos()
 
@@ -221,11 +221,11 @@ class MachineLearningServiceIT(unittest.TestCase):
         ml_service = MachineLearningService(self.formatRandomizedDataForIndividualCombo(is_classifier, algorithm,
                                                                                         hyperparams, input_folder))
         if algorithm is SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET:
-            binary_categorical_matrix = ml_service.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
+            binary_categorical_matrix = ml_service.inputs.rsen_config.binary_cat_matrix
             dummy_trainer = RandomSubsetElasticNetTrainer(False, binary_categorical_matrix, 0, 0.4)
             target_combo = self.fetchFilteredRSENCombos(ml_service, dummy_trainer)[0]
             target_combo_string = ml_service.generateFeatureSetString(target_combo)
-            ml_service.inputs[ArgumentProcessingService.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO] = target_combo_string
+            ml_service.inputs.individual_train_config.combo = target_combo_string
 
         ml_service.analyze(input_folder)
         self.assertResultsForIndividualCombo(input_folder, algorithm, 11, is_classifier)
@@ -320,12 +320,12 @@ class MachineLearningServiceIT(unittest.TestCase):
     def testSpecifiedCombosAreSelectedProperly(self):
         arguments = self.formatRandomizedData(False)
         file_names = []
-        for feature in arguments.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES):
+        for feature in arguments.features.get(ArgumentProcessingService.FEATURE_NAMES):
             file_name = feature.split(".")[0]
             if file_name not in file_names:
                 file_names.append(file_name)
 
-        gene_lists = SafeCastUtil.safeCast(arguments.get(ArgumentProcessingService.GENE_LISTS).keys(), list)
+        gene_lists = SafeCastUtil.safeCast(arguments.gene_lists.keys(), list)
 
         self.assertSpecificComboGeneration(arguments, self.generateSpecificCombos(file_names, gene_lists, False))
         self.assertSpecificComboGeneration(arguments, self.generateSpecificCombos(file_names, gene_lists, True))
@@ -347,7 +347,7 @@ class MachineLearningServiceIT(unittest.TestCase):
         return specific_combos
 
     def assertSpecificComboGeneration(self, arguments, specific_combos):
-        arguments[ArgumentProcessingService.SPECIFIC_COMBOS] = specific_combos
+        arguments.specific_combos = specific_combos
         ml_service = MachineLearningService(arguments)
         gene_list_combos = ml_service.determineGeneListCombos()
         filtered_combos = ml_service.determineSpecificCombos(gene_list_combos)
@@ -382,7 +382,7 @@ class MachineLearningServiceIT(unittest.TestCase):
 
     def evaluateModelFullAnalysisSansGeneList(self, trainer):
         processed_args = self.formatRandomizedData(trainer.is_classifier)
-        processed_args[ArgumentProcessingService.SPEARMAN_CORR] = True
+        processed_args.anaylze_all = True
         ml_service = MachineLearningService(processed_args)
 
         self.analyzeAndAssertResults(ml_service, 1, trainer)

@@ -11,6 +11,8 @@ from joblib import Parallel, delayed
 from collections import OrderedDict
 from itertools import repeat
 
+from ArgumentConfig.AnalysisType import AnalysisType
+from ArgumentConfig.ProcessedArguments import ProcessedArguments
 from HTMLWritingService import HTMLWritingService
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from ArgumentProcessingService import ArgumentProcessingService
@@ -47,43 +49,43 @@ class MachineLearningService(object):
 
     def analyze(self, input_folder):
         gene_list_combos = self.determineGeneListCombos()
-        is_classifier = self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER)
 
-        if self.inputs.get(ArgumentProcessingService.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO) is not None\
-                and self.inputs.get(ArgumentProcessingService.INDIVIDUAL_TRAIN_ALGORITHM) is not None:
+        is_classifier = self.inputs.is_classifier
+        analysis_type = self.inputs.analysisType()
+
+        if analysis_type is AnalysisType.INDIVIDUAL_TRAIN:
             self.analyzeIndividualGeneListCombo(gene_list_combos, input_folder, is_classifier)
-        elif self.inputs.get(ArgumentProcessingService.SPECIFIC_COMBOS) is not None:
+        elif analysis_type is AnalysisType.FULL_CLA_SPECIFIC_COMBO:
             self.analyzeGeneListCombos(self.determineSpecificCombos(gene_list_combos), input_folder, is_classifier)
         else:
             self.analyzeGeneListCombos(gene_list_combos, input_folder, is_classifier)
 
     def determineGeneListCombos(self):
-        if self.inputs.get(ArgumentProcessingService.SPEARMAN_CORR):
-            all_features = self.inputs.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES)
-            return [[all_features]]
-        gene_lists = self.inputs.get(ArgumentProcessingService.GENE_LISTS)
-        feature_names = self.inputs.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES)
+        feature_names = self.inputs.features.get(ArgumentProcessingService.FEATURE_NAMES)
+        if self.inputs.analysisType() is AnalysisType.SPEARMAN_NO_GENE_LISTS:
+            return [[feature_names]]
 
+        gene_lists = self.inputs.gene_lists
         combos, expected_length = GeneListComboUtility.determineGeneListCombos(gene_lists, feature_names)
-
         if len(combos) != expected_length:
             self.log.warning("Unexpected number of combos detected, should be %s but instead created %s.\n%s",
                              expected_length, len(combos), combos)
         return combos
 
     def analyzeIndividualGeneListCombo(self, gene_list_combos, input_folder, is_classifier):
-        target_combo = self.inputs.get(ArgumentProcessingService.INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO)
-        target_algorithm = self.inputs.get(ArgumentProcessingService.INDIVIDUAL_TRAIN_ALGORITHM)
-        hyperparams = self.inputs.get(ArgumentProcessingService.INDIVIDUAL_TRAIN_HYPERPARAMS).split(",")
+        config = self.inputs.individual_train_config
+        target_combo = config.combo
+        target_algorithm = config.algorithm
+        hyperparams = config.hyperparams.split(",")
         casted_params = [SafeCastUtil.safeCast(param, float) for param in hyperparams]
 
-        outer_monte_carlo_loops = self.inputs.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS)
+        outer_monte_carlo_loops = self.inputs.outer_monte_carlo_permutations
         for gene_list_combo in gene_list_combos:
             plain_text_name = self.generateFeatureSetString(gene_list_combo)
             if plain_text_name == target_combo:
                 trainer = self.createTrainerFromTargetAlgorithm(is_classifier, target_algorithm)
                 for permutation in range(0, outer_monte_carlo_loops):
-                    results = self.inputs.get(ArgumentProcessingService.RESULTS)
+                    results = self.inputs.results
                     formatted_data = self.formatData(self.inputs, True, True)
                     training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
                                                                   gene_list_combo, formatted_data)
@@ -142,22 +144,21 @@ class MachineLearningService(object):
             trainer = LassoRegressionTrainer(is_classifier)
         elif target_algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET and\
                 not is_classifier and \
-                self.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX) is not None and\
-                self.inputs.get(ArgumentProcessingService.RSEN_P_VAL) is not None:
+                self.inputs.rsen_config.binary_cat_matrix is not None and\
+                self.inputs.rsen_config.p_val is not None and self.inputs.rsen_config.k_val is not None:
             trainer = RandomSubsetElasticNetTrainer(is_classifier,
-                                                    self.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX),
-                                                    self.inputs.get(ArgumentProcessingService.RSEN_P_VAL),
-                                                    self.inputs.get(ArgumentProcessingService.RSEN_K_VAL))
+                                                    self.inputs.rsen_config.binary_cat_matrix,
+                                                    self.inputs.rsen_config.p_val, self.inputs.rsen_config.k_val)
         else:
             raise ValueError("Unsupported Machine Learning algorithm for individual training: %s", target_algorithm)
         return trainer
 
     def shouldTrainAlgorithm(self, algorithm):
-        configs = self.inputs.get(ArgumentProcessingService.ALGORITHM_CONFIGS)
+        configs = self.inputs.algorithm_configs
         return configs is not None and configs.get(algorithm) is not None and configs.get(algorithm)[0]
 
     def determineSpecificCombos(self, all_combos):
-        specific_combos = self.inputs.get(ArgumentProcessingService.SPECIFIC_COMBOS)
+        specific_combos = self.inputs.specific_combos
         selected_combos = {}
         for specific_combo in specific_combos:
             for combo in all_combos:
@@ -226,10 +227,11 @@ class MachineLearningService(object):
                                           self.monteCarloPermsByAlgorithm(rf, False), len(gene_list_combos))
             self.handleParallellization(gene_list_combos, input_folder, rf_trainer)
 
-        binary_cat_matrix = self.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
+        rsen_config = self.inputs.rsen_config
+        binary_cat_matrix = rsen_config.binary_cat_matrix
         if self.shouldTrainAlgorithm(rsen) and not is_classifier and binary_cat_matrix is not None:
-            p_val = self.inputs.get(ArgumentProcessingService.RSEN_P_VAL)
-            k_val = self.inputs.get(ArgumentProcessingService.RSEN_K_VAL)
+            p_val = rsen_config.p_val
+            k_val = rsen_config.k_val
             rsen_trainer = RandomSubsetElasticNetTrainer(is_classifier, binary_cat_matrix, p_val, k_val)
             rsen_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rsen, True),
                                             self.monteCarloPermsByAlgorithm(rsen, False),
@@ -237,14 +239,12 @@ class MachineLearningService(object):
             self.handleParallellization(gene_list_combos, input_folder, rsen_trainer)
 
     def monteCarloPermsByAlgorithm(self, algorithm, outer):
-        if outer:
-            return self.inputs.get(ArgumentProcessingService.ALGORITHM_CONFIGS).get(algorithm)[1]
-        else:
-            return self.inputs.get(ArgumentProcessingService.ALGORITHM_CONFIGS).get(algorithm)[2]
+        monte_carlo_config = self.inputs.algorithm_configs.get(algorithm)
+        return monte_carlo_config[1] if outer else monte_carlo_config[2]
 
     def handleParallellization(self, gene_list_combos, input_folder, trainer):
         max_nodes = multiprocessing.cpu_count()
-        requested_threads = self.inputs.get(ArgumentProcessingService.NUM_THREADS)
+        requested_threads = self.inputs.num_threads
         nodes_to_use = numpy.amin([requested_threads, max_nodes])
 
         valid_combos = self.fetchValidGeneListCombos(input_folder, gene_list_combos, trainer)
@@ -257,12 +257,12 @@ class MachineLearningService(object):
     def fetchValidGeneListCombos(self, input_folder, gene_list_combos, trainer):
         valid_combos = [feature_set for feature_set in gene_list_combos if trainer.shouldProcessFeatureSet(feature_set)]
 
+        rsen_config = self.inputs.rsen_config
         if trainer.algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET and \
-                self.inputs.get(ArgumentProcessingService.RSEN_COMBINE_GENE_LISTS):
+                rsen_config.combine_gene_lists:
             all_genes = self.fetchAllGeneListGenesDeduped()
             # TODO: Can fail if "." in feature name.
-            bin_cat_matrix = self.inputs.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX).get(
-                                             ArgumentProcessingService.FEATURE_NAMES)[0].split(".")[0]
+            bin_cat_matrix = rsen_config.binary_cat_matrix.get(ArgumentProcessingService.FEATURE_NAMES)[0].split(".")[0]
             full_gene_list = [bin_cat_matrix + "." + gene for gene in all_genes if len(gene.strip()) > 0]
 
             new_combos = []
@@ -303,7 +303,7 @@ class MachineLearningService(object):
         return trimmed_combos
 
     def fetchAllGeneListGenesDeduped(self):
-        all_genes = SafeCastUtil.safeCast(self.inputs.get(ArgumentProcessingService.GENE_LISTS).values(), list)
+        all_genes = SafeCastUtil.safeCast(self.inputs.gene_lists.values(), list)
         concated_genes = SafeCastUtil.safeCast(numpy.concatenate(all_genes), list)
         dedupded_genes = list(OrderedDict(zip(concated_genes, repeat(None))))
         return dedupded_genes
@@ -327,7 +327,7 @@ class MachineLearningService(object):
             self.log.debug("Computing outer Monte Carlo Permutation %s for %s.", i, feature_set_as_string)
 
             optimal_hyperparams = self.determineOptimalHyperparameters(feature_set, formatted_data, trainer)
-            record_diagnostics = self.inputs.get(ArgumentProcessingService.RECORD_DIAGNOSTICS)
+            record_diagnostics = self.inputs.record_diagnostics
             trainer.logIfBestHyperparamsOnRangeThreshold(optimal_hyperparams, record_diagnostics, input_folder)
             trainer.logOptimalHyperParams(optimal_hyperparams, self.generateFeatureSetString(feature_set),
                                           record_diagnostics, input_folder)
@@ -377,11 +377,11 @@ class MachineLearningService(object):
                     feature_map[file_name].append(feature_name)
                 else:
                     feature_map[file_name] = [feature_name]
-        gene_lists = self.inputs.get(ArgumentProcessingService.GENE_LISTS)
+        gene_lists = self.inputs.gene_lists
 
         feature_set_string = ""
         for file_key in feature_map.keys():
-            if self.inputs.get(ArgumentProcessingService.RSEN_COMBINE_GENE_LISTS) and \
+            if self.inputs.rsen_config.combine_gene_lists and \
                             len(feature_map[file_key]) == len(self.fetchAllGeneListGenesDeduped()):
                 feature_set_string += (file_key + ":ALL_GENE_LISTS ")
             else:
@@ -395,14 +395,14 @@ class MachineLearningService(object):
                                 same_list = False
                         if same_list:
                             feature_set_string += (file_key + ":" + gene_list_key + " ")
-        if feature_set_string == "" and self.inputs.get(ArgumentProcessingService.SPEARMAN_CORR):
+        if feature_set_string == "" and self.inputs.analysisType() is AnalysisType.SPEARMAN_NO_GENE_LISTS:
             return "all_features"  # TODO: This is a bit lazy, do it smarter.
         return feature_set_string.strip()
 
     def fetchOuterPermutationModelScore(self, feature_set, trainer, optimal_hyperparams, testing_matrix,
                                         training_matrix):
         # TODO: Handle hyperparams with n
-        results = self.inputs.get(ArgumentProcessingService.RESULTS)
+        results = self.inputs.results
         features, relevant_results = trainer.populateFeaturesAndResultsByCellLine(training_matrix, results)
         feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
         model = trainer.buildModel(relevant_results, features, optimal_hyperparams, feature_names)
@@ -463,8 +463,7 @@ class MachineLearningService(object):
                                                                   further_formatted_data)
             inner_train_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set,
                                                              further_formatted_data)
-            results = self.inputs.get(ArgumentProcessingService.RESULTS)
-            model_data = trainer.hyperparameterize(inner_train_matrix, inner_validation_matrix, results)
+            model_data = trainer.hyperparameterize(inner_train_matrix, inner_validation_matrix, self.inputs.results)
             for data in model_data.keys():
                 if inner_model_hyperparams.get(data) is not None:
                     inner_model_hyperparams[data].append(model_data[data])
@@ -486,21 +485,27 @@ class MachineLearningService(object):
         return data_formatting_service.formatData(should_scale, should_one_hot_encode)
 
     def reformatInputsByTrainingMatrix(self, training_matrix, feature_names):
-        new_inputs = {ArgumentProcessingService.FEATURES: {}, ArgumentProcessingService.RESULTS: []}
+        real_inputs = self.inputs
 
-        new_inputs[ArgumentProcessingService.FEATURES][ArgumentProcessingService.FEATURE_NAMES] = feature_names
+        features = {}
+        results = []
+        features[ArgumentProcessingService.FEATURE_NAMES] = feature_names
         for training_cell in training_matrix.keys():
-            for input_cell in self.inputs.get(ArgumentProcessingService.FEATURES).keys():
+            for input_cell in real_inputs.features.keys():
                 if training_cell is input_cell:
-                    new_inputs[ArgumentProcessingService.FEATURES][training_cell] = training_matrix.get(training_cell)
-                    for result in self.inputs[ArgumentProcessingService.RESULTS]:
+                    features[training_cell] = training_matrix.get(training_cell)
+                    for result in real_inputs.results:
                         if result[0] is training_cell:
-                            new_inputs[ArgumentProcessingService.RESULTS].append(result)
+                            results.append(result)
                             break
                     break
-        new_inputs[ArgumentProcessingService.DATA_SPLIT] = self.inputs[ArgumentProcessingService.DATA_SPLIT]
-        new_inputs[ArgumentProcessingService.SPEARMAN_CORR] = False
-        return new_inputs
+        return ProcessedArguments(results, real_inputs.is_classifier, features, real_inputs.gene_lists,
+                                  real_inputs.inner_monte_carlo_permutations,
+                                  real_inputs.outer_monte_carlo_permutations, real_inputs.data_split,
+                                  real_inputs.algorithm_configs, real_inputs.num_threads,
+                                  real_inputs.record_diagnostics,
+                                  real_inputs.individual_train_config, real_inputs.rsen_config,
+                                  real_inputs.specific_combos, False)
 
     def determineOptimalHyperparameters(self, feature_set, formatted_data, trainer):
         inner_model_hyperparams = self.determineInnerHyperparameters(feature_set, formatted_data, trainer)
@@ -554,8 +559,7 @@ class MachineLearningService(object):
             try:
                 writer = csv.writer(csv_file)
                 if write_action == "w":
-                    writer.writerow(self.getCSVFileHeader(self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER),
-                                                          ml_algorithm, outer_perms))
+                    writer.writerow(self.getCSVFileHeader(self.inputs.is_classifier, ml_algorithm, outer_perms))
                 writer.writerow(line)
             except ValueError as error:
                 self.log.error("Error writing to file %s. %s", file_name, error)

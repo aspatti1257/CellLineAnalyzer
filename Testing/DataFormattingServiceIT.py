@@ -37,8 +37,7 @@ class DataFormattingServiceIT(unittest.TestCase):
         features = pd.read_csv('SampleClassifierDataFolder/features.csv', delimiter=',')
         results = pd.read_csv('SampleClassifierDataFolder/results.csv', delimiter=',')
         X_train, X_test, y_train, y_test = s.testTrainSplit(features, results,
-                                                            self.data_formatting_service.inputs.get(
-                                                                ArgumentProcessingService.DATA_SPLIT))
+                                                            self.data_formatting_service.inputs.data_split)
         return X_test, X_train, y_test, y_train
 
     def testFormattingDataRandomizesMatrices(self):
@@ -76,8 +75,8 @@ class DataFormattingServiceIT(unittest.TestCase):
     def testSpearmanRTrimmingDoesNotTrimSignificantFeatures(self):
         significant_prefix = RandomizedDataGenerator.SIGNIFICANT_FEATURE_PREFIX
         arguments = self.processArguments(True)
-        arguments[ArgumentProcessingService.SPEARMAN_CORR] = True
-        orig_features = arguments.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES)
+        arguments.analyze_all = True
+        orig_features = arguments.features.get(ArgumentProcessingService.FEATURE_NAMES)
         orig_sig_features = [feature for feature in orig_features if significant_prefix in feature]
         data_formatting_service = DataFormattingService(arguments)
         output = data_formatting_service.formatData(True)
@@ -127,8 +126,8 @@ class DataFormattingServiceIT(unittest.TestCase):
         assert (np.shape(categorical_onehot))[1] == 2
 
     def testFeatureOrderIsPreserved(self):
-        original_input = self.data_formatting_service.inputs.get(ArgumentProcessingService.FEATURES)
-        self.data_formatting_service.inputs[ArgumentProcessingService.SPEARMAN_CORR] = False  # don't attempt trimming
+        original_input = self.data_formatting_service.inputs.features
+        self.data_formatting_service.analyze_all = False  # don't attempt trimming
         formatted_output = self.data_formatting_service.formatData(False, False)
         self.validateMatrixOrderHasNotChanged(formatted_output, original_input, DataFormattingService.TESTING_MATRIX)
         self.validateMatrixOrderHasNotChanged(formatted_output, original_input, DataFormattingService.TRAINING_MATRIX)

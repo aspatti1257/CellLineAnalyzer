@@ -189,8 +189,8 @@ class RandomizedDataGenerator(object):
 
     @staticmethod
     def generateAnalysisRowForCombo(ml_service, combo, algo):
-        is_classifier = ml_service.inputs.get(ArgumentProcessingService.IS_CLASSIFIER)
-        perms = ml_service.inputs.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS)
+        is_classifier = ml_service.inputs.is_classifier
+        perms = ml_service.inputs.outer_monte_carlo_permutations
         trainer = ml_service.createTrainerFromTargetAlgorithm(is_classifier, algo)
 
         # TODO: Flesh this out such that it can generate a list of scores for outer monte carlo perms and their

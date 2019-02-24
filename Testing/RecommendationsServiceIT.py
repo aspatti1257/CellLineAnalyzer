@@ -18,11 +18,11 @@ class RecommendationsServiceIT(unittest.TestCase):
 
     def tearDown(self):
         if self.current_working_dir != "/":
-            dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
-            for file_or_dir in os.listdir(dir):
+            directory = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
+            for file_or_dir in os.listdir(directory):
                 if file_or_dir == "__init__.py":
                     continue
-                current_path = dir + "/" + file_or_dir
+                current_path = directory + "/" + file_or_dir
                 if self.DRUG_DIRECTORY in file_or_dir:
                     for file in os.listdir(current_path):
                         os.remove(current_path + "/" + file)
@@ -61,8 +61,8 @@ class RecommendationsServiceIT(unittest.TestCase):
                 file_name = drug_path + "/" + algo + ".csv"
                 with open(file_name, 'w', newline='') as feature_file:
                     writer = csv.writer(feature_file)
-                    header = ml_service.getCSVFileHeader(ml_service.inputs.get(ArgumentProcessingService.IS_CLASSIFIER),
-                                                         algo, ml_service.inputs.get(ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS))
+                    header = ml_service.getCSVFileHeader(ml_service.inputs.is_classifier,
+                                                         algo, ml_service.inputs.outer_monte_carlo_permutations)
                     writer.writerow(header)
                     for combo in combos:
                         row = RandomizedDataGenerator.generateAnalysisRowForCombo(ml_service, combo, algo)

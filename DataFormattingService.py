@@ -7,6 +7,7 @@ from scipy.stats import spearmanr
 from sklearn.model_selection import train_test_split
 from collections import OrderedDict
 
+from ArgumentConfig.AnalysisType import AnalysisType
 from ArgumentProcessingService import ArgumentProcessingService
 from Utilities.SafeCastUtil import SafeCastUtil
 
@@ -26,21 +27,19 @@ class DataFormattingService(object):
         self.inputs = inputs
 
     def formatData(self, should_scale, should_one_hot_encode=True):
-        features_df = pd.DataFrame.from_dict(self.inputs[ArgumentProcessingService.FEATURES], orient='index')
-        columns = self.inputs.get(ArgumentProcessingService.FEATURES).get(ArgumentProcessingService.FEATURE_NAMES)
+        features_df = pd.DataFrame.from_dict(self.inputs.features, orient='index')
+        columns = self.inputs.features.get(ArgumentProcessingService.FEATURE_NAMES)
         features_df.columns = columns
         features_df = features_df.drop(ArgumentProcessingService.FEATURE_NAMES)
 
         if should_one_hot_encode:
-            features_oh_df = self.oneHot(features_df)
+            one_hot_df = self.oneHot(features_df)
         else:
-            features_oh_df = features_df
+            one_hot_df = features_df
 
-        x_train, x_test, y_train, y_test = self.testTrainSplit(features_oh_df,
-                                                               self.inputs[ArgumentProcessingService.RESULTS],
-                                                               self.inputs[ArgumentProcessingService.DATA_SPLIT])
+        x_train, x_test, y_train, y_test = self.testTrainSplit(one_hot_df, self.inputs.results, self.inputs.data_split)
 
-        if self.inputs.get(ArgumentProcessingService.SPEARMAN_CORR):
+        if self.inputs.analysisType() is AnalysisType.SPEARMAN_NO_GENE_LISTS:
             x_train_corr, x_test_corr = self.filterCorrelatedFeatures(x_train, x_test, columns, y_train)
         else:
             x_train_corr, x_test_corr = x_train, x_test
