@@ -8,8 +8,6 @@ import threading
 import psutil
 
 from joblib import Parallel, delayed
-from collections import OrderedDict
-from itertools import repeat
 
 from ArgumentConfig.AnalysisType import AnalysisType
 from ArgumentConfig.ProcessedArguments import ProcessedArguments
@@ -261,7 +259,7 @@ class MachineLearningService(object):
         rsen_config = self.inputs.rsen_config
         if trainer.algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET and \
                 rsen_config.combine_gene_lists:
-            all_genes = self.fetchAllGeneListGenesDeduped()
+            all_genes = GeneListComboUtility.fetchAllGeneListGenesDeduped(self.inputs.gene_lists)
             # TODO: Can fail if "." in feature name.
             bin_cat_matrix = rsen_config.binary_cat_matrix.get(ArgumentProcessingService.FEATURE_NAMES)[0].split(".")[0]
             full_gene_list = [bin_cat_matrix + "." + gene for gene in all_genes if len(gene.strip()) > 0]
@@ -302,12 +300,6 @@ class MachineLearningService(object):
             if self.generateFeatureSetString(combo) not in existing_combo_strings:
                 trimmed_combos.append(combo)
         return trimmed_combos
-
-    def fetchAllGeneListGenesDeduped(self):
-        all_genes = SafeCastUtil.safeCast(self.inputs.gene_lists.values(), list)
-        concated_genes = SafeCastUtil.safeCast(numpy.concatenate(all_genes), list)
-        dedupded_genes = list(OrderedDict(zip(concated_genes, repeat(None))))
-        return dedupded_genes
 
     def runMonteCarloSelection(self, feature_set, trainer, input_folder, num_combos):
         scores = []
@@ -369,36 +361,9 @@ class MachineLearningService(object):
         self.saveOutputToTxtFile(scores, accuracies, feature_set_as_string, input_folder, trainer.algorithm)
 
     def generateFeatureSetString(self, feature_set):
-        feature_map = {}
-        for feature_list in feature_set:
-            for feature in feature_list:
-                file_name = feature.split(".")[0]
-                feature_name = feature.split(".")[1:][0]
-                if feature_map.get(file_name):
-                    feature_map[file_name].append(feature_name)
-                else:
-                    feature_map[file_name] = [feature_name]
-        gene_lists = self.inputs.gene_lists
-
-        feature_set_string = ""
-        for file_key in feature_map.keys():
-            if self.inputs.rsen_config.combine_gene_lists and \
-                            len(feature_map[file_key]) == len(self.fetchAllGeneListGenesDeduped()):
-                feature_set_string += (file_key + ":ALL_GENE_LISTS ")
-            else:
-                for gene_list_key in gene_lists.keys():
-                    if len(feature_map[file_key]) == len(gene_lists[gene_list_key]):
-                        feature_map[file_key].sort()
-                        gene_lists[gene_list_key].sort()
-                        same_list = True
-                        for i in range(0, len(gene_lists[gene_list_key])):
-                            if gene_lists[gene_list_key][i] != feature_map[file_key][i]:
-                                same_list = False
-                        if same_list:
-                            feature_set_string += (file_key + ":" + gene_list_key + " ")
-        if feature_set_string == "" and self.inputs.analysisType() is AnalysisType.SPEARMAN_NO_GENE_LISTS:
-            return "all_features"  # TODO: This is a bit lazy, do it smarter.
-        return feature_set_string.strip()
+        return GeneListComboUtility.generateFeatureSetString(feature_set, self.inputs.gene_lists,
+                                                             self.inputs.rsen_config.combine_gene_lists,
+                                                             self.inputs.analysisType)
 
     def fetchOuterPermutationModelScore(self, feature_set, trainer, optimal_hyperparams, testing_matrix,
                                         training_matrix):

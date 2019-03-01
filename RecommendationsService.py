@@ -42,8 +42,9 @@ class RecommendationsService(object):
                 if best_model is None:
                     continue
                 else:
-                cellline_viabilities.append([drug, best_model.predict(cell_line_map[cell_line])])
-            recs = presciption_from_prediction(self, trainer, viability_acceptance, cellline_viabilities) #@AP: viability_acceptance is a user-defined value, which should come from the arguments file. How do I get it here?
+                    cellline_viabilities.append([drug, best_model.predict(cell_line_map[cell_line])])
+            recs = []
+            #self.presciption_from_prediction(self, trainer, viability_acceptance, cellline_viabilities) #@AP: viability_acceptance is a user-defined value, which should come from the arguments file. How do I get it here?
             with open('FinalResults.csv','a') as f:
                 f.write(str(cell_line)+',')
                 for drug in recs:
@@ -220,7 +221,7 @@ class RecommendationsService(object):
     def determineAndTrainBestModel(self, drug, analysis_files_folder, trimmed_cell_lines, combos):
         # TODO: ultimately we'd want to use multiple algorithms, and make an ensemble prediction/prescription.
         # But for now, let's stick with one algorithm.
-        best_scoring_combo = None
+        best_combo_string = None
         best_scoring_algo = None
         optimal_hyperparams = None
         top_score = AbstractModelTrainer.DEFAULT_MIN_SCORE
@@ -244,7 +245,7 @@ class RecommendationsService(object):
                         score = SafeCastUtil.safeCast(row[header.index(self.scorePhrase())], float)
                         if score is not None and score > top_score:
                             best_scoring_algo = analysis_file_name.split(".")[0]
-                            best_scoring_combo = string_combo
+                            best_combo_string = string_combo
                             top_score = score
                             optimal_hyperparams = self.fetchBestHyperparams(row, indices_of_outer_loops)
                 except ValueError as valueError: #@AP what does this do?
@@ -257,7 +258,9 @@ class RecommendationsService(object):
             # not just the process error log.
             self.log.error('Error: no method found an R2 higher than 0 for drug: %s.', drug)
             return None
-        return self.trainBestModel(best_scoring_algo, best_scoring_combo, optimal_hyperparams, combos)
+
+        best_combo = self.determineBestComboFromString(best_combo_string, combos)
+        return self.trainBestModel(best_scoring_algo, best_combo, optimal_hyperparams, combos)
 
     def scorePhrase(self):
         if self.inputs.is_classifier:
@@ -311,8 +314,9 @@ class RecommendationsService(object):
         #       # create new trainer object for best_scoring_algo.
         #       # trim data for best_scoring_combo
         #       # train model with optimal_hyperparams and return it.
-        trainer = self.createTrainerFromTargetAlgorithm(is_classifier,best_scoring_algo)
-        trainer.train(timmed_cell_lines.train_results, trimmed_cell_lines.train_data, optimal_hyperparams, feature_names) # @AP: feature_names is an input parameter whenever the function is called in MachineLearningService. However, when I look into the code for the trainers, it is never used. Is it obsolete?
+        trainer = self.createTrainerFromTargetAlgorithm(is_classifier, best_scoring_algo)
+        # trainer.train(trimmed_cell_lines.train_results, trimmed_cell_lines.train_data, optimal_hyperparams, feature_names)
+        # @AP: feature_names is an input parameter whenever the function is called in MachineLearningService. However, when I look into the code for the trainers, it is never used. Is it obsolete?
         # @AP Now we still need predictions. In MachineLearningService.py I see "trainer.fetchPredictionsAndScore", but I don't see this in for example the random forest trainer. Where can I find it? Am I overlooking something?
         return trainer
 
@@ -321,12 +325,24 @@ class RecommendationsService(object):
         # viability_acceptance is a user-defined threshold: include all drugs whose performance
         # is >= viability_acceptance*best_viability
         # druglist is a lists the drugs for which viability of this cell line was predicted
-        best = numpy.argmax(celline_viabilities[:, 1])
-        bestdrug = celline_viabilities[best, 0]
-        bestviab = celline_viabilities[best, 1]
+        best = numpy.argmax(cellline_viabilities[:, 1])
+        bestdrug = cellline_viabilities[best, 0]
+        bestviab = cellline_viabilities[best, 1]
         viab_threshold = viability_acceptance * bestviab
         prescription = [bestdrug]
-        for d in range(len(celline_viabilities[:, 1])):
-            if celline_viabilities[d, 1] >= viab_threshold and celline_viabilities[d, 0] not in prescription:
-                prescription.append(celline_viabilities[d, 0])
+        for d in range(len(cellline_viabilities[:, 1])):
+            if cellline_viabilities[d, 1] >= viab_threshold and cellline_viabilities[d, 0] not in prescription:
+                prescription.append(cellline_viabilities[d, 0])
         return prescription
+
+
+    def determineBestComboFromString(self, best_combo_string, combos):
+        gene_lists = self.inputs.gene_lists
+        combine_gene_lists = self.inputs.rsen_config.combine_gene_lists
+        analysis_type = self.inputs.analysisType()
+        for combo in combos:
+            feature_set_string = GeneListComboUtility.generateFeatureSetString(combo, gene_lists,
+                                                                               combine_gene_lists, analysis_type)
+            if feature_set_string == best_combo_string:
+                return combo
+        return None
