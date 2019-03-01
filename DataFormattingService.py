@@ -106,11 +106,14 @@ class DataFormattingService(object):
         filtered_test_df = test_df
 
         for feature_name in feature_names:
-            spearman_corr = spearmanr(filtered_train_df.get(feature_name), results)
-            p_val = spearman_corr[1]
+            try:
+                spearman_corr = spearmanr(filtered_train_df.get(feature_name), results)
+                p_val = SafeCastUtil.safeCast(spearman_corr[1], float, len(feature_names))
 
-            if math.isnan(p_val) or (p_val / len(feature_names)) > self.P_VALUE_CUTOFF:
-                filtered_train_df = filtered_train_df.drop(feature_name, axis=1)
-                filtered_test_df = filtered_test_df.drop(feature_name, axis=1)
+                if math.isnan(p_val) or (p_val / len(feature_names)) > self.P_VALUE_CUTOFF:
+                    filtered_train_df = filtered_train_df.drop(feature_name, axis=1)
+                    filtered_test_df = filtered_test_df.drop(feature_name, axis=1)
+            except ValueError as error:
+                self.log.error("Exception while trying to trim features: %s", error)
 
         return filtered_train_df, filtered_test_df
