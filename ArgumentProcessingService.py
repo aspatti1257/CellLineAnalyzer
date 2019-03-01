@@ -31,13 +31,20 @@ class ArgumentProcessingService(object):
     NUM_THREADS = "num_threads"
     ALGORITHM_CONFIGS = "algorithm_configs"
     RECORD_DIAGNOSTICS = "record_diagnostics"
+
+    # RSEN Specific Arguments
     RSEN_P_VAL = "rsen_p_val"
     RSEN_K_VAL = "rsen_k_val"
     RSEN_COMBINE_GENE_LISTS = "rsen_combine_gene_lists"
     BINARY_CATEGORICAL_MATRIX = "binary_categorical_matrix"
+
+    # For AnalysisType.FULL_CLA_SPECIFIC_COMBO
     SPECIFIC_COMBOS = "specific_combos"
+
+    # For AnalysisType.SPEARMAN_NO_GENE_LISTS
     SPEARMAN_CORR = "spearman_corr"
 
+    # For AnalysisType.INDIVIDUAL_TRAIN
     INDIVIDUAL_TRAIN_ALGORITHM = "individual_train_algorithm"
     INDIVIDUAL_TRAIN_HYPERPARAMS = "individual_train_hyperparams"
     INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO = "individual_train_combo"
