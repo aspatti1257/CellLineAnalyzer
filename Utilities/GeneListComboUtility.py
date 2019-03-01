@@ -1,5 +1,10 @@
-from Utilities.SafeCastUtil import SafeCastUtil
 import numpy
+from collections import OrderedDict
+from itertools import repeat
+
+from ArgumentConfig.AnalysisType import AnalysisType
+from Utilities.SafeCastUtil import SafeCastUtil
+
 
 
 class GeneListComboUtility(object):
@@ -53,3 +58,42 @@ class GeneListComboUtility(object):
                 for subsequent_index in range(target_index, len(current_array) - 1):
                     current_array[subsequent_index + 1] = 0
         return all_arrays
+
+    @staticmethod
+    def generateFeatureSetString(feature_set, gene_lists, combine_gene_lists, analysis_type):
+        feature_map = {}
+        for feature_list in feature_set:
+            for feature in feature_list:
+                file_name = feature.split(".")[0]
+                feature_name = feature.split(".")[1:][0]
+                if feature_map.get(file_name):
+                    feature_map[file_name].append(feature_name)
+                else:
+                    feature_map[file_name] = [feature_name]
+
+        feature_set_string = ""
+        num_gene_lists_deduped = len(GeneListComboUtility.fetchAllGeneListGenesDeduped(gene_lists))
+        for file_key in feature_map.keys():
+            if combine_gene_lists and len(feature_map[file_key]) == num_gene_lists_deduped:
+                feature_set_string += (file_key + ":ALL_GENE_LISTS ")
+            else:
+                for gene_list_key in gene_lists.keys():
+                    if len(feature_map[file_key]) == len(gene_lists[gene_list_key]):
+                        feature_map[file_key].sort()
+                        gene_lists[gene_list_key].sort()
+                        same_list = True
+                        for i in range(0, len(gene_lists[gene_list_key])):
+                            if gene_lists[gene_list_key][i] != feature_map[file_key][i]:
+                                same_list = False
+                        if same_list:
+                            feature_set_string += (file_key + ":" + gene_list_key + " ")
+        if feature_set_string == "" and analysis_type is AnalysisType.SPEARMAN_NO_GENE_LISTS:
+            return "all_features"  # TODO: This is a bit lazy, do it smarter.
+        return feature_set_string.strip()
+
+    @staticmethod
+    def fetchAllGeneListGenesDeduped(gene_lists):
+        all_genes = SafeCastUtil.safeCast(gene_lists.values(), list)
+        concated_genes = SafeCastUtil.safeCast(numpy.concatenate(all_genes), list)
+        dedupded_genes = list(OrderedDict(zip(concated_genes, repeat(None))))
+        return dedupded_genes

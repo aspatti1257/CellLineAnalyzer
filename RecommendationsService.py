@@ -214,7 +214,7 @@ class RecommendationsService(object):
     def determineAndTrainBestModel(self, drug, analysis_files_folder, trimmed_cell_lines, combos):
         # TODO: ultimately we'd want to use multiple algorithms, and make an ensemble prediction/prescription.
         # But for now, let's stick with one algorithm.
-        best_scoring_combo = None
+        best_combo_string = None
         best_scoring_algo = None
         optimal_hyperparams = None
         top_score = AbstractModelTrainer.DEFAULT_MIN_SCORE
@@ -238,7 +238,7 @@ class RecommendationsService(object):
                         score = SafeCastUtil.safeCast(row[header.index(self.scorePhrase())], float)
                         if score is not None and score > top_score:
                             best_scoring_algo = analysis_file_name.split(".")[0]
-                            best_scoring_combo = string_combo
+                            best_combo_string = string_combo
                             top_score = score
                             optimal_hyperparams = self.fetchBestHyperparams(row, indices_of_outer_loops)
                 except ValueError as valueError:
@@ -251,7 +251,9 @@ class RecommendationsService(object):
             # not just the process error log.
             self.log.error('Error: no method found an R2 higher than 0 for drug: %s.', drug)
             return None
-        return self.trainBestModel(best_scoring_algo, best_scoring_combo, optimal_hyperparams, combos)
+
+        best_combo = self.determineBestComboFromString(best_combo_string, combos)
+        return self.trainBestModel(best_scoring_algo, best_combo, optimal_hyperparams, combos)
 
     def scorePhrase(self):
         if self.inputs.is_classifier:
@@ -311,3 +313,14 @@ class RecommendationsService(object):
         #         prescription.append(celline_viabilities[d, 0])
         # return prescription
         pass
+
+    def determineBestComboFromString(self, best_combo_string, combos):
+        gene_lists = self.inputs.gene_lists
+        combine_gene_lists = self.inputs.rsen_config.combine_gene_lists
+        analysis_type = self.inputs.analysisType()
+        for combo in combos:
+            feature_set_string = GeneListComboUtility.generateFeatureSetString(combo, gene_lists,
+                                                                               combine_gene_lists, analysis_type)
+            if feature_set_string == best_combo_string:
+                return combo
+        return None
