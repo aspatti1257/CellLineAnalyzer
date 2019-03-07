@@ -67,7 +67,7 @@ class ArgumentProcessingService(object):
             return None
         results_list = self.validateAndExtractResults(results_file, is_classifier)
 
-        gene_lists = self.extractGeneLists(analyze_all)
+        gene_lists = self.extractGeneLists()
 
         write_diagnostics = self.fetchOrReturnDefault(arguments.get(self.RECORD_DIAGNOSTICS), bool, False)
         feature_files = [file for file in os.listdir(self.input_folder) if self.fileIsFeatureFile(file, results_file)]
@@ -141,7 +141,7 @@ class ArgumentProcessingService(object):
                 data_file.close()
         return sample_list
 
-    def extractGeneLists(self, analyze_all):
+    def extractGeneLists(self):
         gene_lists = {"null_gene_list": []}
         files = os.listdir(self.input_folder)
         for file in [f for f in files if self.GENE_LISTS in f]:
@@ -166,15 +166,18 @@ class ArgumentProcessingService(object):
             features_path = self.input_folder + "/" + file
             with open(features_path) as feature_file:
                 num_features = 0
+                valid_indices = []
                 try:
                     for line_index, line in enumerate(feature_file):
                         line_split = line.split(",")
                         if line_index == 0:
-                            feature_names = [file_name + "." + name.strip() for name in line_split if len(name.strip()) > 0]
+                            valid_indices, feature_names = self.fetchUniqueFeatureNamesAndIndices(line_split, file_name)
                             feature_matrix[self.FEATURE_NAMES] += feature_names
-                            num_features = len(feature_names)
+                            num_features = len(valid_indices)
                             continue
                         for i in range(0, num_features):
+                            if i not in valid_indices:
+                                continue
                             feature = line_split[i] if line_split[i] is not None else self.UNFILLED_VALUE_PLACEHOLDER
                             feature_as_float = SafeCastUtil.safeCast(feature, float)
                             if feature_as_float is not None:
@@ -188,6 +191,19 @@ class ArgumentProcessingService(object):
                     self.log.debug("Closing file %s", feature_file)
                     feature_file.close()
         return feature_matrix
+
+    def fetchUniqueFeatureNamesAndIndices(self, line_split, file_name):
+        unvalidated_features = [file_name + "." + name.strip() for name in line_split if len(name.strip()) > 0]
+        valid_indices = []
+        valid_features = []
+        for i in range(0, len(unvalidated_features)):
+            if unvalidated_features.count(unvalidated_features[i]) == 1:
+                valid_indices.append(i)
+
+        for i in range(0, len(unvalidated_features)):
+            if i in valid_indices:
+                valid_features.append(unvalidated_features[i])
+        return valid_indices, valid_features
 
     def createAndValidateFeatureMatrix(self, results_list, gene_lists, write_diagnostics, feature_files):
         incomplete_features = []
