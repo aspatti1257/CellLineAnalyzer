@@ -36,13 +36,19 @@ class RecommendationsService(object):
                 continue
             trimmed_cell_lines = self.removeFromCellLinesMap(cell_line, cell_line_map)
             # remove cell line from results
-            recs = []
+            cellline_viabilities = []
             for drug in self.getDrugFolders(input_folder):
                 best_model = self.determineAndTrainBestModel(drug, input_folder, trimmed_cell_lines, combos)
                 if best_model is None:
                     continue
-                # recs.append(best_model.predict(cell_line_map[cell_line]))
-
+                else:
+                cellline_viabilities.append([drug, best_model.predict(cell_line_map[cell_line])])
+            recs = presciption_from_prediction(self, trainer, viability_acceptance, cellline_viabilities) #@AP: viability_acceptance is a user-defined value, which should come from the arguments file. How do I get it here?
+            with open('FinalResults.csv','a') as f:
+                f.write(str(cell_line)+',')
+                for drug in recs:
+                    f.write(drug+';')
+                f.write('\n')
            # See which drug prediction comes closest to actual R^2 score.
            # See self.inputs.results for this value.
            # Record to FinalResults.csv
@@ -241,7 +247,7 @@ class RecommendationsService(object):
                             best_scoring_combo = string_combo
                             top_score = score
                             optimal_hyperparams = self.fetchBestHyperparams(row, indices_of_outer_loops)
-                except ValueError as valueError:
+                except ValueError as valueError: #@AP what does this do?
                     self.log.error(valueError)
                 finally:
                     self.log.debug("Closing file %s", analysis_file)
@@ -262,11 +268,22 @@ class RecommendationsService(object):
         monte_carlo_results = self.getMonteCarloResults(row, indices_of_outer_loops)
         best_hyps = None
         top_score = AbstractModelTrainer.DEFAULT_MIN_SCORE
+        max_num_occurrences = 0
         for hyperparam in SafeCastUtil.safeCast(monte_carlo_results.keys(), list):
-            average_of_scores = numpy.average(monte_carlo_results.get(hyperparam))
-            if average_of_scores > top_score:
-                top_score = average_of_scores
-                best_hyps = hyperparam
+            if len(monte_carlo_results.get(hyperparam)) > max_nu_occurrences:
+                max_num_occurrences = len(monte_carlo_results.get(hyperparam))
+                best_hyps_list = [hyperparam]
+            elif len(monte_carlo_results.get(hyperparams)) == max_nu_occurrences:
+                best_hyps_list.append(hyperparam)
+        if len(best_hyps_list) == 1:
+            best_hyps = hyperparam
+            top_score = numpy.average(monte_carlo_results.get(hyperparam))
+        elif len(best_hyps_list) > 1:
+           top_score = 0
+           for hyperparam in best_hyps_list:
+               if numpy.average(monte_carlo_results.get(hyperparam)) > top_score:
+                   top_score = numpy.average(monte_carlo_results.get(hyperparam))
+                   best_hyps = hyperparam
         return best_hyps
 
     def getMonteCarloResults(self, row, indices_of_outer_loops):
@@ -299,18 +316,17 @@ class RecommendationsService(object):
         # @AP Now we still need predictions. In MachineLearningService.py I see "trainer.fetchPredictionsAndScore", but I don't see this in for example the random forest trainer. Where can I find it? Am I overlooking something?
         return trainer
 
-    def presciption_from_prediction(self, viability_acceptance, druglist, celline_viabilities):
+    def presciption_from_prediction(self, trainer, viability_acceptance, druglist, cellline_viabilities):
         # celline_viabilities has two columns: column 1 is a drugname, column 2 its (predicted) viability
         # viability_acceptance is a user-defined threshold: include all drugs whose performance
         # is >= viability_acceptance*best_viability
         # druglist is a lists the drugs for which viability of this cell line was predicted
-        # best = numpy.argmax(celline_viabilities[:, 1])
-        # bestdrug = celline_viabilities[best, 0]
-        # bestviab = celline_viabilities[best, 1]
-        # viab_threshold = viability_acceptance * bestviab
-        # prescription = [bestdrug]
-        # for d in range(len(celline_viabilities[:, 1])):
-        #     if celline_viabilities[d, 1] >= viab_threshold and celline_viabilities[d, 0] not in prescription:
-        #         prescription.append(celline_viabilities[d, 0])
-        # return prescription
-        pass
+        best = numpy.argmax(celline_viabilities[:, 1])
+        bestdrug = celline_viabilities[best, 0]
+        bestviab = celline_viabilities[best, 1]
+        viab_threshold = viability_acceptance * bestviab
+        prescription = [bestdrug]
+        for d in range(len(celline_viabilities[:, 1])):
+            if celline_viabilities[d, 1] >= viab_threshold and celline_viabilities[d, 0] not in prescription:
+                prescription.append(celline_viabilities[d, 0])
+        return prescription
