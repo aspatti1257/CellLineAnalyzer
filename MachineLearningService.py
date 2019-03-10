@@ -129,7 +129,8 @@ class MachineLearningService(object):
 
         return SafeCastUtil.safeCast(score, str) + self.DELIMITER + hyperparam_string
 
-    def createTrainerFromTargetAlgorithm(self, is_classifier, target_algorithm):
+    @staticmethod
+    def createTrainerFromTargetAlgorithm(is_classifier, target_algorithm, bin_cat_matrix, p_val, k_val):
         if target_algorithm == SupportedMachineLearningAlgorithms.RANDOM_FOREST:
             trainer = RandomForestTrainer(is_classifier)
         elif target_algorithm == SupportedMachineLearningAlgorithms.LINEAR_SVM:

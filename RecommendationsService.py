@@ -32,7 +32,7 @@ class RecommendationsService(object):
         cell_line_map = self.inputs.features
         # get results map
         for cell_line in cell_line_map.keys():
-            if cell_line == ArgumentProcessingService.FEATURE_NAMES:
+            if cell_line == ArgumentProcessingService.FEATURE_NAMES: #@AP: what does this do?
                 continue
             trimmed_cell_lines = self.removeFromCellLinesMap(cell_line, cell_line_map)
             # remove cell line from results
@@ -200,7 +200,7 @@ class RecommendationsService(object):
 
     def removeFromCellLinesMap(self, cell_line, features_map):
         cloned_features = copy.deepcopy(features_map)
-        del cloned_features[ArgumentProcessingService.FEATURE_NAMES]
+        del cloned_features[ArgumentProcessingService.FEATURE_NAMES] #@AP: why delete these?
         del cloned_features[cell_line]
         return cloned_features
 
@@ -286,15 +286,18 @@ class RecommendationsService(object):
         files = os.listdir(input_folder + "/" + drug)
         return [file for file in files if "Analysis.csv" in file]
 
-    def trainBestModel(self, best_scoring_algo, best_scoring_combo, optimal_hyperparams, combos):
+    def trainBestModel(self, best_scoring_algo, best_scoring_combo, optimal_hyperparams, combos, trimmed_cell_lines):
+        is_classifier = self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER)
         # for combo in combos:
         #    # maybe we want to extract this MachineLearningService function to GeneListComboUtility as well
         #    if MachineLearningService.generateFeatureSetString(combo) == best_scoring_combo:
         #       # create new trainer object for best_scoring_algo.
         #       # trim data for best_scoring_combo
         #       # train model with optimal_hyperparams and return it.
-        # return None
-        pass
+        trainer = self.createTrainerFromTargetAlgorithm(is_classifier,best_scoring_algo)
+        trainer.train(timmed_cell_lines.train_results, trimmed_cell_lines.train_data, optimal_hyperparams, feature_names) # @AP: feature_names is an input parameter whenever the function is called in MachineLearningService. However, when I look into the code for the trainers, it is never used. Is it obsolete?
+        # @AP Now we still need predictions. In MachineLearningService.py I see "trainer.fetchPredictionsAndScore", but I don't see this in for example the random forest trainer. Where can I find it? Am I overlooking something?
+        return trainer
 
     def presciption_from_prediction(self, viability_acceptance, druglist, celline_viabilities):
         # celline_viabilities has two columns: column 1 is a drugname, column 2 its (predicted) viability
