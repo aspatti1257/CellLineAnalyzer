@@ -162,6 +162,7 @@ class ArgumentProcessingService(object):
         for cell_line in results_list:
             feature_matrix[cell_line[0]] = []
         for file in feature_files:
+            self.log.info("Fetching all features for file %s", file)
             file_name = file.split(".")[0]
             features_path = self.input_folder + "/" + file
             with open(features_path) as feature_file:
@@ -173,7 +174,7 @@ class ArgumentProcessingService(object):
                         if line_index == 0:
                             valid_indices, feature_names = self.fetchUniqueFeatureNamesAndIndices(line_split, file_name)
                             feature_matrix[self.FEATURE_NAMES] += feature_names
-                            num_features = len(valid_indices)
+                            num_features = len(line_split)
                             continue
                         for i in range(0, num_features):
                             if i not in valid_indices:
