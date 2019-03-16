@@ -2,6 +2,7 @@ import numpy as np
 import random
 import csv
 
+from Utilities.ModelTrainerFactory import ModelTrainerFactory
 from Utilities.SafeCastUtil import SafeCastUtil
 from ArgumentProcessingService import ArgumentProcessingService
 
@@ -191,7 +192,7 @@ class RandomizedDataGenerator(object):
     def generateAnalysisRowForCombo(ml_service, combo, algo):
         is_classifier = ml_service.inputs.is_classifier
         perms = ml_service.inputs.outer_monte_carlo_permutations
-        trainer = ml_service.createTrainerFromTargetAlgorithm(is_classifier, algo)
+        trainer = ModelTrainerFactory.createTrainerFromTargetAlgorithm(is_classifier, algo, ml_service.inputs.rsen_config)
 
         # TODO: Flesh this out such that it can generate a list of scores for outer monte carlo perms and their
         # hyperparams. Optimal boolean phrases for RSEN will need to be addressed as well.

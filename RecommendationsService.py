@@ -9,6 +9,7 @@ import copy
 import csv
 import numpy
 
+from Utilities.ModelTrainerFactory import ModelTrainerFactory
 from Utilities.SafeCastUtil import SafeCastUtil
 
 
@@ -260,7 +261,7 @@ class RecommendationsService(object):
             return None
 
         best_combo = self.determineBestComboFromString(best_combo_string, combos)
-        return self.trainBestModel(best_scoring_algo, best_combo, optimal_hyperparams, combos)
+        return self.trainBestModel(best_scoring_algo, best_combo, optimal_hyperparams, trimmed_cell_lines)
 
     def scorePhrase(self):
         if self.inputs.is_classifier:
@@ -272,11 +273,12 @@ class RecommendationsService(object):
         best_hyps = None
         top_score = AbstractModelTrainer.DEFAULT_MIN_SCORE
         max_num_occurrences = 0
+        best_hyps_list = []
         for hyperparam in SafeCastUtil.safeCast(monte_carlo_results.keys(), list):
-            if len(monte_carlo_results.get(hyperparam)) > max_nu_occurrences:
+            if len(monte_carlo_results.get(hyperparam)) > max_num_occurrences:
                 max_num_occurrences = len(monte_carlo_results.get(hyperparam))
                 best_hyps_list = [hyperparam]
-            elif len(monte_carlo_results.get(hyperparams)) == max_nu_occurrences:
+            elif len(monte_carlo_results.get(hyperparam)) == max_num_occurrences:
                 best_hyps_list.append(hyperparam)
         if len(best_hyps_list) == 1:
             best_hyps = hyperparam
@@ -306,15 +308,16 @@ class RecommendationsService(object):
         files = os.listdir(input_folder + "/" + drug)
         return [file for file in files if "Analysis.csv" in file]
 
-    def trainBestModel(self, best_scoring_algo, best_scoring_combo, optimal_hyperparams, combos, trimmed_cell_lines):
-        is_classifier = self.inputs.get(ArgumentProcessingService.IS_CLASSIFIER)
+    def trainBestModel(self, best_scoring_algo, best_scoring_combo, optimal_hyperparams, trimmed_cell_lines):
+        is_classifier = self.inputs.is_classifier
+        rsen_config = self.inputs.rsen_config
         # for combo in combos:
         #    # maybe we want to extract this MachineLearningService function to GeneListComboUtility as well
         #    if MachineLearningService.generateFeatureSetString(combo) == best_scoring_combo:
         #       # create new trainer object for best_scoring_algo.
         #       # trim data for best_scoring_combo
         #       # train model with optimal_hyperparams and return it.
-        trainer = self.createTrainerFromTargetAlgorithm(is_classifier, best_scoring_algo)
+        trainer = ModelTrainerFactory.createTrainerFromTargetAlgorithm(is_classifier, best_scoring_algo, rsen_config)
         # trainer.train(trimmed_cell_lines.train_results, trimmed_cell_lines.train_data, optimal_hyperparams, feature_names)
         # @AP: feature_names is an input parameter whenever the function is called in MachineLearningService. However, when I look into the code for the trainers, it is never used. Is it obsolete?
         # @AP Now we still need predictions. In MachineLearningService.py I see "trainer.fetchPredictionsAndScore", but I don't see this in for example the random forest trainer. Where can I find it? Am I overlooking something?

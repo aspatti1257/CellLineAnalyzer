@@ -6,7 +6,6 @@ from ArgumentConfig.AnalysisType import AnalysisType
 from Utilities.SafeCastUtil import SafeCastUtil
 
 
-
 class GeneListComboUtility(object):
 
     @staticmethod

@@ -24,6 +24,7 @@ from Trainers.LassoRegressionTrainer import LassoRegressionTrainer
 from Trainers.RandomSubsetElasticNetTrainer import RandomSubsetElasticNetTrainer
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
 from Utilities.GeneListComboUtility import GeneListComboUtility
+from Utilities.ModelTrainerFactory import ModelTrainerFactory
 from Utilities.SafeCastUtil import SafeCastUtil
 
 
@@ -77,11 +78,13 @@ class MachineLearningService(object):
         hyperparams = config.hyperparams.split(",")
         casted_params = [SafeCastUtil.safeCast(param, float) for param in hyperparams]
 
+        rsen_config = self.inputs.rsen_config
+
         outer_monte_carlo_loops = self.inputs.outer_monte_carlo_permutations
         for gene_list_combo in gene_list_combos:
             plain_text_name = self.generateFeatureSetString(gene_list_combo)
             if plain_text_name == target_combo:
-                trainer = self.createTrainerFromTargetAlgorithm(is_classifier, target_algorithm)
+                trainer = ModelTrainerFactory.createTrainerFromTargetAlgorithm(is_classifier, target_algorithm, rsen_config)
                 for permutation in range(0, outer_monte_carlo_loops):
                     results = self.inputs.results
                     formatted_data = self.formatData(self.inputs, True, True)
@@ -127,31 +130,6 @@ class MachineLearningService(object):
 
         return SafeCastUtil.safeCast(score, str) + self.DELIMITER + hyperparam_string
 
-    @staticmethod
-    def createTrainerFromTargetAlgorithm(is_classifier, target_algorithm, bin_cat_matrix, p_val, k_val):
-        if target_algorithm == SupportedMachineLearningAlgorithms.RANDOM_FOREST:
-            trainer = RandomForestTrainer(is_classifier)
-        elif target_algorithm == SupportedMachineLearningAlgorithms.LINEAR_SVM:
-            trainer = LinearSVMTrainer(is_classifier)
-        elif target_algorithm == SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM:
-            trainer = RadialBasisFunctionSVMTrainer(is_classifier)
-        elif target_algorithm == SupportedMachineLearningAlgorithms.ELASTIC_NET and not is_classifier:
-            trainer = ElasticNetTrainer(is_classifier)
-        elif target_algorithm == SupportedMachineLearningAlgorithms.RIDGE_REGRESSION and not is_classifier:
-            trainer = RidgeRegressionTrainer(is_classifier)
-        elif target_algorithm == SupportedMachineLearningAlgorithms.LASSO_REGRESSION and not is_classifier:
-            trainer = LassoRegressionTrainer(is_classifier)
-        elif target_algorithm == SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET and\
-                not is_classifier and \
-                self.inputs.rsen_config.binary_cat_matrix is not None and\
-                self.inputs.rsen_config.p_val is not None and self.inputs.rsen_config.k_val is not None:
-            trainer = RandomSubsetElasticNetTrainer(is_classifier,
-                                                    self.inputs.rsen_config.binary_cat_matrix,
-                                                    self.inputs.rsen_config.p_val, self.inputs.rsen_config.k_val)
-        else:
-            raise ValueError("Unsupported Machine Learning algorithm for individual training: %s", target_algorithm)
-        return trainer
-
     def shouldTrainAlgorithm(self, algorithm):
         configs = self.inputs.algorithm_configs
         return configs is not None and configs.get(algorithm) is not None and configs.get(algorithm)[0]
@@ -186,6 +164,7 @@ class MachineLearningService(object):
         rf = SupportedMachineLearningAlgorithms.RANDOM_FOREST
         rsen = SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET
 
+        #TODO: Extract all these to the new ModelTrainerFactory class.
         if not is_classifier and self.shouldTrainAlgorithm(enet):
             elasticnet_trainer = ElasticNetTrainer(is_classifier)
             elasticnet_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(enet, True),
