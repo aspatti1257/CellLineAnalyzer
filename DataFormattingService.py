@@ -58,16 +58,17 @@ class DataFormattingService(object):
         for key in keys_as_list:
             maybe_scaled_dict[key] = []
 
-        for i in range(0, len(as_dict[keys_as_list[0]])):
-            array_to_maybe_scale = []
-            for key in keys_as_list:
-                array_to_maybe_scale.append(as_dict[key][i])
-            if should_scale:
-                maybe_scaled_array = preprocessing.scale(array_to_maybe_scale)
-            else:
-                maybe_scaled_array = array_to_maybe_scale
-            for j in range(0, len(keys_as_list)):
-                maybe_scaled_dict[keys_as_list[j]].append(maybe_scaled_array[j])
+        if len(keys_as_list) > 0:
+            for i in range(0, len(as_dict[keys_as_list[0]])):
+                array_to_maybe_scale = []
+                for key in keys_as_list:
+                    array_to_maybe_scale.append(as_dict[key][i])
+                if should_scale:
+                    maybe_scaled_array = preprocessing.scale(array_to_maybe_scale)
+                else:
+                    maybe_scaled_array = array_to_maybe_scale
+                for j in range(0, len(keys_as_list)):
+                    maybe_scaled_dict[keys_as_list[j]].append(maybe_scaled_array[j])
 
         return maybe_scaled_dict
 

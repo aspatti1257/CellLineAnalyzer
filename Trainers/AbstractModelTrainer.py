@@ -91,7 +91,7 @@ class AbstractModelTrainer(ABC):
         try:
             model = self.train(relevant_results, features, hyperparam_set, feature_names)
         except ValueError as valueError:
-            self.log.error(valueError)
+            self.log.error("Algorithn - " + self.algorithm + ":" + valueError)
         return model
 
     def fetchAllHyperparamPermutations(self, hyperparams):

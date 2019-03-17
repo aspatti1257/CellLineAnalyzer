@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from ArgumentProcessingService import ArgumentProcessingService
 from DataFormattingService import DataFormattingService
 from MachineLearningService import MachineLearningService
@@ -33,25 +35,36 @@ class RecommendationsService(object):
         # Both the features and the feature names are presented as an ordered list, all of them have the same length.
         cell_line_map = self.inputs.features
         results = self.inputs.results
+
+        cloned_inputs = copy.deepcopy(self.inputs)
+        cloned_inputs.data_split = 1.0
+        data_formatting_service = DataFormattingService(cloned_inputs)
+        formatted_inputs = data_formatting_service.formatData(True, True)
+        feature_names = formatted_inputs.get(ArgumentProcessingService.FEATURE_NAMES)
         # get results map
         for cell_line in cell_line_map.keys():
             if cell_line == ArgumentProcessingService.FEATURE_NAMES:
                 # Continue skips over this, so if the key we're analyzing isn't a cell line (i.e. it's the feature
                 # names, skip it).
                 continue
-            trimmed_cell_lines, trimmed_results = self.removeCellLineFromFeaturesAndResults(cell_line, cell_line_map, results)
+            trimmed_cell_lines, trimmed_results = self.removeCellLineFromFeaturesAndResults(cell_line, formatted_inputs,
+                                                                                            results)
             # remove cell line from results
             cellline_viabilities = []
             for drug in self.getDrugFolders(input_folder):
-                best_model = self.determineAndTrainBestModel(drug, input_folder, trimmed_cell_lines, trimmed_results,
-                                                             combos)
-                if best_model is None:
+                best_model, best_combo = self.fetchBestModelAndCombo(drug, input_folder, trimmed_cell_lines,
+                                                                     trimmed_results, combos)
+                if best_model is None or best_combo is None:
                     continue
                 else:
-                    # TODO: This cell_line needs to be formatted and one hot encoded as well.
-                    cellline_viabilities.append([drug, best_model.predict([cell_line_map[cell_line]])])
+                    prediction = self.generatePrediction(best_model, best_combo, cell_line, feature_names, formatted_inputs)
+                    cellline_viabilities.append([drug, prediction])
             recs = []
-            #self.presciption_from_prediction(self, trainer, viability_acceptance, cellline_viabilities) #@AP: viability_acceptance is a user-defined value, which should come from the arguments file. How do I get it here?
+            #self.presciption_from_prediction(self, trainer, viability_acceptance, cellline_viabilities)
+            # @AP: viability_acceptance is a user-defined value, which should come from the arguments file. How do I
+            # get it here?
+            # @MB: Added it via referencing self.inputs.recs_config.viability_acceptance. Defaults to None, set to 0.1
+            # for the sake of RecommendationsServiceIT testing.
             with open('FinalResults.csv','a') as f:
                 f.write(str(cell_line)+',')
                 for drug in recs:
@@ -212,12 +225,12 @@ class RecommendationsService(object):
         # hyperparams['SVM'][argmax.split('_')[2]] = argmax.split('_')[3]
         # return genelists, hyperparams
 
-    def removeCellLineFromFeaturesAndResults(self, cell_line, features_map, results):
-        cloned_features = copy.deepcopy(features_map)
-        del cloned_features[cell_line]
+    def removeCellLineFromFeaturesAndResults(self, cell_line, formatted_inputs, results):
+        cloned_formatted_data = copy.deepcopy(formatted_inputs)
+        del cloned_formatted_data.get(DataFormattingService.TRAINING_MATRIX)[cell_line]
 
         cloned_results = [result for result in results if result[0] is not cell_line]
-        return cloned_features, cloned_results
+        return cloned_formatted_data, cloned_results
 
     def getDrugFolders(self, input_folder):
         # search for and return all drug folders in the input_folder.
@@ -226,7 +239,7 @@ class RecommendationsService(object):
         drug_folders = [f for f in folders if 'Analysis' in f]
         return drug_folders
 
-    def determineAndTrainBestModel(self, drug, analysis_files_folder, trimmed_cell_lines, trimmed_results, combos):
+    def fetchBestModelAndCombo(self, drug, analysis_files_folder, trimmed_cell_lines, trimmed_results, combos):
         # TODO: ultimately we'd want to use multiple algorithms, and make an ensemble prediction/prescription.
         # But for now, let's stick with one algorithm.
         best_combo_string = None
@@ -256,7 +269,11 @@ class RecommendationsService(object):
                             best_combo_string = string_combo
                             top_score = score
                             optimal_hyperparams = self.fetchBestHyperparams(row, indices_of_outer_loops)
-                except ValueError as valueError: #@AP what does this do?
+                except ValueError as valueError:
+                    #@AP what does this do?
+                    #@MB: This is a try/catch block. Any errors that we encounter will be caught and handled here. In
+                    # this case, we're just logging it, but we may want to do something else in the future if we
+                    # discover something really bad. This helps us quickly detect when something goes wrong.
                     self.log.error(valueError)
                 finally:
                     self.log.debug("Closing file %s", analysis_file)
@@ -268,8 +285,8 @@ class RecommendationsService(object):
             return None
 
         best_combo = self.determineBestComboFromString(best_combo_string, combos)
-        return self.trainBestModel(best_scoring_algo, best_combo, optimal_hyperparams, trimmed_cell_lines,
-                                   trimmed_results)
+        return self.trainBestModelWithCombo(best_scoring_algo, best_combo, optimal_hyperparams, trimmed_cell_lines,
+                                            trimmed_results)
 
     def scorePhrase(self):
         if self.inputs.is_classifier:
@@ -316,26 +333,19 @@ class RecommendationsService(object):
         files = os.listdir(input_folder + "/" + drug)
         return [file for file in files if "Analysis.csv" in file]
 
-    def trainBestModel(self, best_scoring_algo, best_scoring_combo, optimal_hyperparams, trimmed_cell_lines,
-                       trimmed_results):
+    def trainBestModelWithCombo(self, best_scoring_algo, best_scoring_combo, optimal_hyperparams, trimmed_cell_lines,
+                                trimmed_results):
         is_classifier = self.inputs.is_classifier
         rsen_config = self.inputs.rsen_config
-
-        cloned_inputs = copy.deepcopy(self.inputs)
-        cloned_inputs.features = trimmed_cell_lines
-        cloned_inputs.results = trimmed_results
-        # cloned_inputs.data_split = 1.0
-        data_formatting_service = DataFormattingService(cloned_inputs)
-        formatted_data = data_formatting_service.formatData(True, True)
         training_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
-                                                                      best_scoring_combo, formatted_data)
+                                                                      best_scoring_combo, trimmed_cell_lines)
         trainer = ModelTrainerFactory.createTrainerFromTargetAlgorithm(is_classifier, best_scoring_algo, rsen_config)
 
         features, relevant_results = trainer.populateFeaturesAndResultsByCellLine(training_matrix, trimmed_results)
-        feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
         params = [SafeCastUtil.safeCast(param.split(":")[1].strip(), float) for param in optimal_hyperparams.split(",")]
+        feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
         model = trainer.buildModel(relevant_results, features, params, feature_names)
-        return model
+        return model, best_scoring_combo
 
         # @AP: feature_names is an input parameter whenever the function is called in MachineLearningService. However,
         #  when I look into the code for the trainers, it is never used. Is it obsolete?
@@ -373,3 +383,14 @@ class RecommendationsService(object):
             if feature_set_string == best_combo_string:
                 return combo
         return None
+
+    def generatePrediction(self, best_model, best_combo, cell_line, all_features, formatted_inputs):
+        ommited_cell_line = formatted_inputs.get(DataFormattingService.TRAINING_MATRIX).get(cell_line)
+        input_wrapper = OrderedDict()
+        input_wrapper[DataFormattingService.TRAINING_MATRIX] = OrderedDict()
+        input_wrapper[DataFormattingService.TRAINING_MATRIX][cell_line] = ommited_cell_line
+        input_wrapper[ArgumentProcessingService.FEATURE_NAMES] = all_features
+        trimmed_cell_line = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
+                                                                  best_combo, input_wrapper)
+        prediction = best_model.predict([trimmed_cell_line.get(cell_line)])[0]
+        return prediction
