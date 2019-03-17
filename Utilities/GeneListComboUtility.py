@@ -3,6 +3,7 @@ from collections import OrderedDict
 from itertools import repeat
 
 from ArgumentConfig.AnalysisType import AnalysisType
+from ArgumentProcessingService import ArgumentProcessingService
 from Utilities.SafeCastUtil import SafeCastUtil
 
 
@@ -96,3 +97,27 @@ class GeneListComboUtility(object):
         concated_genes = SafeCastUtil.safeCast(numpy.concatenate(all_genes), list)
         dedupded_genes = list(OrderedDict(zip(concated_genes, repeat(None))))
         return dedupded_genes
+
+    @staticmethod
+    def trimMatrixByFeatureSet(matrix_type, gene_lists, formatted_inputs):
+        full_matrix = formatted_inputs.get(matrix_type)
+        trimmed_matrix = {
+            ArgumentProcessingService.FEATURE_NAMES: []
+        }
+
+        important_indices = []
+        feature_names = formatted_inputs.get(ArgumentProcessingService.FEATURE_NAMES)
+        for i in range(0, len(feature_names)):
+            for gene_list in gene_lists:
+                for gene in gene_list:
+                    if gene == feature_names[i]:
+                        important_indices.append(i)
+                        trimmed_matrix[ArgumentProcessingService.FEATURE_NAMES].append(gene)
+
+        for cell_line in full_matrix.keys():
+            new_cell_line_features = []
+            for j in range(0, len(full_matrix[cell_line])):
+                if j in important_indices:
+                    new_cell_line_features.append(full_matrix[cell_line][j])
+            trimmed_matrix[cell_line] = new_cell_line_features
+        return trimmed_matrix

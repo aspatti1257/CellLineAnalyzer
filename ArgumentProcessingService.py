@@ -6,6 +6,7 @@ import re
 from ArgumentConfig.IndividualTrainConfig import IndividualTrainConfig
 from ArgumentConfig.ProcessedArguments import ProcessedArguments
 from ArgumentConfig.RSENConfig import RSENConfig
+from ArgumentConfig.RecommendationsConfig import RecommendationsConfig
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Utilities.SafeCastUtil import SafeCastUtil
 
@@ -49,6 +50,9 @@ class ArgumentProcessingService(object):
     INDIVIDUAL_TRAIN_HYPERPARAMS = "individual_train_hyperparams"
     INDIVIDUAL_TRAIN_FEATURE_GENE_LIST_COMBO = "individual_train_combo"
 
+    # For AnalysisType.RECOMMENDATIONS
+    VIABILITY_ACCEPTANCE = "viability_acceptance"
+
     def __init__(self, input_folder):
         self.input_folder = input_folder
 
@@ -89,9 +93,12 @@ class ArgumentProcessingService(object):
         rsen_config = self.createRSENConfig(arguments, binary_cat_matrix)
         specific_combos = self.determineSpecificCombos(arguments.get(self.SPECIFIC_COMBOS))
 
+        recs_config = self.createRecommendationsConfig(arguments)
+
         return ProcessedArguments(results_list, is_classifier, feature_map, gene_lists, inner_monte_carlo_perms,
                                   outer_monte_carlo_perms, data_split, algorithm_configs, num_threads,
-                                  write_diagnostics, individual_train_config, rsen_config, specific_combos, analyze_all)
+                                  write_diagnostics, individual_train_config, rsen_config, recs_config, specific_combos,
+                                  analyze_all)
 
     def validateDirectoryContents(self, directory_contents):
         return self.ARGUMENTS_FILE in directory_contents
@@ -377,6 +384,11 @@ class ArgumentProcessingService(object):
         individual_train_config = IndividualTrainConfig(individual_train_algorithm, individual_train_hyperparams,
                                                         individual_train_feature_gene_list_combo)
         return individual_train_config
+
+    def createRecommendationsConfig(self, arguments):
+        viability_acceptance = self.fetchOrReturnDefault(arguments.get(self.VIABILITY_ACCEPTANCE), float, None)
+        recs_config = RecommendationsConfig(viability_acceptance)
+        return recs_config
 
     def fetchBinaryCatMatrixIfApplicable(self, arguments, gene_lists, results_list, analyze_all):
         binary_matrix_file = arguments.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)

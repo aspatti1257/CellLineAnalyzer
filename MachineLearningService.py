@@ -15,13 +15,6 @@ from HTMLWritingService import HTMLWritingService
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from ArgumentProcessingService import ArgumentProcessingService
 from DataFormattingService import DataFormattingService
-from Trainers.RandomForestTrainer import RandomForestTrainer
-from Trainers.LinearSVMTrainer import LinearSVMTrainer
-from Trainers.RadialBasisFunctionSVMTrainer import RadialBasisFunctionSVMTrainer
-from Trainers.ElasticNetTrainer import ElasticNetTrainer
-from Trainers.RidgeRegressionTrainer import RidgeRegressionTrainer
-from Trainers.LassoRegressionTrainer import LassoRegressionTrainer
-from Trainers.RandomSubsetElasticNetTrainer import RandomSubsetElasticNetTrainer
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
 from Utilities.GeneListComboUtility import GeneListComboUtility
 from Utilities.ModelTrainerFactory import ModelTrainerFactory
@@ -88,10 +81,10 @@ class MachineLearningService(object):
                 for permutation in range(0, outer_monte_carlo_loops):
                     results = self.inputs.results
                     formatted_data = self.formatData(self.inputs, True, True)
-                    training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
-                                                                  gene_list_combo, formatted_data)
-                    testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, gene_list_combo,
-                                                                 formatted_data)
+                    training_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
+                                                                                  gene_list_combo, formatted_data)
+                    testing_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, gene_list_combo,
+                                                                                 formatted_data)
                     features, relevant_results = trainer.populateFeaturesAndResultsByCellLine(training_matrix, results)
                     feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
                     model = trainer.buildModel(relevant_results, features, casted_params, feature_names)
@@ -156,65 +149,21 @@ class MachineLearningService(object):
         return SafeCastUtil.safeCast(selected_combos.values(), list)
 
     def analyzeGeneListCombos(self, gene_list_combos, input_folder, is_classifier):
-        enet = SupportedMachineLearningAlgorithms.ELASTIC_NET
-        rig_reg = SupportedMachineLearningAlgorithms.RIDGE_REGRESSION
-        las_reg = SupportedMachineLearningAlgorithms.LASSO_REGRESSION
-        lin_svm = SupportedMachineLearningAlgorithms.LINEAR_SVM
-        rbf = SupportedMachineLearningAlgorithms.RADIAL_BASIS_FUNCTION_SVM
-        rf = SupportedMachineLearningAlgorithms.RANDOM_FOREST
-        rsen = SupportedMachineLearningAlgorithms.RANDOM_SUBSET_ELASTIC_NET
-
-        #TODO: Extract all these to the new ModelTrainerFactory class.
-        if not is_classifier and self.shouldTrainAlgorithm(enet):
-            elasticnet_trainer = ElasticNetTrainer(is_classifier)
-            elasticnet_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(enet, True),
-                                                  self.monteCarloPermsByAlgorithm(enet, False),
-                                                  len(gene_list_combos))
-            self.handleParallellization(gene_list_combos, input_folder, elasticnet_trainer)
-
-        if not is_classifier and self.shouldTrainAlgorithm(rig_reg):
-            ridge_regression_trainer = RidgeRegressionTrainer(is_classifier)
-            ridge_regression_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rig_reg, True),
-                                                        self.monteCarloPermsByAlgorithm(rig_reg, False),
-                                                        len(gene_list_combos))
-            self.handleParallellization(gene_list_combos, input_folder, ridge_regression_trainer)
-
-        if not is_classifier and self.shouldTrainAlgorithm(las_reg):
-            lasso_regression_trainer = LassoRegressionTrainer(is_classifier)
-            lasso_regression_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rig_reg, True),
-                                                        self.monteCarloPermsByAlgorithm(rig_reg, False),
-                                                        len(gene_list_combos))
-            self.handleParallellization(gene_list_combos, input_folder, lasso_regression_trainer)
-
-        if self.shouldTrainAlgorithm(lin_svm):
-            linear_svm_trainer = LinearSVMTrainer(is_classifier)
-            linear_svm_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(lin_svm, True),
-                                                  self.monteCarloPermsByAlgorithm(lin_svm, False),
-                                                  len(gene_list_combos))
-            self.handleParallellization(gene_list_combos, input_folder, linear_svm_trainer)
-
-        if self.shouldTrainAlgorithm(rbf):
-            rbf_svm_trainer = RadialBasisFunctionSVMTrainer(is_classifier)
-            rbf_svm_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rbf, True),
-                                               self.monteCarloPermsByAlgorithm(rbf, False), len(gene_list_combos))
-            self.handleParallellization(gene_list_combos, input_folder, rbf_svm_trainer)
-
-        if self.shouldTrainAlgorithm(rf):
-            rf_trainer = RandomForestTrainer(is_classifier)
-            rf_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rf, True),
-                                          self.monteCarloPermsByAlgorithm(rf, False), len(gene_list_combos))
-            self.handleParallellization(gene_list_combos, input_folder, rf_trainer)
-
         rsen_config = self.inputs.rsen_config
-        binary_cat_matrix = rsen_config.binary_cat_matrix
-        if self.shouldTrainAlgorithm(rsen) and not is_classifier and binary_cat_matrix is not None:
-            p_val = rsen_config.p_val
-            k_val = rsen_config.k_val
-            rsen_trainer = RandomSubsetElasticNetTrainer(is_classifier, binary_cat_matrix, p_val, k_val)
-            rsen_trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(rsen, True),
-                                            self.monteCarloPermsByAlgorithm(rsen, False),
-                                            len(gene_list_combos))
-            self.handleParallellization(gene_list_combos, input_folder, rsen_trainer)
+        for algo in SupportedMachineLearningAlgorithms.fetchAlgorithms():
+            if self.shouldTrainAlgorithm(algo):
+                trainer = None
+                try:
+                    trainer = ModelTrainerFactory.createTrainerFromTargetAlgorithm(is_classifier, algo, rsen_config)
+                except ValueError as valueError:
+                    self.log.error("Improper configuration for algorithm: [%s], %s.", algo, valueError)
+                finally:
+                    if trainer is not None:
+                        trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(algo, True),
+                                                   self.monteCarloPermsByAlgorithm(algo, False),
+                                                   len(gene_list_combos))
+                        self.handleParallellization(gene_list_combos, input_folder, algo)
+
 
     def monteCarloPermsByAlgorithm(self, algorithm, outer):
         monte_carlo_config = self.inputs.algorithm_configs.get(algorithm)
@@ -291,10 +240,10 @@ class MachineLearningService(object):
 
         for i in range(1, outer_perms + 1):
             formatted_data = self.formatData(self.inputs, True, True)
-            training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set,
-                                                          formatted_data)
-            testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set,
-                                                         formatted_data)
+            training_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set,
+                                                                          formatted_data)
+            testing_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set,
+                                                                         formatted_data)
 
             self.log.debug("Computing outer Monte Carlo Permutation %s for %s.", i, feature_set_as_string)
 
@@ -404,10 +353,10 @@ class MachineLearningService(object):
                 formatted_data.get(DataFormattingService.TRAINING_MATRIX),
                 formatted_data.get(ArgumentProcessingService.FEATURE_NAMES))
             further_formatted_data = self.formatData(formatted_inputs, False, False)
-            inner_validation_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set,
-                                                                  further_formatted_data)
-            inner_train_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set,
-                                                             further_formatted_data)
+            inner_validation_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX,
+                                                                                  feature_set, further_formatted_data)
+            inner_train_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
+                                                                             feature_set, further_formatted_data)
             model_data = trainer.hyperparameterize(inner_train_matrix, inner_validation_matrix, self.inputs.results)
             for data in model_data.keys():
                 if inner_model_hyperparams.get(data) is not None:
@@ -449,7 +398,7 @@ class MachineLearningService(object):
                                   real_inputs.outer_monte_carlo_permutations, real_inputs.data_split,
                                   real_inputs.algorithm_configs, real_inputs.num_threads,
                                   real_inputs.record_diagnostics,
-                                  real_inputs.individual_train_config, real_inputs.rsen_config,
+                                  real_inputs.individual_train_config, real_inputs.rsen_config, real_inputs.recs_config,
                                   real_inputs.specific_combos, False)
 
     def determineOptimalHyperparameters(self, feature_set, formatted_data, trainer):
@@ -467,29 +416,6 @@ class MachineLearningService(object):
         if additional_data:
             best_hyperparam.append(additional_data)
         return best_hyperparam
-
-    def trimMatrixByFeatureSet(self, matrix_type, gene_lists, formatted_inputs):
-        full_matrix = formatted_inputs.get(matrix_type)
-        trimmed_matrix = {
-            ArgumentProcessingService.FEATURE_NAMES: []
-        }
-
-        important_indices = []
-        feature_names = formatted_inputs.get(ArgumentProcessingService.FEATURE_NAMES)
-        for i in range(0, len(feature_names)):
-            for gene_list in gene_lists:
-                for gene in gene_list:
-                    if gene == feature_names[i]:
-                        important_indices.append(i)
-                        trimmed_matrix[ArgumentProcessingService.FEATURE_NAMES].append(gene)
-
-        for cell_line in full_matrix.keys():
-            new_cell_line_features = []
-            for j in range(0, len(full_matrix[cell_line])):
-                if j in important_indices:
-                    new_cell_line_features.append(full_matrix[cell_line][j])
-            trimmed_matrix[cell_line] = new_cell_line_features
-        return trimmed_matrix
 
     def writeToCSVInLock(self, line, input_folder, ml_algorithm, num_combos, outer_perms):
         lock = threading.Lock()

@@ -33,6 +33,7 @@ class RecommendationsServiceIT(unittest.TestCase):
     # Run this IT and put a breakpoint in recs_service.recommendByHoldout() to see what variables you have to work with.
     def testRecommendations(self):
         inputs = self.formatRandomizedData(False)
+        inputs.recs_config.viability_acceptance = 0.1
         self.instantiateMLServiceAndSetupDrugData(inputs)
 
         recs_service = RecommendationsService(inputs)
