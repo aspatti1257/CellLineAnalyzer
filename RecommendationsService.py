@@ -3,7 +3,6 @@ from collections import OrderedDict
 from ArgumentProcessingService import ArgumentProcessingService
 from DataFormattingService import DataFormattingService
 from MachineLearningService import MachineLearningService
-from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
 from Utilities.GeneListComboUtility import GeneListComboUtility
 import os
@@ -288,6 +287,7 @@ class RecommendationsService(object):
         return self.trainBestModelWithCombo(best_scoring_algo, best_combo, optimal_hyperparams, trimmed_cell_lines,
                                             trimmed_results)
 
+
     def scorePhrase(self):
         if self.inputs.is_classifier:
             return MachineLearningService.PERCENT_ACCURATE_PREDICTIONS
@@ -358,10 +358,6 @@ class RecommendationsService(object):
         # every RandomForestTrainer is also an AbstractModelTrainer.
 
     def presciption_from_prediction(self, trainer, viability_acceptance, druglist, cellline_viabilities):
-        # celline_viabilities has two columns: column 1 is a drugname, column 2 its (predicted) viability
-        # viability_acceptance is a user-defined threshold: include all drugs whose performance
-        # is >= viability_acceptance*best_viability
-        # druglist is a lists the drugs for which viability of this cell line was predicted
         best = numpy.argmax(cellline_viabilities[:, 1])
         bestdrug = cellline_viabilities[best, 0]
         bestviab = cellline_viabilities[best, 1]
@@ -371,7 +367,6 @@ class RecommendationsService(object):
             if cellline_viabilities[d, 1] >= viab_threshold and cellline_viabilities[d, 0] not in prescription:
                 prescription.append(cellline_viabilities[d, 0])
         return prescription
-
 
     def determineBestComboFromString(self, best_combo_string, combos):
         gene_lists = self.inputs.gene_lists
