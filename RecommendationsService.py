@@ -358,6 +358,10 @@ class RecommendationsService(object):
         # every RandomForestTrainer is also an AbstractModelTrainer.
 
     def presciption_from_prediction(self, trainer, viability_acceptance, druglist, cellline_viabilities):
+        # celline_viabilities has two columns: column 1 is a drugname, column 2 its (predicted) viability
+        # viability_acceptance is a user-defined threshold: include all drugs whose performance
+        # is >= viability_acceptance*best_viability
+        # druglist is a lists the drugs for which viability of this cell line was predicted
         best = numpy.argmax(cellline_viabilities[:, 1])
         bestdrug = cellline_viabilities[best, 0]
         bestviab = cellline_viabilities[best, 1]
