@@ -33,6 +33,7 @@ def promptUserForInput():
                               "Choose your task:\n"
                               "\t0: Analysis of cell lines\n"
                               "\t1: Convert MATLAB to CSV file\n"
+                              "\t2: Dr.S Analysis (Drug Recommendations System)"
                               "\tQ: Quit\n")
 
     option_as_int = SafeCastUtil.safeCast(simulation_to_run, int)
