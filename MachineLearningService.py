@@ -24,6 +24,7 @@ from Trainers.LassoRegressionTrainer import LassoRegressionTrainer
 from Trainers.RandomSubsetElasticNetTrainer import RandomSubsetElasticNetTrainer
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
 from Utilities.GeneListComboUtility import GeneListComboUtility
+from Utilities.PercentageBarUtility import PercentageBarUtility
 from Utilities.SafeCastUtil import SafeCastUtil
 
 
@@ -31,7 +32,7 @@ class MachineLearningService(object):
 
     log = logging.getLogger(__name__)
     logging.basicConfig()
-    log.setLevel(logging.INFO)
+    log.setLevel(logging.DEBUG)
 
     MAXIMUM_FEATURES_RECORDED = 20
     DELIMITER = " --- "
@@ -581,17 +582,7 @@ class MachineLearningService(object):
             return "th"
 
     def logPercentDone(self, total_lines, num_combos, ml_algorithm):
-        percent_done = numpy.round((total_lines / num_combos) * 100, 1)
-        percentage_bar = "["
-        for i in range(0, 100):
-            if i < percent_done:
-                percentage_bar += "="
-            elif i >= percent_done:
-                if i > 0 and (i - 1) < percent_done:
-                    percentage_bar += ">"
-                else:
-                    percentage_bar += " "
-        percentage_bar += "]"
+        percent_done, percentage_bar = PercentageBarUtility.calculateAndCreatePercentageBar(total_lines, num_combos)
         self.log.info("Total progress for %s: %s%% done: %s", ml_algorithm, percent_done, percentage_bar)
 
     def saveOutputToTxtFile(self, scores, accuracies, feature_set_as_string, input_folder, algorithm):

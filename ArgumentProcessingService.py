@@ -2,11 +2,14 @@ import logging
 import multiprocessing
 import os
 import re
+import mmap
+import numpy
 
 from ArgumentConfig.IndividualTrainConfig import IndividualTrainConfig
 from ArgumentConfig.ProcessedArguments import ProcessedArguments
 from ArgumentConfig.RSENConfig import RSENConfig
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
+from Utilities.PercentageBarUtility import PercentageBarUtility
 from Utilities.SafeCastUtil import SafeCastUtil
 
 
@@ -165,12 +168,15 @@ class ArgumentProcessingService(object):
             self.log.info("Fetching all features for file %s", file)
             file_name = file.split(".")[0]
             features_path = self.input_folder + "/" + file
+            num_lines = self.countLines(features_path)
             with open(features_path) as feature_file:
                 num_features = 0
                 valid_indices = []
                 try:
                     for line_index, line in enumerate(feature_file):
                         line_split = line.split(",")
+                        percent_done, percentage_bar = PercentageBarUtility.calculateAndCreatePercentageBar(line_index, num_lines)
+                        self.log.info("Total progress for %s: %s%% done: %s", file, percent_done, percentage_bar)
                         if line_index == 0:
                             valid_indices, feature_names = self.fetchUniqueFeatureNamesAndIndices(line_split, file_name)
                             feature_matrix[self.FEATURE_NAMES] += feature_names
@@ -192,6 +198,15 @@ class ArgumentProcessingService(object):
                     self.log.debug("Closing file %s", feature_file)
                     feature_file.close()
         return feature_matrix
+
+    def countLines(self, file):
+        open_file = open(file, "r+")
+        buf = mmap.mmap(open_file.fileno(), 0)
+        lines = 0
+        readline = buf.readline
+        while readline():
+            lines += 1
+        return lines
 
     def fetchUniqueFeatureNamesAndIndices(self, line_split, file_name):
         unvalidated_features = [file_name + "." + name.strip() for name in line_split if len(name.strip()) > 0]

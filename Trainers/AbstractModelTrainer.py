@@ -89,6 +89,7 @@ class AbstractModelTrainer(ABC):
     def buildModel(self, relevant_results, features, hyperparam_set, feature_names):
         model = None
         try:
+            self.log.debug("Attempting model build at for %s.", self.algorithm)
             model = self.train(relevant_results, features, hyperparam_set, feature_names)
         except ValueError as valueError:
             self.log.error(valueError)
