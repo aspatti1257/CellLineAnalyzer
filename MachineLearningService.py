@@ -6,6 +6,7 @@ import numpy
 import os
 import threading
 import psutil
+import copy
 
 from joblib import Parallel, delayed
 
@@ -96,7 +97,7 @@ class MachineLearningService(object):
                     model_score = trainer.fetchPredictionsAndScore(model, testing_matrix, results)
                     score = model_score[0]
                     accuracy = model_score[1]
-                    importances = trainer.fetchFeatureImportances(model, gene_list_combo)
+                    importances = trainer.fetchFeatureImportances(model, feature_names)
                     for key in importances.keys():
                         importances[key] = [importances[key]]
                     ordered_importances = self.averageAndSortImportances(importances, 1)
@@ -379,7 +380,7 @@ class MachineLearningService(object):
         feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
         model = trainer.buildModel(relevant_results, features, optimal_hyperparams, feature_names)
         score, accuracy = trainer.fetchPredictionsAndScore(model, testing_matrix, results)
-        return [score, accuracy, trainer.fetchFeatureImportances(model, feature_set),
+        return [score, accuracy, trainer.fetchFeatureImportances(model, feature_names),
                 trainer.fetchModelPhrases(model, feature_set)]
 
     def averageAndSortImportances(self, importances, outer_loops):
@@ -497,12 +498,19 @@ class MachineLearningService(object):
 
     def trimMatrixByFeatureSet(self, matrix_type, gene_lists, formatted_inputs):
         full_matrix = formatted_inputs.get(matrix_type)
+        feature_names = formatted_inputs.get(ArgumentProcessingService.FEATURE_NAMES)
+
+        if self.inputs.analysisType() is AnalysisType.SPEARMAN_NO_GENE_LISTS:
+            # Skips an expensive process since we'll always be analyzing all features anyways in this mode.
+            cloned_full_matrix = copy.deepcopy(full_matrix)
+            cloned_full_matrix[ArgumentProcessingService.FEATURE_NAMES] = feature_names
+            return cloned_full_matrix
+
         trimmed_matrix = {
             ArgumentProcessingService.FEATURE_NAMES: []
         }
 
         important_indices = []
-        feature_names = formatted_inputs.get(ArgumentProcessingService.FEATURE_NAMES)
         for i in range(0, len(feature_names)):
             for gene_list in gene_lists:
                 for gene in gene_list:

@@ -117,21 +117,20 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
 
         return uses_bin_cat_matrix and uses_other_feature_file
 
-    def fetchFeatureImportances(self, model, gene_list_combo):
-        features_in_order = [feature for feature in super().generateFeaturesInOrder(gene_list_combo)
-                             if self.bin_cat_matrix_name not in feature]
+    def fetchFeatureImportances(self, model, features_in_order):
+        evaluated_features = [feature for feature in features_in_order if self.bin_cat_matrix_name not in feature]
         importances_map = OrderedDict()
         for model_phrase in model.models_by_phrase:
-            if hasattr(model_phrase.model, "coef_") and len(features_in_order) == len(model_phrase.model.coef_):
-                for i in range(0, len(features_in_order)):
+            if hasattr(model_phrase.model, "coef_") and len(evaluated_features) == len(model_phrase.model.coef_):
+                for i in range(0, len(evaluated_features)):
                     weighted_score = model_phrase.model.coef_[i] * model_phrase.score
-                    if importances_map.get(features_in_order[i]) is None:
-                        importances_map[features_in_order[i]] = [weighted_score]
+                    if importances_map.get(evaluated_features[i]) is None:
+                        importances_map[evaluated_features[i]] = [weighted_score]
                     else:
-                        importances_map[features_in_order[i]].append(weighted_score)
+                        importances_map[evaluated_features[i]].append(weighted_score)
 
         feature_names = SafeCastUtil.safeCast(importances_map.keys(), list)
-        average_coefficients = [numpy.sum(imps) / len(features_in_order) for imps in
+        average_coefficients = [numpy.sum(imps) / len(evaluated_features) for imps in
                                 SafeCastUtil.safeCast(importances_map.values(), list)]
         return super().normalizeCoefficients(average_coefficients, feature_names)
 

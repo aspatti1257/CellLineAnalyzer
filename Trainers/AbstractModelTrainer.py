@@ -51,7 +51,7 @@ class AbstractModelTrainer(ABC):
         pass
 
     @abstractmethod
-    def fetchFeatureImportances(self, model, gene_list_combo):
+    def fetchFeatureImportances(self, model, features_in_order):
         pass
 
     def preserveNonHyperparamData(self, model_data, model):

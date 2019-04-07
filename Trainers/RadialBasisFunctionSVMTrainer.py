@@ -55,5 +55,5 @@ class RadialBasisFunctionSVMTrainer(AbstractModelTrainer):
         if record_diagnostics:
             self.writeToDiagnosticsFile(input_folder, message)
 
-    def fetchFeatureImportances(self, model, gene_list_combo):
+    def fetchFeatureImportances(self, model, features_in_order):
         return {}  # Not supported.

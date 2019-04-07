@@ -53,8 +53,7 @@ class LinearSVMTrainer(AbstractModelTrainer):
         if record_diagnostics:
             self.writeToDiagnosticsFile(input_folder, message)
 
-    def fetchFeatureImportances(self, model, gene_list_combo):
-        features_in_order = super().generateFeaturesInOrder(gene_list_combo)
+    def fetchFeatureImportances(self, model, features_in_order):
         if hasattr(model, "coef_") and hasattr(model, "coef_"):
             if self.is_classifier and len(features_in_order) == len(model.coef_[0]):
                 # TODO: This is probably wrong. Find proper way to get importances for classifier case.
