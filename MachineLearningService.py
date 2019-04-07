@@ -502,9 +502,8 @@ class MachineLearningService(object):
 
         if self.inputs.analysisType() is AnalysisType.SPEARMAN_NO_GENE_LISTS:
             # Skips an expensive process since we'll always be analyzing all features anyways in this mode.
-            cloned_full_matrix = copy.deepcopy(full_matrix)
-            cloned_full_matrix[ArgumentProcessingService.FEATURE_NAMES] = feature_names
-            return cloned_full_matrix
+            full_matrix[ArgumentProcessingService.FEATURE_NAMES] = feature_names
+            return full_matrix
 
         trimmed_matrix = {
             ArgumentProcessingService.FEATURE_NAMES: []
