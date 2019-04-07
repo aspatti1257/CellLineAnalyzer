@@ -10,6 +10,7 @@ from ArgumentProcessingService import ArgumentProcessingService
 from Utilities.SafeCastUtil import SafeCastUtil
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import accuracy_score
+import multiprocessing
 
 
 class AbstractModelTrainer(ABC):
@@ -20,6 +21,8 @@ class AbstractModelTrainer(ABC):
     DEFAULT_MIN_SCORE = -10
 
     ADDITIONAL_DATA = "additional_data"
+
+    parallel_hyperparam_threads = -1
 
     @abstractmethod
     def __init__(self, algorithm, hyperparameters, is_classifier):
@@ -79,11 +82,42 @@ class AbstractModelTrainer(ABC):
         feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
 
         model_data = {}
-        for hyperparam_set in self.fetchAllHyperparamPermutations(hyperparams):
-            model = self.buildModel(relevant_results, features, hyperparam_set, feature_names)
-            self.preserveNonHyperparamData(model_data, model)
-            current_model_score = self.fetchPredictionsAndScore(model, testing_matrix, results)
-            self.setModelDataDictionary(model_data, hyperparam_set, current_model_score)
+
+        hyperparam_permutations = self.fetchAllHyperparamPermutations(hyperparams)
+        if self.parallel_hyperparam_threads > 0:
+            chunked_hyperparams = self.chunkList(hyperparam_permutations, self.parallel_hyperparam_threads)
+
+            for chunk in chunked_hyperparams:
+                manager = multiprocessing.Manager()
+                parallelized_dict = manager.dict()
+                multithreaded_jobs = []
+                for hyperparam_set in chunk:
+                    process = multiprocessing.Process(target=self.buildModelAndRecordScore,
+                                                      args=(feature_names, features, hyperparam_set, parallelized_dict,
+                                                            relevant_results, results, testing_matrix))
+                    multithreaded_jobs.append(process)
+                    process.start()
+
+                for proc in multithreaded_jobs:
+                    proc.join()
+
+                for key in parallelized_dict.keys():
+                    model_data[key] = parallelized_dict[key]
+        else:
+            for hyperparam_set in hyperparam_permutations:
+                self.buildModelAndRecordScore(feature_names, features, hyperparam_set, model_data, relevant_results,
+                                              results, testing_matrix)
+        return model_data
+
+    def chunkList(self, original_list, size):
+        return [original_list[i * size:(i + 1) * size] for i in range((len(original_list) + size - 1) // size)]
+
+    def buildModelAndRecordScore(self, feature_names, features, hyperparam_set, model_data, relevant_results, results,
+                                 testing_matrix):
+        model = self.buildModel(relevant_results, features, hyperparam_set, feature_names)
+        self.preserveNonHyperparamData(model_data, model)
+        current_model_score = self.fetchPredictionsAndScore(model, testing_matrix, results)
+        self.setModelDataDictionary(model_data, hyperparam_set, current_model_score)
         return model_data
 
     def buildModel(self, relevant_results, features, hyperparam_set, feature_names):

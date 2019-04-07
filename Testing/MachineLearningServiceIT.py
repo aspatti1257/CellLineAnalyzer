@@ -382,7 +382,7 @@ class MachineLearningServiceIT(unittest.TestCase):
 
     def evaluateModelFullAnalysisSansGeneList(self, trainer):
         processed_args = self.formatRandomizedData(trainer.is_classifier)
-        processed_args.anaylze_all = True
+        processed_args.analyze_all = True
         ml_service = MachineLearningService(processed_args)
 
         self.analyzeAndAssertResults(ml_service, 1, trainer)

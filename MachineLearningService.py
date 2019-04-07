@@ -248,9 +248,14 @@ class MachineLearningService(object):
 
         valid_combos = self.fetchValidGeneListCombos(input_folder, gene_list_combos, trainer)
 
-        Parallel(n_jobs=nodes_to_use)(delayed(self.runMonteCarloSelection)(feature_set, trainer, input_folder,
-                                                                           len(valid_combos))
-                                      for feature_set in valid_combos)
+        if self.inputs.analysisType() is AnalysisType.SPEARMAN_NO_GENE_LISTS:
+            trainer.parallel_hyperparam_threads = nodes_to_use
+            for feature_set in valid_combos:
+                self.runMonteCarloSelection(feature_set, trainer, input_folder, len(valid_combos))
+        else:
+            Parallel(n_jobs=nodes_to_use)(delayed(self.runMonteCarloSelection)(feature_set, trainer, input_folder,
+                                                                               len(valid_combos))
+                                          for feature_set in valid_combos)
         self.logMemoryUsageAndGarbageCollect()
 
     def fetchValidGeneListCombos(self, input_folder, gene_list_combos, trainer):
@@ -312,6 +317,7 @@ class MachineLearningService(object):
 
         for i in range(1, outer_perms + 1):
             formatted_data = self.formatData(self.inputs, True, True)
+            self.log.info("Creating train and test matrices by feature set: %s.", feature_set_as_string)
             training_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set,
                                                           formatted_data)
             testing_matrix = self.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set,
@@ -363,7 +369,7 @@ class MachineLearningService(object):
     def generateFeatureSetString(self, feature_set):
         return GeneListComboUtility.generateFeatureSetString(feature_set, self.inputs.gene_lists,
                                                              self.inputs.rsen_config.combine_gene_lists,
-                                                             self.inputs.analysisType)
+                                                             self.inputs.analysisType())
 
     def fetchOuterPermutationModelScore(self, feature_set, trainer, optimal_hyperparams, testing_matrix,
                                         training_matrix):
@@ -583,7 +589,7 @@ class MachineLearningService(object):
 
     def logPercentDone(self, total_lines, num_combos, ml_algorithm):
         percent_done, percentage_bar = PercentageBarUtility.calculateAndCreatePercentageBar(total_lines, num_combos)
-        self.log.info("Total progress for %s: %s%% done: %s", ml_algorithm, percent_done, percentage_bar)
+        self.log.info("Total progress for %s: %s%% done:\n %s", ml_algorithm, percent_done, percentage_bar)
 
     def saveOutputToTxtFile(self, scores, accuracies, feature_set_as_string, input_folder, algorithm):
         lock = threading.Lock()

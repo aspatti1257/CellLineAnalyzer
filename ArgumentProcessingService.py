@@ -3,7 +3,6 @@ import multiprocessing
 import os
 import re
 import mmap
-import numpy
 
 from ArgumentConfig.IndividualTrainConfig import IndividualTrainConfig
 from ArgumentConfig.ProcessedArguments import ProcessedArguments
@@ -175,8 +174,10 @@ class ArgumentProcessingService(object):
                 try:
                     for line_index, line in enumerate(feature_file):
                         line_split = line.split(",")
-                        percent_done, percentage_bar = PercentageBarUtility.calculateAndCreatePercentageBar(line_index, num_lines)
-                        self.log.info("Total progress for %s: %s%% done: %s", file, percent_done, percentage_bar)
+                        percent_done, percentage_bar = PercentageBarUtility.calculateAndCreatePercentageBar(line_index,
+                                                                                                            num_lines)
+                        self.log.info("Total progress extracting rows for %s: %s%% done:\n %s",
+                                      file, percent_done, percentage_bar)
                         if line_index == 0:
                             valid_indices, feature_names = self.fetchUniqueFeatureNamesAndIndices(line_split, file_name)
                             feature_matrix[self.FEATURE_NAMES] += feature_names
