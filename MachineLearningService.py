@@ -27,7 +27,7 @@ class MachineLearningService(object):
 
     log = logging.getLogger(__name__)
     logging.basicConfig()
-    log.setLevel(logging.DEBUG)
+    log.setLevel(logging.INFO)
 
     MAXIMUM_FEATURES_RECORDED = 20
     DELIMITER = " --- "

@@ -26,7 +26,7 @@ class MachineLearningServiceIT(unittest.TestCase):
 
     THRESHOLD_OF_SIGNIFICANCE = 0.60
 
-    MONTE_CARLO_PERMS = 6
+    MONTE_CARLO_PERMS = 2
     INDIVIDUAL_MONTE_CARLO_PERMS = 10
 
     def setUp(self):

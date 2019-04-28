@@ -1,6 +1,7 @@
 from collections import OrderedDict
 
 from ArgumentProcessingService import ArgumentProcessingService
+from ArgumentConfig.AnalysisType import AnalysisType
 from DataFormattingService import DataFormattingService
 from MachineLearningService import MachineLearningService
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
@@ -338,7 +339,8 @@ class RecommendationsService(object):
         is_classifier = self.inputs.is_classifier
         rsen_config = self.inputs.rsen_config
         training_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
-                                                                      best_scoring_combo, trimmed_cell_lines)
+                                                                      best_scoring_combo, trimmed_cell_lines,
+                                                                      AnalysisType.RECOMMENDATIONS)
         trainer = ModelTrainerFactory.createTrainerFromTargetAlgorithm(is_classifier, best_scoring_algo, rsen_config)
 
         features, relevant_results = trainer.populateFeaturesAndResultsByCellLine(training_matrix, trimmed_results)
@@ -390,6 +392,6 @@ class RecommendationsService(object):
         input_wrapper[DataFormattingService.TRAINING_MATRIX][cell_line] = ommited_cell_line
         input_wrapper[ArgumentProcessingService.FEATURE_NAMES] = all_features
         trimmed_cell_line = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
-                                                                  best_combo, input_wrapper)
+                                                                        best_combo, input_wrapper, AnalysisType.RECOMMENDATIONS)
         prediction = best_model.predict([trimmed_cell_line.get(cell_line)])[0]
         return prediction

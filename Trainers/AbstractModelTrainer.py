@@ -175,7 +175,7 @@ class AbstractModelTrainer(ABC):
         try:
             model = self.train(relevant_results, features, hyperparam_set, feature_names)
         except ValueError as valueError:
-            self.log.error("Failed to create model build for %s: \n%s", self.algorithm, valueError)
+            self.log.error("Failed to create model build for %s:\n%s", self.algorithm, valueError)
         return model
 
     def fetchAllHyperparamPermutations(self, hyperparams):
