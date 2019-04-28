@@ -42,7 +42,6 @@ class RidgeRegressionTrainer(AbstractModelTrainer):
             self.writeToDiagnosticsFile(input_folder, message)
 
     def fetchFeatureImportances(self, model, features_in_order):
-        # features_in_order = super().generateFeaturesInOrder(gene_list_combo)
         if hasattr(model, "coef_") and hasattr(model, "coef_") and len(features_in_order) == len(model.coef_):
             return super().normalizeCoefficients(model.coef_, features_in_order)
 
