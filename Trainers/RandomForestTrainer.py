@@ -50,9 +50,8 @@ class RandomForestTrainer(AbstractModelTrainer):
         if record_diagnostics:
             self.writeToDiagnosticsFile(input_folder, message)
 
-    def fetchFeatureImportances(self, model, gene_list_combo):
+    def fetchFeatureImportances(self, model, features_in_order):
         importances = {}
-        features_in_order = super().generateFeaturesInOrder(gene_list_combo)
 
         if hasattr(model, "feature_importances_") and len(features_in_order) == len(model.feature_importances_):
             for i in range(0, len(features_in_order)):

@@ -10,6 +10,7 @@ from ArgumentProcessingService import ArgumentProcessingService
 from Utilities.SafeCastUtil import SafeCastUtil
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import accuracy_score
+import multiprocessing
 
 
 class AbstractModelTrainer(ABC):
@@ -20,6 +21,10 @@ class AbstractModelTrainer(ABC):
     DEFAULT_MIN_SCORE = -10
 
     ADDITIONAL_DATA = "additional_data"
+
+    EMPTY_MODEL_RESPONSE = 0.0, 0.0
+
+    parallel_hyperparam_threads = -1
 
     @abstractmethod
     def __init__(self, algorithm, hyperparameters, is_classifier):
@@ -48,7 +53,7 @@ class AbstractModelTrainer(ABC):
         pass
 
     @abstractmethod
-    def fetchFeatureImportances(self, model, gene_list_combo):
+    def fetchFeatureImportances(self, model, features_in_order):
         pass
 
     def preserveNonHyperparamData(self, model_data, model):
@@ -78,12 +83,91 @@ class AbstractModelTrainer(ABC):
         features, relevant_results = self.populateFeaturesAndResultsByCellLine(training_matrix, results)
         feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
 
+
+        hyperparam_permutations = self.fetchAllHyperparamPermutations(hyperparams)
+        if SafeCastUtil.safeCast(self.parallel_hyperparam_threads, int, -1) < 0:
+            return self.hyperparameterizeInSerial(feature_names, features, hyperparam_permutations,
+                                                  relevant_results, results, testing_matrix)
+        else:
+            return self.hyperparameterizeInParallel(feature_names, features, hyperparam_permutations,
+                                                    relevant_results, results, testing_matrix)
+
+    def hyperparameterizeInSerial(self, feature_names, features, hyperparam_permutations, relevant_results,
+                                  results, testing_matrix):
         model_data = {}
-        for hyperparam_set in self.fetchAllHyperparamPermutations(hyperparams):
-            model = self.buildModel(relevant_results, features, hyperparam_set, feature_names)
-            self.preserveNonHyperparamData(model_data, model)
-            current_model_score = self.fetchPredictionsAndScore(model, testing_matrix, results)
+        for hyperparam_set in hyperparam_permutations:
+            self.buildModelAndRecordScore(feature_names, features, hyperparam_set, model_data, relevant_results,
+                                          results, testing_matrix)
+        return model_data
+
+    def hyperparameterizeInParallel(self, feature_names, features, hyperparam_permutations,
+                                    relevant_results, results, testing_matrix):
+        model_data = {}
+        chunked_hyperparams = self.chunkList(hyperparam_permutations, self.parallel_hyperparam_threads)
+        for chunk in chunked_hyperparams:
+            manager = multiprocessing.Manager()
+            parallelized_dict = manager.dict()
+            multithreaded_jobs = []
+            for hyperparam_set in chunk:
+                process = multiprocessing.Process(target=self.buildModelAndRecordScore,
+                                                  args=(feature_names, features, hyperparam_set, parallelized_dict,
+                                                        relevant_results, results, testing_matrix))
+                multithreaded_jobs.append(process)
+
+                try:
+                    process.start()
+                except:
+                    self.log.error("Multithreaded job failed during individual hyperparam analysis for algorithm %s.",
+                                   self.algorithm)
+
+            for proc in multithreaded_jobs:
+                try:
+                    proc.join()
+                except:
+                    self.log.error("Multithreaded job failed during individual hyperparam analysis for algorithm %s "
+                                   "and PID %s.", self.algorithm, proc.pid)
+
+            for hyperparam_set in chunk:
+                hyperparam_tuple = SafeCastUtil.safeCast(hyperparam_set, tuple)
+                optimal_value = parallelized_dict.get(hyperparam_tuple)
+                if optimal_value is not None:
+                    model_data[hyperparam_tuple] = optimal_value
+                else:
+                    self.log.warning("Parallel hyperparameter optimization thread for %s did not execute successfully. "
+                                     "No training data available for hyperparams: %s.", self.algorithm, hyperparam_set)
+                    model_data[hyperparam_tuple] = self.EMPTY_MODEL_RESPONSE
+            additional_data = parallelized_dict.get(self.ADDITIONAL_DATA)
+            if additional_data is not None:
+                if model_data.get(self.ADDITIONAL_DATA) is None:
+                    model_data[self.ADDITIONAL_DATA] = additional_data
+                else:
+                    for add_data in additional_data:
+                        model_data[self.ADDITIONAL_DATA].append(add_data)
+
+        return model_data
+
+    def chunkList(self, original_list, size):
+        return [original_list[i * size:(i + 1) * size] for i in range((len(original_list) + size - 1) // size)]
+
+    def buildModelAndRecordScore(self, feature_names, features, hyperparam_set, model_data, relevant_results, results,
+                                 testing_matrix):
+        self.log.debug("Building %s model with hyperparams %s.", self.algorithm, hyperparam_set)
+        model = self.buildModel(relevant_results, features, hyperparam_set, feature_names)
+        self.preserveNonHyperparamData(model_data, model)
+        current_model_score = self.fetchPredictionsAndScore(model, testing_matrix, results)
+
+        lock = threading.Lock()
+        lock.acquire(True)
+        try:
             self.setModelDataDictionary(model_data, hyperparam_set, current_model_score)
+        except FileNotFoundError as fnfe:
+            self.log.error("Unable to write to shared model_date object for algorithm: %s.\n", fnfe)
+        except AttributeError as ae:
+            self.log.error("Unable to write to shared model_date object for algorithm: %s.\n", ae)
+        finally:
+            lock.release()
+
+        self.log.debug("Finished building %s model with hyperparams %s.", self.algorithm, hyperparam_set)
         return model_data
 
     def buildModel(self, relevant_results, features, hyperparam_set, feature_names):
@@ -91,7 +175,7 @@ class AbstractModelTrainer(ABC):
         try:
             model = self.train(relevant_results, features, hyperparam_set, feature_names)
         except ValueError as valueError:
-            self.log.error("Algorithn - " + self.algorithm + ":" + valueError)
+            self.log.error("Failed to create model build for %s: \n%s", self.algorithm, valueError)
         return model
 
     def fetchAllHyperparamPermutations(self, hyperparams):
@@ -183,7 +267,6 @@ class AbstractModelTrainer(ABC):
                 self.log.error("Error writing to file %s. %s", diagnostics_file, error)
             finally:
                 diagnostics_file.close()
-                # TODO: Lock thread message here too. Extract to logging utility or something.
                 lock.release()
 
     def generateFeaturesInOrder(self, gene_list_combo):

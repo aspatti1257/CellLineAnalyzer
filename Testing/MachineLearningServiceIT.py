@@ -26,7 +26,7 @@ class MachineLearningServiceIT(unittest.TestCase):
 
     THRESHOLD_OF_SIGNIFICANCE = 0.60
 
-    MONTE_CARLO_PERMS = 2
+    MONTE_CARLO_PERMS = 6
     INDIVIDUAL_MONTE_CARLO_PERMS = 10
 
     def setUp(self):
@@ -123,6 +123,7 @@ class MachineLearningServiceIT(unittest.TestCase):
         RandomizedDataGenerator.generateRandomizedFiles(3, 1000, 150, is_classifier, self.MONTE_CARLO_PERMS, .8)
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         argument_processing_service = ArgumentProcessingService(input_folder)
+        argument_processing_service.log.setLevel(logging.DEBUG)
         return argument_processing_service.handleInputFolder()
 
     def assertResults(self, target_dir, trainer, expected_lines, is_classifier):
@@ -382,8 +383,11 @@ class MachineLearningServiceIT(unittest.TestCase):
 
     def evaluateModelFullAnalysisSansGeneList(self, trainer):
         processed_args = self.formatRandomizedData(trainer.is_classifier)
-        processed_args.anaylze_all = True
+        processed_args.analyze_all = True
         ml_service = MachineLearningService(processed_args)
+
+        ml_service.log.setLevel(logging.DEBUG)
+        trainer.log.setLevel(logging.DEBUG)
 
         self.analyzeAndAssertResults(ml_service, 1, trainer)
 

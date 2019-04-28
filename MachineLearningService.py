@@ -6,6 +6,7 @@ import numpy
 import os
 import threading
 import psutil
+import copy
 
 from joblib import Parallel, delayed
 
@@ -18,6 +19,7 @@ from DataFormattingService import DataFormattingService
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
 from Utilities.GeneListComboUtility import GeneListComboUtility
 from Utilities.ModelTrainerFactory import ModelTrainerFactory
+from Utilities.PercentageBarUtility import PercentageBarUtility
 from Utilities.SafeCastUtil import SafeCastUtil
 
 
@@ -25,7 +27,7 @@ class MachineLearningService(object):
 
     log = logging.getLogger(__name__)
     logging.basicConfig()
-    log.setLevel(logging.INFO)
+    log.setLevel(logging.DEBUG)
 
     MAXIMUM_FEATURES_RECORDED = 20
     DELIMITER = " --- "
@@ -82,16 +84,16 @@ class MachineLearningService(object):
                     results = self.inputs.results
                     formatted_data = self.formatData(self.inputs, True, True)
                     training_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
-                                                                                  gene_list_combo, formatted_data)
+                                                                                  gene_list_combo, formatted_data, self.inputs.analysisType())
                     testing_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, gene_list_combo,
-                                                                                 formatted_data)
+                                                                                 formatted_data, self.inputs.analysisType())
                     features, relevant_results = trainer.populateFeaturesAndResultsByCellLine(training_matrix, results)
                     feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
                     model = trainer.buildModel(relevant_results, features, casted_params, feature_names)
                     model_score = trainer.fetchPredictionsAndScore(model, testing_matrix, results)
                     score = model_score[0]
                     accuracy = model_score[1]
-                    importances = trainer.fetchFeatureImportances(model, gene_list_combo)
+                    importances = trainer.fetchFeatureImportances(model, feature_names)
                     for key in importances.keys():
                         importances[key] = [importances[key]]
                     ordered_importances = self.averageAndSortImportances(importances, 1)
@@ -176,9 +178,14 @@ class MachineLearningService(object):
 
         valid_combos = self.fetchValidGeneListCombos(input_folder, gene_list_combos, trainer)
 
-        Parallel(n_jobs=nodes_to_use)(delayed(self.runMonteCarloSelection)(feature_set, trainer, input_folder,
-                                                                           len(valid_combos))
-                                      for feature_set in valid_combos)
+        if self.inputs.analysisType() is AnalysisType.SPEARMAN_NO_GENE_LISTS:
+            trainer.parallel_hyperparam_threads = nodes_to_use
+            for feature_set in valid_combos:
+                self.runMonteCarloSelection(feature_set, trainer, input_folder, len(valid_combos))
+        else:
+            Parallel(n_jobs=nodes_to_use)(delayed(self.runMonteCarloSelection)(feature_set, trainer, input_folder,
+                                                                               len(valid_combos))
+                                          for feature_set in valid_combos)
         self.logMemoryUsageAndGarbageCollect()
 
     def fetchValidGeneListCombos(self, input_folder, gene_list_combos, trainer):
@@ -240,10 +247,12 @@ class MachineLearningService(object):
 
         for i in range(1, outer_perms + 1):
             formatted_data = self.formatData(self.inputs, True, True)
+            self.log.info("Creating train and test matrices by feature set: %s.", feature_set_as_string)
+
             training_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set,
-                                                                          formatted_data)
+                                                                          formatted_data, self.inputs.analysisType())
             testing_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set,
-                                                                         formatted_data)
+                                                                         formatted_data, self.inputs.analysisType())
 
             self.log.debug("Computing outer Monte Carlo Permutation %s for %s.", i, feature_set_as_string)
 
@@ -291,7 +300,7 @@ class MachineLearningService(object):
     def generateFeatureSetString(self, feature_set):
         return GeneListComboUtility.generateFeatureSetString(feature_set, self.inputs.gene_lists,
                                                              self.inputs.rsen_config.combine_gene_lists,
-                                                             self.inputs.analysisType)
+                                                             self.inputs.analysisType())
 
     def fetchOuterPermutationModelScore(self, feature_set, trainer, optimal_hyperparams, testing_matrix,
                                         training_matrix):
@@ -301,7 +310,8 @@ class MachineLearningService(object):
         feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
         model = trainer.buildModel(relevant_results, features, optimal_hyperparams, feature_names)
         score, accuracy = trainer.fetchPredictionsAndScore(model, testing_matrix, results)
-        return [score, accuracy, trainer.fetchFeatureImportances(model, feature_set),
+        # TODO: This should be it's own class.
+        return [score, accuracy, trainer.fetchFeatureImportances(model, feature_names),
                 trainer.fetchModelPhrases(model, feature_set)]
 
     def averageAndSortImportances(self, importances, outer_loops):
@@ -348,15 +358,19 @@ class MachineLearningService(object):
         inner_model_hyperparams = {}
         inner_perms = self.monteCarloPermsByAlgorithm(trainer.algorithm, False)
         for j in range(1, inner_perms + 1):
+            self.log.info("Computing inner Monte Carlo Permutation %s for %s.", j,
+                           self.generateFeatureSetString(feature_set))
             self.logMemoryUsageAndGarbageCollect()
             formatted_inputs = self.reformatInputsByTrainingMatrix(
                 formatted_data.get(DataFormattingService.TRAINING_MATRIX),
                 formatted_data.get(ArgumentProcessingService.FEATURE_NAMES))
             further_formatted_data = self.formatData(formatted_inputs, False, False)
             inner_validation_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX,
-                                                                                  feature_set, further_formatted_data)
+                                                                                  feature_set, further_formatted_data,
+                                                                                  formatted_inputs.analysisType())
             inner_train_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
-                                                                             feature_set, further_formatted_data)
+                                                                             feature_set, further_formatted_data,
+                                                                             formatted_inputs.analysisType())
             model_data = trainer.hyperparameterize(inner_train_matrix, inner_validation_matrix, self.inputs.results)
             for data in model_data.keys():
                 if inner_model_hyperparams.get(data) is not None:
@@ -487,18 +501,8 @@ class MachineLearningService(object):
             return "th"
 
     def logPercentDone(self, total_lines, num_combos, ml_algorithm):
-        percent_done = numpy.round((total_lines / num_combos) * 100, 1)
-        percentage_bar = "["
-        for i in range(0, 100):
-            if i < percent_done:
-                percentage_bar += "="
-            elif i >= percent_done:
-                if i > 0 and (i - 1) < percent_done:
-                    percentage_bar += ">"
-                else:
-                    percentage_bar += " "
-        percentage_bar += "]"
-        self.log.info("Total progress for %s: %s%% done: %s", ml_algorithm, percent_done, percentage_bar)
+        percent_done, percentage_bar = PercentageBarUtility.calculateAndCreatePercentageBar(total_lines, num_combos)
+        self.log.info("Total progress for %s: %s%% done:\n %s", ml_algorithm, percent_done, percentage_bar)
 
     def saveOutputToTxtFile(self, scores, accuracies, feature_set_as_string, input_folder, algorithm):
         lock = threading.Lock()
