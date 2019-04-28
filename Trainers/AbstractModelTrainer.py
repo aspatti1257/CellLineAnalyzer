@@ -128,7 +128,10 @@ class AbstractModelTrainer(ABC):
                                    "and PID %s.", self.algorithm, proc.pid)
 
             for hyperparam_set in chunk:
-                hyperparam_tuple = SafeCastUtil.safeCast(hyperparam_set, tuple)
+                copied_hyperparams = hyperparam_set[:]
+                if len(copied_hyperparams) == 1:
+                    copied_hyperparams.append(None)
+                hyperparam_tuple = SafeCastUtil.safeCast(copied_hyperparams, tuple)
                 optimal_value = parallelized_dict.get(hyperparam_tuple)
                 if optimal_value is not None:
                     model_data[hyperparam_tuple] = optimal_value
