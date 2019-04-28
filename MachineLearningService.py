@@ -380,6 +380,7 @@ class MachineLearningService(object):
         feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
         model = trainer.buildModel(relevant_results, features, optimal_hyperparams, feature_names)
         score, accuracy = trainer.fetchPredictionsAndScore(model, testing_matrix, results)
+        # TODO: This should be it's own class.
         return [score, accuracy, trainer.fetchFeatureImportances(model, feature_names),
                 trainer.fetchModelPhrases(model, feature_set)]
 
@@ -427,6 +428,8 @@ class MachineLearningService(object):
         inner_model_hyperparams = {}
         inner_perms = self.monteCarloPermsByAlgorithm(trainer.algorithm, False)
         for j in range(1, inner_perms + 1):
+            self.log.info("Computing inner Monte Carlo Permutation %s for %s.", j,
+                           self.generateFeatureSetString(feature_set))
             self.logMemoryUsageAndGarbageCollect()
             formatted_inputs = self.reformatInputsByTrainingMatrix(
                 formatted_data.get(DataFormattingService.TRAINING_MATRIX),
