@@ -114,10 +114,14 @@ class MachineLearningServiceIT(unittest.TestCase):
         self.analyzeAndAssertResults(ml_service, num_gene_list_combos, trainer)
 
     def analyzeAndAssertResults(self, ml_service, num_gene_list_combos, trainer):
-        gene_list_combos_shortened = ml_service.determineGeneListCombos()[0:num_gene_list_combos]
-        target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
-        ml_service.handleParallellization(gene_list_combos_shortened, target_dir, trainer)
-        self.assertResults(target_dir, trainer, num_gene_list_combos + 1, trainer.is_classifier)
+        try:
+            gene_list_combos_shortened = ml_service.determineGeneListCombos()[0:num_gene_list_combos]
+            target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
+            ml_service.handleParallellization(gene_list_combos_shortened, target_dir, trainer)
+            self.assertResults(target_dir, trainer, num_gene_list_combos + 1, trainer.is_classifier)
+        except KeyboardInterrupt as keyboardInterrupt:
+            self.log.error("Interrupted manually, failing and initiating cleanup.")
+            assert False
 
     def formatRandomizedData(self, is_classifier):
         RandomizedDataGenerator.generateRandomizedFiles(3, 1000, 150, is_classifier, self.MONTE_CARLO_PERMS, .8)

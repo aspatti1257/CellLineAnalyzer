@@ -1,12 +1,9 @@
 import csv
-import gc
 import logging
 import multiprocessing
 import numpy
 import os
 import threading
-import psutil
-import copy
 
 from joblib import Parallel, delayed
 
@@ -19,6 +16,7 @@ from DataFormattingService import DataFormattingService
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
 from Utilities.GeneListComboUtility import GeneListComboUtility
 from Utilities.ModelTrainerFactory import ModelTrainerFactory
+from Utilities.GarbageCollectionUtility import GarbageCollectionUtility
 from Utilities.PercentageBarUtility import PercentageBarUtility
 from Utilities.SafeCastUtil import SafeCastUtil
 
@@ -186,7 +184,7 @@ class MachineLearningService(object):
             Parallel(n_jobs=nodes_to_use)(delayed(self.runMonteCarloSelection)(feature_set, trainer, input_folder,
                                                                                len(valid_combos))
                                           for feature_set in valid_combos)
-        self.logMemoryUsageAndGarbageCollect()
+        GarbageCollectionUtility.logMemoryUsageAndGarbageCollect(self.log)
 
     def fetchValidGeneListCombos(self, input_folder, gene_list_combos, trainer):
         valid_combos = [feature_set for feature_set in gene_list_combos if trainer.shouldProcessFeatureSet(feature_set)]
@@ -282,7 +280,7 @@ class MachineLearningService(object):
             scores_and_hyperparams.append(self.generateScoreAndHyperParam(prediction_data[0], optimal_hyperparams,
                                                                           trainer))
 
-            self.logMemoryUsageAndGarbageCollect()
+            GarbageCollectionUtility.logMemoryUsageAndGarbageCollect(self.log)
 
         average_score = numpy.mean(scores)
         average_accuracy = numpy.mean(accuracies)
@@ -360,7 +358,7 @@ class MachineLearningService(object):
         for j in range(1, inner_perms + 1):
             self.log.info("Computing inner Monte Carlo Permutation %s for %s.", j,
                            self.generateFeatureSetString(feature_set))
-            self.logMemoryUsageAndGarbageCollect()
+            GarbageCollectionUtility.logMemoryUsageAndGarbageCollect(self.log)
             formatted_inputs = self.reformatInputsByTrainingMatrix(
                 formatted_data.get(DataFormattingService.TRAINING_MATRIX),
                 formatted_data.get(ArgumentProcessingService.FEATURE_NAMES))
@@ -378,15 +376,6 @@ class MachineLearningService(object):
                 else:
                     inner_model_hyperparams[data] = [model_data[data]]
         return inner_model_hyperparams
-
-    def logMemoryUsageAndGarbageCollect(self):
-        processes = psutil.Process()
-        procs = [processes] + processes.children(recursive=True)
-        for process in procs:
-            rss = process.memory_info().rss
-            memory_usage_mb = numpy.round(rss / 1e6, 2)
-            self.log.debug("Memory usage for PID %s: %s: MB", process.pid, memory_usage_mb)
-        gc.collect()
 
     def formatData(self, inputs, should_scale, should_one_hot_encode):
         data_formatting_service = DataFormattingService(inputs)
