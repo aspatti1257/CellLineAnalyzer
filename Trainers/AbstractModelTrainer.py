@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 
 from ArgumentProcessingService import ArgumentProcessingService
 from Utilities.SafeCastUtil import SafeCastUtil
+from Utilities.GarbageCollectionUtility import GarbageCollectionUtility
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import accuracy_score
 import multiprocessing
@@ -22,7 +23,7 @@ class AbstractModelTrainer(ABC):
 
     ADDITIONAL_DATA = "additional_data"
 
-    EMPTY_MODEL_RESPONSE = 0.0, 0.0
+    EMPTY_MODEL_RESPONSE = DEFAULT_MIN_SCORE, 0.0
 
     parallel_hyperparam_threads = -1
 
@@ -85,6 +86,7 @@ class AbstractModelTrainer(ABC):
 
 
         hyperparam_permutations = self.fetchAllHyperparamPermutations(hyperparams)
+        GarbageCollectionUtility.logMemoryUsageAndGarbageCollect(self.log)
         if SafeCastUtil.safeCast(self.parallel_hyperparam_threads, int, -1) < 0:
             return self.hyperparameterizeInSerial(feature_names, features, hyperparam_permutations,
                                                   relevant_results, results, testing_matrix)
@@ -102,10 +104,13 @@ class AbstractModelTrainer(ABC):
 
     def hyperparameterizeInParallel(self, feature_names, features, hyperparam_permutations,
                                     relevant_results, results, testing_matrix):
+        #  TODO: Investigate "spawn" contexts to get this working with Ridge and RBF_SVC:
+        #  https://github.com/numpy/numpy/issues/5752
+        context = multiprocessing.get_context()
+        manager = context.Manager()
         model_data = {}
         chunked_hyperparams = self.chunkList(hyperparam_permutations, self.parallel_hyperparam_threads)
         for chunk in chunked_hyperparams:
-            manager = multiprocessing.Manager()
             parallelized_dict = manager.dict()
             multithreaded_jobs = []
             for hyperparam_set in chunk:
@@ -119,7 +124,6 @@ class AbstractModelTrainer(ABC):
                 except:
                     self.log.error("Multithreaded job failed during individual hyperparam analysis for algorithm %s.",
                                    self.algorithm)
-
             for proc in multithreaded_jobs:
                 try:
                     proc.join()
@@ -132,9 +136,9 @@ class AbstractModelTrainer(ABC):
                 if len(copied_hyperparams) == 1:
                     copied_hyperparams.append(None)
                 hyperparam_tuple = SafeCastUtil.safeCast(copied_hyperparams, tuple)
-                optimal_value = parallelized_dict.get(hyperparam_tuple)
-                if optimal_value is not None:
-                    model_data[hyperparam_tuple] = optimal_value
+                model_result = parallelized_dict.get(hyperparam_tuple)
+                if model_result is not None:
+                    model_data[hyperparam_tuple] = model_result
                 else:
                     self.log.warning("Parallel hyperparameter optimization thread for %s did not execute successfully. "
                                      "No training data available for hyperparams: %s.", self.algorithm, hyperparam_set)
@@ -146,7 +150,6 @@ class AbstractModelTrainer(ABC):
                 else:
                     for add_data in additional_data:
                         model_data[self.ADDITIONAL_DATA].append(add_data)
-
         return model_data
 
     def chunkList(self, original_list, size):
@@ -164,9 +167,9 @@ class AbstractModelTrainer(ABC):
         try:
             self.setModelDataDictionary(model_data, hyperparam_set, current_model_score)
         except FileNotFoundError as fnfe:
-            self.log.error("Unable to write to shared model_date object for algorithm: %s.\n", fnfe)
+            self.log.error("Unable to write to shared model_data object for algorithm: %s.\n", fnfe)
         except AttributeError as ae:
-            self.log.error("Unable to write to shared model_date object for algorithm: %s.\n", ae)
+            self.log.error("Unable to write to shared model_data object for algorithm: %s.\n", ae)
         finally:
             lock.release()
 
@@ -237,7 +240,7 @@ class AbstractModelTrainer(ABC):
         return features, relevant_results
 
     def logIfBestHyperparamsOnRangeThreshold(self, best_hyperparams, record_diagnostics, input_folder):
-        if not self.supportsHyperparams():
+        if not self.supportsHyperparams() or best_hyperparams is None:
             return
         hyperparam_keys = SafeCastUtil.safeCast(self.hyperparameters.keys(), list)
         for i in range(0, len(hyperparam_keys)):
