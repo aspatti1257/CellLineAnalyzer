@@ -40,7 +40,7 @@ class RadialBasisFunctionSVMTrainer(AbstractModelTrainer):
         if not self.is_classifier:
             model_data[hyperparam_set[0], hyperparam_set[1], hyperparam_set[2]] = current_model_score
         else:
-            model_data[hyperparam_set[0], hyperparam_set[1], None] = current_model_score
+            model_data[hyperparam_set[0], hyperparam_set[1]] = current_model_score
 
     def logOptimalHyperParams(self, hyperparams, feature_set_as_string, record_diagnostics, input_folder):
         message = "Optimal Hyperparameters for " + feature_set_as_string + " " + self.algorithm + " algorithm " \
