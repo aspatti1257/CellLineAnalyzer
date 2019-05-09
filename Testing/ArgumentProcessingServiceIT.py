@@ -29,21 +29,24 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
         self.processAndValidateArguments(input_folder, True)
 
     def testClassifierWithRandomlyGeneratedInput(self):
-        RandomizedDataGenerator.generateRandomizedFiles(5, 50, self.total_features_in_files, True, 10, .8)
+        random_data_generator = RandomizedDataGenerator(RandomizedDataGenerator.GENERATED_DATA_FOLDER)
+        random_data_generator.generateRandomizedFiles(5, 50, self.total_features_in_files, True, 10, .8)
         assert len(os.listdir(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER)) > 7
 
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         self.processAndValidateArguments(input_folder, True)
 
     def testRegressorWithRandomlyGeneratedInput(self):
-        RandomizedDataGenerator.generateRandomizedFiles(5, 50, self.total_features_in_files, False, 10, .8)
+        random_data_generator = RandomizedDataGenerator(RandomizedDataGenerator.GENERATED_DATA_FOLDER)
+        random_data_generator.generateRandomizedFiles(5, 50, self.total_features_in_files, False, 10, .8)
         assert len(os.listdir(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER)) > 7
 
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         self.processAndValidateArguments(input_folder, False)
 
     def testFeatureValidation(self):
-        RandomizedDataGenerator.generateRandomizedFiles(5, 50, self.total_features_in_files, True, 10, .8)
+        random_data_generator = RandomizedDataGenerator(RandomizedDataGenerator.GENERATED_DATA_FOLDER)
+        random_data_generator.generateRandomizedFiles(5, 50, self.total_features_in_files, True, 10, .8)
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         files = os.listdir(input_folder)
         gene_list = [file for file in files if ArgumentProcessingService.GENE_LISTS in file][0]

@@ -36,8 +36,11 @@ class RecommendationsServiceIT(unittest.TestCase):
         inputs.recs_config.viability_acceptance = 0.1
         self.instantiateMLServiceAndSetupDrugData(inputs)
 
-        recs_service = RecommendationsService(inputs)
-        recs_service.recommendByHoldout(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER)
+        try:
+            recs_service = RecommendationsService(inputs)
+            recs_service.recommendByHoldout(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER)
+        except KeyboardInterrupt as keyboard_interrupt:
+            assert False
 
     # These methods below are just setup methods to create a dummy dataset.
     def instantiateMLServiceAndSetupDrugData(self, inputs):
@@ -46,7 +49,8 @@ class RecommendationsServiceIT(unittest.TestCase):
         self.setupDrugData(combos, ml_service)
 
     def formatRandomizedData(self, is_classifier):
-        RandomizedDataGenerator.generateRandomizedFiles(3, 1000, 150, is_classifier, 2, .8)
+        random_data_generator = RandomizedDataGenerator(RandomizedDataGenerator.GENERATED_DATA_FOLDER)
+        random_data_generator.generateRandomizedFiles(3, 1000, 150, is_classifier, 2, .8)
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         argument_processing_service = ArgumentProcessingService(input_folder)
         return argument_processing_service.handleInputFolder()

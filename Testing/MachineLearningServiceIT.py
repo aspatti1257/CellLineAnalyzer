@@ -124,7 +124,8 @@ class MachineLearningServiceIT(unittest.TestCase):
             assert False
 
     def formatRandomizedData(self, is_classifier):
-        RandomizedDataGenerator.generateRandomizedFiles(3, 1000, 150, is_classifier, self.MONTE_CARLO_PERMS, .8)
+        random_data_generator = RandomizedDataGenerator(RandomizedDataGenerator.GENERATED_DATA_FOLDER)
+        random_data_generator.generateRandomizedFiles(3, 1000, 150, is_classifier, self.MONTE_CARLO_PERMS, .8)
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         argument_processing_service = ArgumentProcessingService(input_folder)
         argument_processing_service.log.setLevel(logging.DEBUG)
@@ -236,8 +237,9 @@ class MachineLearningServiceIT(unittest.TestCase):
         self.assertResultsForIndividualCombo(input_folder, algorithm, 11, is_classifier)
 
     def formatRandomizedDataForIndividualCombo(self, is_classifier, algorithm, hyperparams, input_folder):
-        RandomizedDataGenerator.generateRandomizedFiles(3, 1000, 150, is_classifier, self.INDIVIDUAL_MONTE_CARLO_PERMS,
-                                                        .8, algorithm, hyperparams)
+        random_data_generator = RandomizedDataGenerator(RandomizedDataGenerator.GENERATED_DATA_FOLDER)
+        random_data_generator.generateRandomizedFiles(3, 1000, 150, is_classifier, self.INDIVIDUAL_MONTE_CARLO_PERMS,
+                                                      .8, algorithm, hyperparams)
         argument_processing_service = ArgumentProcessingService(input_folder)
         return argument_processing_service.handleInputFolder()
 
