@@ -43,8 +43,7 @@ class RandomizedDataGenerator(object):
 
     def generateResultsCSV(self, is_classifier, num_cells):
         results = []
-        with open(self.path + "/" + ArgumentProcessingService.RESULTS + ".csv",
-                  'w', newline='') as results_file:
+        with open(self.path + "/" + ArgumentProcessingService.RESULTS + ".csv", 'w', newline='') as results_file:
             writer = csv.writer(results_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
             writer.writerow(["cell_line_name"] + ["result"])
             for cell in range(0, num_cells):

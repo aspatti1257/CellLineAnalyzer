@@ -1,5 +1,6 @@
 import sys
 import logging
+import os
 
 from ArgumentProcessingService import ArgumentProcessingService
 from MachineLearningService import MachineLearningService
@@ -90,8 +91,10 @@ def writeHTMLSummaryFile(input_folder, is_classifier):
 
 
 def fetchRecommendations(input_folder):
-    valid_inputs = handleInputFolderProcessing(input_folder)
-    recs_service = RecommendationsService(valid_inputs)
+    processed_args = {}
+    for drug_dir in [file for file in os.listdir(input_folder) if os.path.isdir(input_folder + file)]:
+        processed_args[drug_dir] = handleInputFolderProcessing(input_folder)
+    recs_service = RecommendationsService(processed_args)
     recs_service.recommendByHoldout(input_folder)
 
 

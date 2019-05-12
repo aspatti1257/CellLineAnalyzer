@@ -26,6 +26,8 @@ class RecommendationsService(object):
         self.inputs = inputs
 
     def recommendByHoldout(self, input_folder):
+        #TODO: Support for inputs to be a dict of drug_name => input, not just one set of inputs for all drugs.
+
         # See self.inputs.features. This contains a map representing all cell lines and
         # their features, along with a set of "featureNames".
 
