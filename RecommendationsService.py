@@ -26,60 +26,61 @@ class RecommendationsService(object):
         self.inputs = inputs
 
     def recommendByHoldout(self, input_folder):
-        #TODO: Support for inputs to be a dict of drug_name => input, not just one set of inputs for all drugs.
+        # TODO: Support for inputs to be a dict of drug_name => input, not just one set of inputs for all drugs.
 
-        # See self.inputs.features. This contains a map representing all cell lines and
-        # their features, along with a set of "featureNames".
+        drug_to_cell_line_to_prediction_map = {}
+        for drug in self.inputs.keys():
+            drug_to_cell_line_to_prediction_map[drug] = {}
+            processed_arguments = self.inputs.get(drug)
+            combos = self.determineGeneListCombos(processed_arguments)
 
-        combos = self.determineGeneListCombos()
+            # A dictionary of cell lines to their features, with the feature names also in there as one of the keys.
+            # Both the features and the feature names are presented as an ordered list, all of them have the same length.
+            cell_line_map = processed_arguments.features
+            results = processed_arguments.results
 
-        # A dictionary of cell lines to their features, with the feature names also in there as one of the keys.
-        # Both the features and the feature names are presented as an ordered list, all of them have the same length.
-        cell_line_map = self.inputs.features
-        results = self.inputs.results
-
-        cloned_inputs = copy.deepcopy(self.inputs)
-        cloned_inputs.data_split = 1.0
-        data_formatting_service = DataFormattingService(cloned_inputs)
-        formatted_inputs = data_formatting_service.formatData(True, True)
-        feature_names = formatted_inputs.get(ArgumentProcessingService.FEATURE_NAMES)
-        # get results map
-        for cell_line in cell_line_map.keys():
-            if cell_line == ArgumentProcessingService.FEATURE_NAMES:
-                # Continue skips over this, so if the key we're analyzing isn't a cell line (i.e. it's the feature
-                # names, skip it).
-                continue
-            trimmed_cell_lines, trimmed_results = self.removeCellLineFromFeaturesAndResults(cell_line, formatted_inputs,
-                                                                                            results)
-            # remove cell line from results
-            cellline_viabilities = []
-            for drug in self.getDrugFolders(input_folder):
+            cloned_inputs = copy.deepcopy(processed_arguments)
+            cloned_inputs.data_split = 1.0
+            data_formatting_service = DataFormattingService(cloned_inputs)
+            formatted_inputs = data_formatting_service.formatData(True, True)
+            feature_names = formatted_inputs.get(ArgumentProcessingService.FEATURE_NAMES)
+            # get results map
+            for cell_line in cell_line_map.keys():
+                if cell_line == ArgumentProcessingService.FEATURE_NAMES:
+                    # Continue skips over this, so if the key we're analyzing isn't a cell line (i.e. it's the feature
+                    # names, skip it).
+                    continue
+                trimmed_cell_lines, trimmed_results = self.removeCellLineFromFeaturesAndResults(cell_line, formatted_inputs,
+                                                                                                results)
+                # remove cell line from results
+                cellline_viabilities = []
                 best_model, best_combo = self.fetchBestModelAndCombo(drug, input_folder, trimmed_cell_lines,
-                                                                     trimmed_results, combos)
+                                                                     trimmed_results, combos, processed_arguments)
                 if best_model is None or best_combo is None:
                     continue
                 else:
                     prediction = self.generatePrediction(best_model, best_combo, cell_line, feature_names, formatted_inputs)
                     cellline_viabilities.append([drug, prediction])
-            recs = []
-            #self.presciption_from_prediction(self, trainer, viability_acceptance, cellline_viabilities)
-            # @AP: viability_acceptance is a user-defined value, which should come from the arguments file. How do I
-            # get it here?
-            # @MB: Added it via referencing self.inputs.recs_config.viability_acceptance. Defaults to None, set to 0.1
-            # for the sake of RecommendationsServiceIT testing.
-            with open('FinalResults.csv','a') as f:
-                f.write(str(cell_line)+',')
-                for drug in recs:
-                    f.write(drug+';')
-                f.write('\n')
-           # See which drug prediction comes closest to actual R^2 score.
-           # See self.inputs.results for this value.
-           # Record to FinalResults.csv
-        pass
+                recs = []
+                drug_to_cell_line_to_prediction_map[drug][cell_line] = prediction
+                #self.presciption_from_prediction(self, trainer, viability_acceptance, cellline_viabilities)
+                # @AP: viability_acceptance is a user-defined value, which should come from the arguments file. How do I
+                # get it here?
+                # @MB: Added it via referencing self.inputs.recs_config.viability_acceptance. Defaults to None, set to 0.1
+                # for the sake of RecommendationsServiceIT testing.
+                with open('FinalResults.csv','a') as f:
+                    f.write(str(cell_line)+',')
+                    for drug in recs:
+                        f.write(drug+';')
+                    f.write('\n')
+               # See which drug prediction comes closest to actual R^2 score.
+               # See self.inputs.results for this value.
+               # Record to FinalResults.csv
+            pass
 
-    def determineGeneListCombos(self):
-        gene_lists = self.inputs.gene_lists
-        feature_names = self.inputs.features.get(ArgumentProcessingService.FEATURE_NAMES)
+    def determineGeneListCombos(self, processed_arguments):
+        gene_lists = processed_arguments.gene_lists
+        feature_names = processed_arguments.features.get(ArgumentProcessingService.FEATURE_NAMES)
 
         combos, expected_length = GeneListComboUtility.determineGeneListCombos(gene_lists, feature_names)
 
@@ -241,7 +242,8 @@ class RecommendationsService(object):
         drug_folders = [f for f in folders if 'Analysis' in f]
         return drug_folders
 
-    def fetchBestModelAndCombo(self, drug, analysis_files_folder, trimmed_cell_lines, trimmed_results, combos):
+    def fetchBestModelAndCombo(self, drug, analysis_files_folder, trimmed_cell_lines, trimmed_results, combos,
+                               processed_arguments):
         # TODO: ultimately we'd want to use multiple algorithms, and make an ensemble prediction/prescription.
         # But for now, let's stick with one algorithm.
         best_combo_string = None
@@ -265,7 +267,7 @@ class RecommendationsService(object):
                                     indices_of_outer_loops.append(i)
                             continue
                         string_combo = row[header.index(MachineLearningService.FEATURE_FILE_GENE_LIST_COMBO)]
-                        score = SafeCastUtil.safeCast(row[header.index(self.scorePhrase())], float)
+                        score = SafeCastUtil.safeCast(row[header.index(self.scorePhrase(processed_arguments))], float)
                         if score is not None and score > top_score:
                             best_scoring_algo = analysis_file_name.split(".")[0]
                             best_combo_string = string_combo
@@ -286,13 +288,13 @@ class RecommendationsService(object):
             self.log.error('Error: no method found an R2 higher than 0 for drug: %s.', drug)
             return None
 
-        best_combo = self.determineBestComboFromString(best_combo_string, combos)
+        best_combo = self.determineBestComboFromString(best_combo_string, combos, processed_arguments)
         return self.trainBestModelWithCombo(best_scoring_algo, best_combo, optimal_hyperparams, trimmed_cell_lines,
-                                            trimmed_results)
+                                            trimmed_results, processed_arguments)
 
 
-    def scorePhrase(self):
-        if self.inputs.is_classifier:
+    def scorePhrase(self, processed_arguments):
+        if processed_arguments.is_classifier:
             return MachineLearningService.PERCENT_ACCURATE_PREDICTIONS
         return MachineLearningService.R_SQUARED_SCORE
 
@@ -337,9 +339,9 @@ class RecommendationsService(object):
         return [file for file in files if "Analysis.csv" in file]
 
     def trainBestModelWithCombo(self, best_scoring_algo, best_scoring_combo, optimal_hyperparams, trimmed_cell_lines,
-                                trimmed_results):
-        is_classifier = self.inputs.is_classifier
-        rsen_config = self.inputs.rsen_config
+                                trimmed_results, processed_arguments):
+        is_classifier = processed_arguments.is_classifier
+        rsen_config = processed_arguments.rsen_config
         training_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
                                                                       best_scoring_combo, trimmed_cell_lines,
                                                                       AnalysisType.RECOMMENDATIONS)
@@ -376,10 +378,10 @@ class RecommendationsService(object):
                 prescription.append(cellline_viabilities[d, 0])
         return prescription
 
-    def determineBestComboFromString(self, best_combo_string, combos):
-        gene_lists = self.inputs.gene_lists
-        combine_gene_lists = self.inputs.rsen_config.combine_gene_lists
-        analysis_type = self.inputs.analysisType()
+    def determineBestComboFromString(self, best_combo_string, combos, processed_arguments):
+        gene_lists = processed_arguments.gene_lists
+        combine_gene_lists = processed_arguments.rsen_config.combine_gene_lists
+        analysis_type = processed_arguments.analysisType()
         for combo in combos:
             feature_set_string = GeneListComboUtility.generateFeatureSetString(combo, gene_lists,
                                                                                combine_gene_lists, analysis_type)
