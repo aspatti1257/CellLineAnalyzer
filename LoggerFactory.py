@@ -6,7 +6,6 @@ class LoggerFactory(object):
     @staticmethod
     def createLog(clazz):
         log = logging.getLogger(clazz)
-        logging.basicConfig()
         log.setLevel(logging.INFO)
 
         handler = logging.StreamHandler(sys.stdout)
