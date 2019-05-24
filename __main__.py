@@ -1,17 +1,14 @@
 import sys
-import logging
 
 from ArgumentProcessingService import ArgumentProcessingService
+from LoggerFactory import LoggerFactory
 from MachineLearningService import MachineLearningService
 from HTMLWritingService import HTMLWritingService
 from RecommendationsService import RecommendationsService
 from Utilities.SafeCastUtil import SafeCastUtil
 from Utilities.FileConverter import FileConverter
 
-log = logging.getLogger(__name__)
-logging.basicConfig()
-log.setLevel(logging.INFO)
-
+log = LoggerFactory.createLog(__name__)
 
 def main():
     arguments = sys.argv[1:]

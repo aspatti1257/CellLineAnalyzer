@@ -1,15 +1,13 @@
-import logging
 import os
 
+from LoggerFactory import LoggerFactory
 from Utilities.SafeCastUtil import SafeCastUtil
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
 
 
 class HTMLWritingService(object):
 
-    log = logging.getLogger(__name__)
-    logging.basicConfig()
-    log.setLevel(logging.INFO)
+    log = LoggerFactory.createLog(__name__)
 
     RECORD_FILE = "FullResultsSummary.txt"
     SUMMARY_FILE = "SummaryReport.html"

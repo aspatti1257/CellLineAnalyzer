@@ -4,6 +4,7 @@ import csv
 import glob
 import os
 
+from LoggerFactory import LoggerFactory
 from Utilities.SafeCastUtil import SafeCastUtil
 
 
@@ -34,9 +35,7 @@ class FileConverter(object):
     @staticmethod
     def convertMatLabToCSV(matlab_files_directory):
 
-        log = logging.getLogger(__name__)
-        logging.basicConfig()
-        log.setLevel(logging.INFO)
+        log = LoggerFactory.createLog(__name__)
 
         os.chdir(matlab_files_directory)
         matlab_files = glob.glob("*.mat")
