@@ -1,17 +1,17 @@
 import unittest
-import logging
 import random
 import copy
 
 
 from CustomModels.RandomSubsetElasticNet import RandomSubsetElasticNet
+from LoggerFactory import LoggerFactory
 from Utilities.SafeCastUtil import SafeCastUtil
 from CustomModels.RecursiveBooleanPhrase import RecursiveBooleanPhrase
 
 
 class RandomSubsetElasticNetModelTest(unittest.TestCase):
-    log = logging.getLogger(__name__)
-    log.setLevel(logging.INFO)
+
+    log = LoggerFactory.createLog(__name__)
 
     train_features = [[0, 0, 0, 1, 0.32, 0.25, 0.52, 0.63],
                       [0, 0, 1, 1, 1.11, 1.45, 0.31, 0.22],

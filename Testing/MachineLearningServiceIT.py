@@ -4,6 +4,7 @@ import unittest
 import numpy
 import math
 
+from LoggerFactory import LoggerFactory
 from Trainers.ElasticNetTrainer import ElasticNetTrainer
 from Trainers.RandomForestTrainer import RandomForestTrainer
 from Trainers.LinearSVMTrainer import LinearSVMTrainer
@@ -21,8 +22,7 @@ from Utilities.SafeCastUtil import SafeCastUtil
 
 class MachineLearningServiceIT(unittest.TestCase):
 
-    log = logging.getLogger(__name__)
-    log.setLevel(logging.INFO)
+    log = LoggerFactory.createLog(__name__)
 
     THRESHOLD_OF_SIGNIFICANCE = 0.60
 

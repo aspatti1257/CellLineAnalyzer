@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import math
-import logging
 from sklearn import preprocessing
 from scipy.stats import spearmanr
 from sklearn.model_selection import train_test_split
@@ -9,14 +8,13 @@ from collections import OrderedDict
 
 from ArgumentConfig.AnalysisType import AnalysisType
 from ArgumentProcessingService import ArgumentProcessingService
+from LoggerFactory import LoggerFactory
 from Utilities.SafeCastUtil import SafeCastUtil
 
 
 class DataFormattingService(object):
 
-    log = logging.getLogger(__name__)
-    logging.basicConfig()
-    log.setLevel(logging.INFO)
+    log = LoggerFactory.createLog(__name__)
     
     TRAINING_MATRIX = "trainingMatrix"
     TESTING_MATRIX = "testingMatrix"  # Will either be outer testing or inner validation matrix

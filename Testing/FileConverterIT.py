@@ -2,12 +2,13 @@ import unittest
 import logging
 import os
 
+from LoggerFactory import LoggerFactory
 from Utilities.FileConverter import FileConverter
 
 
 class FileConverterIT(unittest.TestCase):
-    log = logging.getLogger(__name__)
-    log.setLevel(logging.INFO)
+
+    log = LoggerFactory.createLog(__name__)
 
     def setUp(self):
         current_working_dir = os.getcwd()  # Should be this package.

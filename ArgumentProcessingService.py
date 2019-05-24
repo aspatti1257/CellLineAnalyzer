@@ -1,4 +1,3 @@
-import logging
 import multiprocessing
 import os
 import re
@@ -8,6 +7,7 @@ from ArgumentConfig.IndividualTrainConfig import IndividualTrainConfig
 from ArgumentConfig.ProcessedArguments import ProcessedArguments
 from ArgumentConfig.RSENConfig import RSENConfig
 from ArgumentConfig.RecommendationsConfig import RecommendationsConfig
+from LoggerFactory import LoggerFactory
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Utilities.PercentageBarUtility import PercentageBarUtility
 from Utilities.SafeCastUtil import SafeCastUtil
@@ -15,9 +15,7 @@ from Utilities.SafeCastUtil import SafeCastUtil
 
 class ArgumentProcessingService(object):
 
-    log = logging.getLogger(__name__)
-    logging.basicConfig()
-    log.setLevel(logging.INFO)
+    log = LoggerFactory.createLog(__name__)
 
     ARGUMENTS_FILE = "arguments.txt"
     GENE_LISTS = "gene_list"

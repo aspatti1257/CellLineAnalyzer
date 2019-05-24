@@ -1,4 +1,3 @@
-import logging
 import threading
 
 import numpy
@@ -7,6 +6,7 @@ import os
 from abc import ABC, abstractmethod
 
 from ArgumentProcessingService import ArgumentProcessingService
+from LoggerFactory import LoggerFactory
 from Utilities.SafeCastUtil import SafeCastUtil
 from Utilities.GarbageCollectionUtility import GarbageCollectionUtility
 from sklearn.metrics import mean_squared_error
@@ -16,8 +16,7 @@ import multiprocessing
 
 class AbstractModelTrainer(ABC):
 
-    log = logging.getLogger(__name__)
-    log.setLevel(logging.INFO)
+    log = LoggerFactory.createLog(__name__)
 
     DEFAULT_MIN_SCORE = -10
 

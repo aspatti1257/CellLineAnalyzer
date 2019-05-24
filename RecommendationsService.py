@@ -3,11 +3,11 @@ from collections import OrderedDict
 from ArgumentProcessingService import ArgumentProcessingService
 from ArgumentConfig.AnalysisType import AnalysisType
 from DataFormattingService import DataFormattingService
+from LoggerFactory import LoggerFactory
 from MachineLearningService import MachineLearningService
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
 from Utilities.GeneListComboUtility import GeneListComboUtility
 import os
-import logging
 import copy
 import csv
 import numpy
@@ -18,9 +18,7 @@ from Utilities.SafeCastUtil import SafeCastUtil
 
 class RecommendationsService(object):
 
-    log = logging.getLogger(__name__)
-    logging.basicConfig()
-    log.setLevel(logging.INFO)
+    log = LoggerFactory.createLog(__name__)
 
     def __init__(self, inputs):
         self.inputs = inputs

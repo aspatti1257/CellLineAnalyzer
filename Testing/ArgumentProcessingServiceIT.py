@@ -1,17 +1,17 @@
 import csv
 import unittest
-import logging
 import os
 
 from ArgumentProcessingService import ArgumentProcessingService
+from LoggerFactory import LoggerFactory
 from Utilities.RandomizedDataGenerator import RandomizedDataGenerator
 from Utilities.SafeCastUtil import SafeCastUtil
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 
 
 class ArgumentProcessingServiceIT(unittest.TestCase):
-    log = logging.getLogger(__name__)
-    log.setLevel(logging.INFO)
+
+    log = LoggerFactory.createLog(__name__)
 
     def setUp(self):
         self.current_working_dir = os.getcwd()  # Should be this package.

@@ -1,5 +1,4 @@
 import csv
-import logging
 import multiprocessing
 import numpy
 import os
@@ -10,6 +9,7 @@ from joblib import Parallel, delayed
 from ArgumentConfig.AnalysisType import AnalysisType
 from ArgumentConfig.ProcessedArguments import ProcessedArguments
 from HTMLWritingService import HTMLWritingService
+from LoggerFactory import LoggerFactory
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from ArgumentProcessingService import ArgumentProcessingService
 from DataFormattingService import DataFormattingService
@@ -23,9 +23,7 @@ from Utilities.SafeCastUtil import SafeCastUtil
 
 class MachineLearningService(object):
 
-    log = logging.getLogger(__name__)
-    logging.basicConfig()
-    log.setLevel(logging.INFO)
+    log = LoggerFactory.createLog(__name__)
 
     MAXIMUM_FEATURES_RECORDED = 20
     DELIMITER = " --- "

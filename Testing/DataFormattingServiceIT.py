@@ -1,19 +1,18 @@
 import unittest
 import numpy as np
 import os
-import logging
 import pandas as pd
 
 from DataFormattingService import DataFormattingService
 from ArgumentProcessingService import ArgumentProcessingService
+from LoggerFactory import LoggerFactory
 from Utilities.RandomizedDataGenerator import RandomizedDataGenerator
 from Utilities.SafeCastUtil import SafeCastUtil
 
 
 class DataFormattingServiceIT(unittest.TestCase):
 
-    log = logging.getLogger(__name__)
-    log.setLevel(logging.INFO)
+    log = LoggerFactory.createLog(__name__)
 
     def setUp(self):
         self.current_working_dir = os.getcwd()  # Should be this package.
