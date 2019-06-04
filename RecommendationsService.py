@@ -27,6 +27,7 @@ class RecommendationsService(object):
         # TODO: Support for inputs to be a dict of drug_name => input, not just one set of inputs for all drugs.
 
         drug_to_cell_line_to_prediction_map = {}
+        predictionsfile = open(input_folder+'/Predictions.txt','w')
         for drug in self.inputs.keys():
             drug_to_cell_line_to_prediction_map[drug] = {}
             processed_arguments = self.inputs.get(drug)
@@ -59,6 +60,7 @@ class RecommendationsService(object):
                 else:
                     prediction = self.generatePrediction(best_model, best_combo, cell_line, feature_names, formatted_inputs)
                     cellline_viabilities.append([drug, prediction])
+                    predictionsfile.write(drug+'\t'+str(cellline)+'\t'+str(prediction)+'\t'+str(self.fetchBestModelAndCombo().top_score)+'\n')
                 recs = []
                 drug_to_cell_line_to_prediction_map[drug][cell_line] = prediction
                 #self.presciption_from_prediction(self, trainer, viability_acceptance, cellline_viabilities)
@@ -74,6 +76,7 @@ class RecommendationsService(object):
                # See which drug prediction comes closest to actual R^2 score.
                # See self.inputs.results for this value.
                # Record to FinalResults.csv
+            predictionsfile.close()
             pass
 
     def determineGeneListCombos(self, processed_arguments):
