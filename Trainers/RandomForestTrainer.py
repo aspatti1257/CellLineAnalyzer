@@ -43,9 +43,9 @@ class RandomForestTrainer(AbstractModelTrainer):
 
     def logOptimalHyperParams(self, hyperparams, feature_set_as_string, record_diagnostics, input_folder):
         message = "Optimal Hyperparameters for " + feature_set_as_string + " " + self.algorithm + " algorithm " \
-                  "chosen as:\n" +\
-                        "\tm_val = " + SafeCastUtil.safeCast(hyperparams[0], str) + "\n" \
-                        "\tmax_depth = " + SafeCastUtil.safeCast(hyperparams[1], str) + ".\n"
+                  "chosen as:\n" + \
+                        "\tmax_depth = " + SafeCastUtil.safeCast(hyperparams[0], str) + ".\n" \
+                        "\tm_val = " + SafeCastUtil.safeCast(hyperparams[1], str) + "\n"
         self.log.info(message)
         if record_diagnostics:
             self.writeToDiagnosticsFile(input_folder, message)
