@@ -2,11 +2,14 @@ import threading
 
 import numpy
 import os
+import copy
 
+from collections import OrderedDict
 from abc import ABC, abstractmethod
 
 from ArgumentProcessingService import ArgumentProcessingService
 from LoggerFactory import LoggerFactory
+from Utilities.DictionaryUtility import DictionaryUtility
 from Utilities.SafeCastUtil import SafeCastUtil
 from Utilities.GarbageCollectionUtility import GarbageCollectionUtility
 from sklearn.metrics import mean_squared_error
@@ -38,14 +41,6 @@ class AbstractModelTrainer(ABC):
 
     @abstractmethod
     def train(self, results, features, hyperparams, feature_names):
-        pass
-
-    @abstractmethod
-    def setModelDataDictionary(self, model_data, hyperparam_set, current_model_score):
-        pass
-
-    @abstractmethod
-    def logOptimalHyperParams(self, hyperparams, feature_set_as_string, record_diagnostics, input_folder):
         pass
 
     @abstractmethod
@@ -82,7 +77,6 @@ class AbstractModelTrainer(ABC):
 
         features, relevant_results = self.populateFeaturesAndResultsByCellLine(training_matrix, results)
         feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
-
 
         hyperparam_permutations = self.fetchAllHyperparamPermutations(hyperparams)
         GarbageCollectionUtility.logMemoryUsageAndGarbageCollect(self.log)
@@ -131,17 +125,14 @@ class AbstractModelTrainer(ABC):
                                    "and PID %s.", self.algorithm, proc.pid)
 
             for hyperparam_set in chunk:
-                copied_hyperparams = hyperparam_set[:]
-                if len(copied_hyperparams) == 1:
-                    copied_hyperparams.append(None)
-                hyperparam_tuple = SafeCastUtil.safeCast(copied_hyperparams, tuple)
-                model_result = parallelized_dict.get(hyperparam_tuple)
+                hyperparams_as_string = DictionaryUtility.toString(hyperparam_set)
+                model_result = parallelized_dict.get(hyperparams_as_string)
                 if model_result is not None:
-                    model_data[hyperparam_tuple] = model_result
+                    model_data[hyperparams_as_string] = model_result
                 else:
                     self.log.warning("Parallel hyperparameter optimization thread for %s did not execute successfully. "
                                      "No training data available for hyperparams: %s.", self.algorithm, hyperparam_set)
-                    model_data[hyperparam_tuple] = self.EMPTY_MODEL_RESPONSE
+                    model_data[hyperparams_as_string] = self.EMPTY_MODEL_RESPONSE
             additional_data = parallelized_dict.get(self.ADDITIONAL_DATA)
             if additional_data is not None:
                 if model_data.get(self.ADDITIONAL_DATA) is None:
@@ -164,7 +155,7 @@ class AbstractModelTrainer(ABC):
         lock = threading.Lock()
         lock.acquire(True)
         try:
-            self.setModelDataDictionary(model_data, hyperparam_set, current_model_score)
+            model_data[DictionaryUtility.toString(hyperparam_set)] = current_model_score
         except FileNotFoundError as fnfe:
             self.log.error("Unable to write to shared model_data object for algorithm: %s.\n", fnfe)
         except AttributeError as ae:
@@ -190,12 +181,13 @@ class AbstractModelTrainer(ABC):
         target_index = len(zero_filled_indices) - 1
         current_perm = zero_filled_indices[:]
         while target_index >= 0:
-            current_hyperparams = []
+            current_hyperparams = OrderedDict()
             for i in range(0, len(current_perm)):
-                current_hyperparams.append(hyperparams[hyperparam_keys[i]][SafeCastUtil.safeCast(current_perm[i], int)])
+                param_name = hyperparam_keys[i]
+                current_hyperparams[param_name] = hyperparams[param_name][SafeCastUtil.safeCast(current_perm[i], int)]
             if current_hyperparams not in all_perms:
-                clone_array = current_hyperparams[:]
-                all_perms.append(clone_array)
+                clone_map = copy.deepcopy(current_hyperparams)
+                all_perms.append(clone_map)
 
             if current_perm[target_index] < len(hyperparams[hyperparam_keys[target_index]]) - 1:
                 current_perm[target_index] += 1
@@ -244,18 +236,29 @@ class AbstractModelTrainer(ABC):
         hyperparam_keys = SafeCastUtil.safeCast(self.hyperparameters.keys(), list)
         for i in range(0, len(hyperparam_keys)):
             hyperparam_set = self.hyperparameters[hyperparam_keys[i]]
-            if best_hyperparams[i] >= hyperparam_set[len(hyperparam_set) - 1]:
+            optimal_value = best_hyperparams.get(hyperparam_keys[i])
+            if optimal_value >= hyperparam_set[len(hyperparam_set) - 1]:
                 message = "Best hyperparam for " + self.algorithm + " on upper threshold of provided hyperparam " \
-                          "set: " + hyperparam_keys[i] + " = " + SafeCastUtil.safeCast(best_hyperparams[i], str) + "\n"
+                          "set: " + hyperparam_keys[i] + " = " + SafeCastUtil.safeCast(optimal_value, str) + "\n"
                 self.log.debug(message)
                 if record_diagnostics:
                     self.writeToDiagnosticsFile(input_folder, message)
-            elif best_hyperparams[i] <= hyperparam_set[0]:
+            elif optimal_value <= hyperparam_set[0]:
                 message = "Best hyperparam for " + self.algorithm + " on lower threshold of provided hyperparam " \
-                          "set: " + hyperparam_keys[i] + " = " + SafeCastUtil.safeCast(best_hyperparams[i], str) + "\n"
+                          "set: " + hyperparam_keys[i] + " = " + SafeCastUtil.safeCast(optimal_value, str) + "\n"
                 self.log.debug(message)
                 if record_diagnostics:
                     self.writeToDiagnosticsFile(input_folder, message)
+
+    def logOptimalHyperParams(self, hyperparams, feature_set_as_string, record_diagnostics, input_folder):
+        message = "Optimal Hyperparameters for " + feature_set_as_string + " " + self.algorithm + " algorithm " \
+                  "chosen as:\n"
+
+        for key in SafeCastUtil.safeCast(hyperparams.keys(), list):
+            message += "\t" + key + " = " + SafeCastUtil.safeCast(hyperparams[key], str) + "\n"
+        self.log.info(message)
+        if record_diagnostics:
+            self.writeToDiagnosticsFile(input_folder, message)
 
     def writeToDiagnosticsFile(self, input_folder, message):
         lock = threading.Lock()

@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import numpy as np
 import random
 import csv
@@ -195,6 +197,8 @@ class RandomizedDataGenerator(object):
         # hyperparams. Optimal boolean phrases for RSEN will need to be addressed as well.
         row = [combo, random.random(), random.random()]
         for i in range(0, perms):
-            hyperparams = [random.choice(params) for params in trainer.hyperparameters.values()]
-            row.append(ml_service.generateScoreAndHyperParam(random.random(), hyperparams, trainer))
+            hyperparams = OrderedDict()
+            for key in SafeCastUtil.safeCast(trainer.hyperparameters.keys(), list):
+                hyperparams[key] = random.choice(trainer.hyperparameters[key])
+            row.append(ml_service.generateScoreAndHyperParam(random.random(), hyperparams))
         return row

@@ -1,5 +1,7 @@
 import csv
 import multiprocessing
+from collections import OrderedDict
+
 import numpy
 import os
 import threading
@@ -14,6 +16,7 @@ from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithm
 from ArgumentProcessingService import ArgumentProcessingService
 from DataFormattingService import DataFormattingService
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
+from Utilities.DictionaryUtility import DictionaryUtility
 from Utilities.GeneListComboUtility import GeneListComboUtility
 from Utilities.ModelTrainerFactory import ModelTrainerFactory
 from Utilities.GarbageCollectionUtility import GarbageCollectionUtility
@@ -66,8 +69,6 @@ class MachineLearningService(object):
         config = self.inputs.individual_train_config
         target_combo = config.combo
         target_algorithm = config.algorithm
-        hyperparams = config.hyperparams.split(",")
-        casted_params = [SafeCastUtil.safeCast(param, float) for param in hyperparams]
 
         rsen_config = self.inputs.rsen_config
 
@@ -76,6 +77,8 @@ class MachineLearningService(object):
             plain_text_name = self.generateFeatureSetString(gene_list_combo)
             if plain_text_name == target_combo:
                 trainer = ModelTrainerFactory.createTrainerFromTargetAlgorithm(is_classifier, target_algorithm, rsen_config)
+                hyperparams = self.fetchAndCastHyperparams(config, trainer)
+
                 for permutation in range(0, outer_monte_carlo_loops):
                     results = self.inputs.results
                     formatted_data = self.formatData(self.inputs, True, True)
@@ -85,7 +88,7 @@ class MachineLearningService(object):
                                                                                  formatted_data, self.inputs.analysisType())
                     features, relevant_results = trainer.populateFeaturesAndResultsByCellLine(training_matrix, results)
                     feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
-                    model = trainer.buildModel(relevant_results, features, casted_params, feature_names)
+                    model = trainer.buildModel(relevant_results, features, hyperparams, feature_names)
                     model_score = trainer.fetchPredictionsAndScore(model, testing_matrix, results)
                     score = model_score[0]
                     accuracy = model_score[1]
@@ -99,7 +102,7 @@ class MachineLearningService(object):
                     numbered_combo = target_combo + " RUN " + SafeCastUtil.safeCast(permutation, str)
                     self.log.debug("Final score and accuracy of individual analysis for feature gene combo %s "
                                    "using algorithm %s: %s, %s", numbered_combo, target_algorithm, score, accuracy)
-                    score_and_hyperparam = [self.generateScoreAndHyperParam(score, hyperparams, trainer)]
+                    score_and_hyperparam = [self.generateScoreAndHyperParam(score, hyperparams)]
                     line = self.generateLine(accuracy, numbered_combo, ordered_importances, ordered_phrases, score,
                                              score_and_hyperparam)
                     self.writeToCSVInLock(line, input_folder, target_algorithm, outer_monte_carlo_loops, 1)
@@ -107,19 +110,20 @@ class MachineLearningService(object):
         self.log.info("Gene list feature file %s combo not found in current dataset.", target_combo)
         return
 
+    def fetchAndCastHyperparams(self, config, trainer):
+        hyperparams = config.hyperparams.split(",")
+        hyperparam_dict = OrderedDict()
+        keys = SafeCastUtil.safeCast(trainer.hyperparameters.keys(), list)
+        for i in range(0, len(keys)):
+            hyperparam_dict[keys[i]] = SafeCastUtil.safeCast(hyperparams[i], float)
+        return hyperparam_dict
+
     def generateLine(self, accuracy, combo, ordered_importances, ordered_phrases, score, score_and_hyperparam):
         return numpy.concatenate([[combo, score, accuracy], score_and_hyperparam,
                                   ordered_importances, ordered_phrases])
 
-    def generateScoreAndHyperParam(self, score, hyperparam, trainer):
-        hyperparam_string = ""
-        keys = SafeCastUtil.safeCast(trainer.hyperparameters.keys(), list)
-        for i in range(0, len(keys)):
-            hyperparam_string += (keys[i] + ": " + SafeCastUtil.safeCast(hyperparam[i], str))
-            if i < len(keys) - 1:
-                hyperparam_string += ", "
-
-        return SafeCastUtil.safeCast(score, str) + self.DELIMITER + hyperparam_string
+    def generateScoreAndHyperParam(self, score, hyperparam):
+        return SafeCastUtil.safeCast(score, str) + self.DELIMITER + DictionaryUtility.toString(hyperparam)
 
     def shouldTrainAlgorithm(self, algorithm):
         configs = self.inputs.algorithm_configs
@@ -275,8 +279,7 @@ class MachineLearningService(object):
                         important_rsen_phrases[phrase].append(prediction_data[3].get(phrase))
                     else:
                         important_rsen_phrases[phrase] = [prediction_data[3].get(phrase)]
-            scores_and_hyperparams.append(self.generateScoreAndHyperParam(prediction_data[0], optimal_hyperparams,
-                                                                          trainer))
+            scores_and_hyperparams.append(self.generateScoreAndHyperParam(prediction_data[0], optimal_hyperparams))
 
             GarbageCollectionUtility.logMemoryUsageAndGarbageCollect(self.log)
 
@@ -407,17 +410,17 @@ class MachineLearningService(object):
     def determineOptimalHyperparameters(self, feature_set, formatted_data, trainer):
         inner_model_hyperparams = self.determineInnerHyperparameters(feature_set, formatted_data, trainer)
         highest_average = trainer.DEFAULT_MIN_SCORE
-        best_hyperparam = None
+        best_hyperparam = {}
         for hyperparam_set in inner_model_hyperparams.keys():
             if hyperparam_set == AbstractModelTrainer.ADDITIONAL_DATA:
                 continue
             average = numpy.average([results[0] for results in inner_model_hyperparams[hyperparam_set]])  # raw score
             if average > highest_average:
-                best_hyperparam = SafeCastUtil.safeCast(hyperparam_set, list)
+                best_hyperparam = DictionaryUtility.toDict(hyperparam_set)
                 highest_average = average
         additional_data = inner_model_hyperparams.get(AbstractModelTrainer.ADDITIONAL_DATA)
         if additional_data:
-            best_hyperparam.append(additional_data)
+            best_hyperparam[AbstractModelTrainer.ADDITIONAL_DATA] = additional_data
         return best_hyperparam
 
     def writeToCSVInLock(self, line, input_folder, ml_algorithm, num_combos, outer_perms):

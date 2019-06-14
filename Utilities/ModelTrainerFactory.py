@@ -30,5 +30,5 @@ class ModelTrainerFactory(object):
             trainer = RandomSubsetElasticNetTrainer(is_classifier, rsen_config.binary_cat_matrix, rsen_config.p_val,
                                                     rsen_config.k_val)
         else:
-            raise ValueError("Unsupported Machine Learning algorithm for individual training: %s", target_algorithm)
+            raise ValueError("Unsupported Machine Learning algorithm: %s", target_algorithm)
         return trainer

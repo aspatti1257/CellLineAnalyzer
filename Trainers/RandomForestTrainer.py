@@ -10,6 +10,9 @@ from Utilities.SafeCastUtil import SafeCastUtil
 
 class RandomForestTrainer(AbstractModelTrainer):
 
+    MAX_DEPTH = "max_depth"
+    M_VAL = "m_val"
+
     def __init__(self, is_classifier):
         super().__init__(SupportedMachineLearningAlgorithms.RANDOM_FOREST, self.initializeHyperParameters(0, 0), is_classifier)
 
@@ -18,8 +21,8 @@ class RandomForestTrainer(AbstractModelTrainer):
 
     def initializeHyperParameters(self, n, p):
         hyperparams = OrderedDict()
-        hyperparams["max_depth"] = [0.05 * n, 0.1 * n, 0.2 * n, 0.3 * n, 0.4 * n, 0.5 * n, 0.75 * n, 1 * n]
-        hyperparams["m_val"] = [1, (1 + numpy.sqrt(p)) / 2, numpy.sqrt(p), (numpy.sqrt(p) + p) / 2, p]
+        hyperparams[self.MAX_DEPTH] = [0.05 * n, 0.1 * n, 0.2 * n, 0.3 * n, 0.4 * n, 0.5 * n, 0.75 * n, 1 * n]
+        hyperparams[self.M_VAL] = [1, (1 + numpy.sqrt(p)) / 2, numpy.sqrt(p), (numpy.sqrt(p) + p) / 2, p]
         return hyperparams
 
     def hyperparameterize(self, training_matrix, testing_matrix, results):
@@ -28,8 +31,8 @@ class RandomForestTrainer(AbstractModelTrainer):
         return super().loopThroughHyperparams(self.initializeHyperParameters(n, p), training_matrix, testing_matrix, results)
 
     def train(self, results, features, hyperparams, feature_names):
-        max_depth = numpy.min([SafeCastUtil.safeCast(numpy.floor(hyperparams[0]), int), len(features)])
-        max_leaf_nodes = numpy.maximum(2, SafeCastUtil.safeCast(numpy.ceil(hyperparams[1]), int))
+        max_depth = numpy.min([SafeCastUtil.safeCast(numpy.floor(hyperparams.get(self.MAX_DEPTH)), int), len(features)])
+        max_leaf_nodes = numpy.maximum(2, SafeCastUtil.safeCast(numpy.ceil(hyperparams.get(self.M_VAL)), int))
         if self.is_classifier:
             model = RandomForestClassifier(n_estimators=100, max_leaf_nodes=max_leaf_nodes, max_depth=max_depth)
         else:
@@ -37,18 +40,6 @@ class RandomForestTrainer(AbstractModelTrainer):
         model.fit(features, results)
         self.log.debug("Successful creation of Random Forest model: %s\n", model)
         return model
-
-    def setModelDataDictionary(self, model_data, hyperparam_set, current_model_score):
-        model_data[hyperparam_set[0], hyperparam_set[1]] = current_model_score
-
-    def logOptimalHyperParams(self, hyperparams, feature_set_as_string, record_diagnostics, input_folder):
-        message = "Optimal Hyperparameters for " + feature_set_as_string + " " + self.algorithm + " algorithm " \
-                  "chosen as:\n" + \
-                        "\tmax_depth = " + SafeCastUtil.safeCast(hyperparams[0], str) + ".\n" \
-                        "\tm_val = " + SafeCastUtil.safeCast(hyperparams[1], str) + "\n"
-        self.log.info(message)
-        if record_diagnostics:
-            self.writeToDiagnosticsFile(input_folder, message)
 
     def fetchFeatureImportances(self, model, features_in_order):
         importances = {}
