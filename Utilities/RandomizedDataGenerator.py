@@ -189,9 +189,8 @@ class RandomizedDataGenerator(object):
         perms = ml_service.inputs.outer_monte_carlo_permutations
         trainer = ModelTrainerFactory.createTrainerFromTargetAlgorithm(is_classifier, algo, ml_service.inputs.rsen_config)
         if algo is SupportedMachineLearningAlgorithms.RANDOM_FOREST:
-            n = len(ml_service.inputs.results)
             p = len(ml_service.inputs.features[ArgumentProcessingService.FEATURE_NAMES])
-            trainer.hyperparameters = trainer.initializeHyperParameters(n, p)
+            trainer.hyperparameters = trainer.initializeHyperParameters(p)
 
         # TODO: Flesh this out such that it can generate a list of scores for outer monte carlo perms and their
         # hyperparams. Optimal boolean phrases for RSEN will need to be addressed as well.
