@@ -3,10 +3,12 @@ from collections import OrderedDict
 
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
-from Utilities.SafeCastUtil import SafeCastUtil
 
 
 class LinearSVMTrainer(AbstractModelTrainer):
+
+    C_VAL = "c_val"
+    EPSILON = "epsilon"
 
     def __init__(self, is_classifier):
         super().__init__(SupportedMachineLearningAlgorithms.LINEAR_SVM, self.initializeHyperParameters(is_classifier),
@@ -17,9 +19,9 @@ class LinearSVMTrainer(AbstractModelTrainer):
 
     def initializeHyperParameters(self, is_classifier):
         hyperparams = OrderedDict()
-        hyperparams["c_val"] = [10E-2, 10E-1, 10E0]
+        hyperparams[self.C_VAL] = [10E-2, 10E-1, 10E0]
         if not is_classifier:
-            hyperparams["epsilon"] = [0.01, 0.05, 0.1, 0.15, 0.2]
+            hyperparams[self.EPSILON] = [0.01, 0.05, 0.1, 0.15, 0.2]
         return hyperparams
 
     def hyperparameterize(self, training_matrix, testing_matrix, results):
@@ -28,30 +30,12 @@ class LinearSVMTrainer(AbstractModelTrainer):
 
     def train(self, results, features, hyperparams, feature_names):
         if self.is_classifier:
-            model = svm.LinearSVC(C=hyperparams[0])
+            model = svm.LinearSVC(C=hyperparams.get(self.C_VAL))
         else:
-            model = svm.LinearSVR(C=hyperparams[0], epsilon=hyperparams[1])
+            model = svm.LinearSVR(C=hyperparams.get(self.C_VAL), epsilon=hyperparams.get(self.EPSILON))
         model.fit(features, results)
         self.log.debug("Successful creation of Linear Support Vector Machine model: %s\n", model)
         return model
-
-    def setModelDataDictionary(self, model_data, hyperparam_set, current_model_score):
-        if self.is_classifier:
-            model_data[hyperparam_set[0], None] = current_model_score
-        else:
-            model_data[hyperparam_set[0], hyperparam_set[1]] = current_model_score
-
-    def logOptimalHyperParams(self, hyperparams, feature_set_as_string, record_diagnostics, input_folder):
-        message = "Optimal Hyperparameters for " + feature_set_as_string + " " + self.algorithm + " algorithm " \
-                  "chosen as:\n" +\
-                        "\tc_val = " + SafeCastUtil.safeCast(hyperparams[0], str)
-        if self.is_classifier:
-            message = message + ".\n"
-        else:
-            message = message + "\n\tepsilon = " + SafeCastUtil.safeCast(hyperparams[1], str) + ".\n"
-        self.log.info(message)
-        if record_diagnostics:
-            self.writeToDiagnosticsFile(input_folder, message)
 
     def fetchFeatureImportances(self, model, features_in_order):
         if hasattr(model, "coef_") and hasattr(model, "coef_"):

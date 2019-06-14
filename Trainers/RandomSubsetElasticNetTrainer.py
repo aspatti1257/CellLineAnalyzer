@@ -11,6 +11,9 @@ from CustomModels.RandomSubsetElasticNet import RandomSubsetElasticNet
 
 class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
 
+    ALPHA = "alpha"
+    L_ONE_RATIO = "l_one_ratio"
+
     def __init__(self, is_classifier, binary_categorical_matrix, p_val, k_val):
         self.validateBinaryCategoricalMatrix(binary_categorical_matrix)
 
@@ -49,8 +52,8 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
 
     def initializeHyperParameters(self):
         hyperparams = OrderedDict()
-        hyperparams["alpha"] = [0.01, 0.1, 1, 10]
-        hyperparams["l_one_ratio"] = [0, 0.1, 0.5, 0.9, 1]
+        hyperparams[self.ALPHA] = [0.01, 0.1, 1, 10]
+        hyperparams[self.L_ONE_RATIO] = [0, 0.1, 0.5, 0.9, 1]
         return hyperparams
 
     def hyperparameterize(self, training_matrix, testing_matrix, results):
@@ -58,7 +61,8 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
 
     def train(self, results, features, hyperparams, feature_names):
         binary_feature_indices = self.fetchBinaryFeatureIndices(feature_names)
-        model = RandomSubsetElasticNet(hyperparams[0], hyperparams[1], binary_feature_indices, p=self.p_val,
+        model = RandomSubsetElasticNet(hyperparams.get(self.ALPHA), hyperparams.get(self.L_ONE_RATIO),
+                                       binary_feature_indices, p=self.p_val,
                                        explicit_phrases=self.determineExplicitPhrases(hyperparams))
 
         model.fit(features, results)
@@ -75,7 +79,7 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
     def determineExplicitPhrases(self, hyperparams):
         if len(hyperparams) < 3:
             return None
-        phrase_sets = hyperparams[2]
+        phrase_sets = hyperparams.get(AbstractModelTrainer.ADDITIONAL_DATA)
         all_phrases_and_r2_scores = []
         for phrase_set in phrase_sets:
             for model_phrase in phrase_set:
@@ -91,18 +95,6 @@ class RandomSubsetElasticNetTrainer(AbstractModelTrainer):
         cutoff = numpy.max([SafeCastUtil.safeCast(len(ordered_phrases) * self.k_val, int), 1])
 
         return [model_phrase.phrase for model_phrase in ordered_phrases[:cutoff]]
-
-    def setModelDataDictionary(self, model_data, hyperparam_set, current_model_score):
-        model_data[hyperparam_set[0], hyperparam_set[1]] = current_model_score
-
-    def logOptimalHyperParams(self, hyperparams, feature_set_as_string, record_diagnostics, input_folder):
-        message = "Optimal Hyperparameters for " + feature_set_as_string + " " + self.algorithm + " algorithm " \
-                  "chosen as:\n" +\
-                        "\talpha = " + SafeCastUtil.safeCast(hyperparams[0], str) + "\n" \
-                        "\tl_one_ratio = " + SafeCastUtil.safeCast(hyperparams[1], str) + ".\n"
-        self.log.info(message)
-        if record_diagnostics:
-            self.writeToDiagnosticsFile(input_folder, message)
 
     def shouldProcessFeatureSet(self, feature_set):
         # Feature set should contain a gene list applied to the binary categorical matrix AND another gene list applied
