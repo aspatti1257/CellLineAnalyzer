@@ -1,6 +1,7 @@
 import logging
 import sys
 
+
 class LoggerFactory(object):
 
     @staticmethod
