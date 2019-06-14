@@ -6,6 +6,7 @@ from DataFormattingService import DataFormattingService
 from LoggerFactory import LoggerFactory
 from MachineLearningService import MachineLearningService
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
+from Utilities.DictionaryUtility import DictionaryUtility
 from Utilities.GeneListComboUtility import GeneListComboUtility
 import os
 import copy
@@ -60,7 +61,7 @@ class RecommendationsService(object):
                 else:
                     prediction = self.generatePrediction(best_model, best_combo, cell_line, feature_names, formatted_inputs)
                     cellline_viabilities.append([drug, prediction])
-                    predictionsfile.write(drug+'\t'+str(cellline)+'\t'+str(prediction)+'\t'+str(self.fetchBestModelAndCombo().top_score)+'\n')
+                    # predictionsfile.write(drug+'\t'+str(cell_line)+'\t'+str(prediction)+'\t'+str(self.fetchBestModelAndCombo().top_score)+'\n')
                 recs = []
                 drug_to_cell_line_to_prediction_map[drug][cell_line] = prediction
                 #self.presciption_from_prediction(self, trainer, viability_acceptance, cellline_viabilities)
@@ -349,7 +350,7 @@ class RecommendationsService(object):
         trainer = ModelTrainerFactory.createTrainerFromTargetAlgorithm(is_classifier, best_scoring_algo, rsen_config)
 
         features, relevant_results = trainer.populateFeaturesAndResultsByCellLine(training_matrix, trimmed_results)
-        params = [SafeCastUtil.safeCast(param.split(":")[1].strip(), float) for param in optimal_hyperparams.split(",")]
+        params = DictionaryUtility.toDict(optimal_hyperparams)
         feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
         model = trainer.buildModel(relevant_results, features, params, feature_names)
         return model, best_scoring_combo
