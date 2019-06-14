@@ -202,7 +202,7 @@ class AbstractModelTrainer(ABC):
 
     def fetchPredictionsAndScore(self, model, testing_matrix, results):
         if model is None:
-            return self.DEFAULT_MIN_SCORE
+            return self.EMPTY_MODEL_RESPONSE
         features, relevant_results = self.populateFeaturesAndResultsByCellLine(testing_matrix, results)
         predictions = model.predict(features)
         score = AbstractModelTrainer.DEFAULT_MIN_SCORE
@@ -210,7 +210,6 @@ class AbstractModelTrainer(ABC):
             score = model.score(features, relevant_results)
         except ValueError as valueError:
             self.log.error(valueError)
-            model.score(features, relevant_results)
         if self.is_classifier:
             accuracy = accuracy_score(relevant_results, predictions)
         else:

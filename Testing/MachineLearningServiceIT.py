@@ -5,6 +5,7 @@ import numpy
 import math
 
 from LoggerFactory import LoggerFactory
+from Trainers.AbstractModelTrainer import AbstractModelTrainer
 from Trainers.ElasticNetTrainer import ElasticNetTrainer
 from Trainers.RandomForestTrainer import RandomForestTrainer
 from Trainers.LinearSVMTrainer import LinearSVMTrainer
@@ -184,11 +185,11 @@ class MachineLearningServiceIT(unittest.TestCase):
 
     def testIndividualRandomForestRegressor(self):
         self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.RANDOM_FOREST,
-                                                            "400,2", False)
+                                                            "200,20", False)
 
     def testIndividualRandomForestClassifier(self):
         self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.RANDOM_FOREST,
-                                                            "400,2", True)
+                                                            "200,20", True)
 
     def testIndividualLinearSVMRegressor(self):
         self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.LINEAR_SVM, "0.1,0,1",
@@ -233,8 +234,12 @@ class MachineLearningServiceIT(unittest.TestCase):
             target_combo_string = ml_service.generateFeatureSetString(target_combo)
             ml_service.inputs.individual_train_config.combo = target_combo_string
 
-        ml_service.analyze(input_folder)
-        self.assertResultsForIndividualCombo(input_folder, algorithm, 11, is_classifier)
+        try:
+            ml_service.analyze(input_folder)
+            self.assertResultsForIndividualCombo(input_folder, algorithm, 11, is_classifier)
+        except KeyboardInterrupt as keyboardInterrupt:
+            self.log.error("Interrupted manually, failing and initiating cleanup.")
+            assert False
 
     def formatRandomizedDataForIndividualCombo(self, is_classifier, algorithm, hyperparams, input_folder):
         random_data_generator = RandomizedDataGenerator(RandomizedDataGenerator.GENERATED_DATA_FOLDER)
@@ -257,6 +262,8 @@ class MachineLearningServiceIT(unittest.TestCase):
                         continue
                     feature_gene_list_combo = line_split[0]
                     assert ":" in feature_gene_list_combo
+                    score = SafeCastUtil.safeCast(line_split[1], float)
+                    assert score > AbstractModelTrainer.DEFAULT_MIN_SCORE
                     if len(line_split) > 3:
                         top_importance = line_split[3]
                         assert top_importance is not None
@@ -396,4 +403,3 @@ class MachineLearningServiceIT(unittest.TestCase):
         trainer.log.setLevel(logging.DEBUG)
 
         self.analyzeAndAssertResults(ml_service, 1, trainer)
-

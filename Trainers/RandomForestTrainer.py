@@ -10,33 +10,35 @@ from Utilities.SafeCastUtil import SafeCastUtil
 
 class RandomForestTrainer(AbstractModelTrainer):
 
-    MAX_DEPTH = "max_depth"
-    M_VAL = "m_val"
+    MAX_FEATURES = "max_features"
+    MIN_SAMPLES_SPLIT = "min_samples_split"
 
     def __init__(self, is_classifier):
-        super().__init__(SupportedMachineLearningAlgorithms.RANDOM_FOREST, self.initializeHyperParameters(0, 0), is_classifier)
+        super().__init__(SupportedMachineLearningAlgorithms.RANDOM_FOREST, self.initializeHyperParameters(0), is_classifier)
 
     def supportsHyperparams(self):
         return True
 
-    def initializeHyperParameters(self, n, p):
+    def initializeHyperParameters(self, p):
         hyperparams = OrderedDict()
-        hyperparams[self.MAX_DEPTH] = [0.05 * n, 0.1 * n, 0.2 * n, 0.3 * n, 0.4 * n, 0.5 * n, 0.75 * n, 1 * n]
-        hyperparams[self.M_VAL] = [1, (1 + numpy.sqrt(p)) / 2, numpy.sqrt(p), (numpy.sqrt(p) + p) / 2, p]
+        hyperparams[self.MAX_FEATURES] = [numpy.sqrt(p), (numpy.sqrt(p) + p) / 2, p]
+        hyperparams[self.MIN_SAMPLES_SPLIT] = [2, 10, 20]
         return hyperparams
 
     def hyperparameterize(self, training_matrix, testing_matrix, results):
-        n = len(SafeCastUtil.safeCast(training_matrix.keys(), list))  # number of samples
         p = len(SafeCastUtil.safeCast(training_matrix.values(), list)[0])  # number of features
-        return super().loopThroughHyperparams(self.initializeHyperParameters(n, p), training_matrix, testing_matrix, results)
+        return super().loopThroughHyperparams(self.initializeHyperParameters(p), training_matrix, testing_matrix, results)
 
     def train(self, results, features, hyperparams, feature_names):
-        max_depth = numpy.min([SafeCastUtil.safeCast(numpy.floor(hyperparams.get(self.MAX_DEPTH)), int), len(features)])
-        max_leaf_nodes = numpy.maximum(2, SafeCastUtil.safeCast(numpy.ceil(hyperparams.get(self.M_VAL)), int))
+        max_features = numpy.min([SafeCastUtil.safeCast(numpy.floor(hyperparams.get(self.MAX_FEATURES)), int), len(features[0])])
+
+        min_samples_split = hyperparams.get(self.MIN_SAMPLES_SPLIT)
+        if min_samples_split > 1:
+            min_samples_split = SafeCastUtil.safeCast(min_samples_split, int)
         if self.is_classifier:
-            model = RandomForestClassifier(n_estimators=100, max_leaf_nodes=max_leaf_nodes, max_depth=max_depth)
+            model = RandomForestClassifier(n_estimators=100, min_samples_split=min_samples_split, max_features=max_features)
         else:
-            model = RandomForestRegressor(n_estimators=100, max_leaf_nodes=max_leaf_nodes, max_depth=max_depth)
+            model = RandomForestRegressor(n_estimators=100, min_samples_split=min_samples_split, max_features=max_features)
         model.fit(features, results)
         self.log.debug("Successful creation of Random Forest model: %s\n", model)
         return model
