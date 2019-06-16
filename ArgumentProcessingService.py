@@ -322,7 +322,13 @@ class ArgumentProcessingService(object):
                             important_feature_indices.append(important_index)
                     else:
                         features = self.extractCastedFeatures(line, important_feature_indices)
-                        cell_line = results_list[line_index - 1]
+                        try:
+                            cell_line = results_list[line_index - 1]
+                        except IndexError as index_error:
+                            self.log.error("Index out of range. Results file is shorter than feature file [%s]: %s",
+                                           feature_file, SafeCastUtil.safeCast(index_error, str))
+                            raise ValueError("Make sure there are no extra lines (including whitespace) in ALL feature "
+                                             "files and only feature files you want to analyze are in target folder.")
                         if not cell_line[0] in feature_matrix:
                             feature_matrix[cell_line[0]] = features
                         else:
@@ -331,9 +337,9 @@ class ArgumentProcessingService(object):
                             self.log.error("Invalid line count for %s", file)
                             raise ValueError("Invalid line count for" + file + ". Must be " +
                                              SafeCastUtil.safeCast(file, str) + "lines long.")
-            except ValueError as valueError:
+            except ValueError as value_error:
                 self.log.error("Please verify results file is the same number of rows as all feature files.")
-                self.log.error(valueError)
+                self.log.error(value_error)
                 return None
             finally:
                 feature_file.close()
