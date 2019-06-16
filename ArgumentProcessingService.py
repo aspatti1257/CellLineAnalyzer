@@ -329,6 +329,7 @@ class ArgumentProcessingService(object):
                                            feature_file, SafeCastUtil.safeCast(index_error, str))
                             raise ValueError("Make sure there are no extra lines (including whitespace) in ALL feature "
                                              "files and only feature files you want to analyze are in target folder.")
+                        cell_line = results_list[line_index - 1]
                         if not cell_line[0] in feature_matrix:
                             feature_matrix[cell_line[0]] = features
                         else:

@@ -89,8 +89,8 @@ def writeHTMLSummaryFile(input_folder, is_classifier):
 
 def fetchRecommendations(input_folder):
     processed_args_by_drug = {}
-    for drug_dir in [file for file in os.listdir(input_folder) if os.path.isdir(input_folder + file) and "Analysis" in file]:
-        processed_args = handleInputFolderProcessing(input_folder)
+    for drug_dir in [file for file in os.listdir(input_folder) if os.path.isdir(input_folder + file) and "analysis" in file]:
+        processed_args = handleInputFolderProcessing(input_folder + drug_dir)
         if processed_args is not None:
             processed_args_by_drug[drug_dir] = processed_args
     if len(processed_args_by_drug.keys()) > 0:
