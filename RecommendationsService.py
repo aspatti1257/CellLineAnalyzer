@@ -28,7 +28,6 @@ class RecommendationsService(object):
         # TODO: Support for inputs to be a dict of drug_name => input, not just one set of inputs for all drugs.
 
         drug_to_cell_line_to_prediction_map = {}
-        predictionsfile = open(input_folder+'/Predictions.txt','w')
         for drug in self.inputs.keys():
             drug_to_cell_line_to_prediction_map[drug] = {}
             processed_arguments = self.inputs.get(drug)
@@ -54,16 +53,29 @@ class RecommendationsService(object):
                                                                                                 results)
                 # remove cell line from results
                 cellline_viabilities = []
-                best_model, best_combo = self.fetchBestModelAndCombo(drug, input_folder, trimmed_cell_lines,
-                                                                     trimmed_results, combos, processed_arguments)
+                best_model, best_combo, top_score = self.fetchBestModelComboAndScore(drug, input_folder, trimmed_cell_lines,
+                                                                                     trimmed_results, combos, processed_arguments)
                 if best_model is None or best_combo is None:
                     continue
                 else:
                     prediction = self.generatePrediction(best_model, best_combo, cell_line, feature_names, formatted_inputs)
                     cellline_viabilities.append([drug, prediction])
-                    # predictionsfile.write(drug+'\t'+str(cell_line)+'\t'+str(prediction)+'\t'+str(self.fetchBestModelAndCombo().top_score)+'\n')
+                    write_action = "w"
+                    file_name = "Predictions.txt"
+                    if file_name in os.listdir(input_folder):
+                        write_action = "a"
+                    with open(input_folder + "/" + file_name, write_action, newline='') as predictions_file:
+                        try:
+                            if write_action == "w":
+                                predictions_file.write("Drug\tCell_Line\tPrediction\tR2^Score\n")
+                            predictions_file.write(drug + '\t' + str(cell_line) + '\t' + str(prediction) + '\t' +
+                                                   str(top_score) + '\n')
+                        except ValueError as error:
+                            self.log.error("Error writing to file %s. %s", file_name, error)
+                        finally:
+                            predictions_file.close()
                 recs = []
-                drug_to_cell_line_to_prediction_map[drug][cell_line] = prediction
+                drug_to_cell_line_to_prediction_map[drug][cell_line] = prediction, top_score
                 #self.presciption_from_prediction(self, trainer, viability_acceptance, cellline_viabilities)
                 # @AP: viability_acceptance is a user-defined value, which should come from the arguments file. How do I
                 # get it here?
@@ -77,7 +89,6 @@ class RecommendationsService(object):
                # See which drug prediction comes closest to actual R^2 score.
                # See self.inputs.results for this value.
                # Record to FinalResults.csv
-            predictionsfile.close()
             pass
 
     def determineGeneListCombos(self, processed_arguments):
@@ -244,8 +255,8 @@ class RecommendationsService(object):
         drug_folders = [f for f in folders if 'Analysis' in f]
         return drug_folders
 
-    def fetchBestModelAndCombo(self, drug, analysis_files_folder, trimmed_cell_lines, trimmed_results, combos,
-                               processed_arguments):
+    def fetchBestModelComboAndScore(self, drug, analysis_files_folder, trimmed_cell_lines, trimmed_results, combos,
+                                    processed_arguments):
         # TODO: ultimately we'd want to use multiple algorithms, and make an ensemble prediction/prescription.
         # But for now, let's stick with one algorithm.
         best_combo_string = None
@@ -291,8 +302,9 @@ class RecommendationsService(object):
             return None
 
         best_combo = self.determineBestComboFromString(best_combo_string, combos, processed_arguments)
-        return self.trainBestModelWithCombo(best_scoring_algo, best_combo, optimal_hyperparams, trimmed_cell_lines,
-                                            trimmed_results, processed_arguments)
+        best_model = self.trainBestModelWithCombo(best_scoring_algo, best_combo, optimal_hyperparams,
+                                                              trimmed_cell_lines, trimmed_results, processed_arguments)
+        return best_model, best_combo, top_score
 
 
     def scorePhrase(self, processed_arguments):
@@ -353,7 +365,7 @@ class RecommendationsService(object):
         params = DictionaryUtility.toDict(optimal_hyperparams)
         feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
         model = trainer.buildModel(relevant_results, features, params, feature_names)
-        return model, best_scoring_combo
+        return model
 
         # @AP: feature_names is an input parameter whenever the function is called in MachineLearningService. However,
         #  when I look into the code for the trainers, it is never used. Is it obsolete?
