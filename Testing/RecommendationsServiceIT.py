@@ -2,7 +2,9 @@ import unittest
 import os
 import csv
 
+from LoggerFactory import LoggerFactory
 from RecommendationsService import RecommendationsService
+from Trainers.AbstractModelTrainer import AbstractModelTrainer
 from Utilities.RandomizedDataGenerator import RandomizedDataGenerator
 from Utilities.SafeCastUtil import SafeCastUtil
 from ArgumentProcessingService import ArgumentProcessingService
@@ -11,6 +13,8 @@ from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithm
 
 
 class RecommendationsServiceIT(unittest.TestCase):
+
+    log = LoggerFactory.createLog(__name__)
 
     def setUp(self):
         self.current_working_dir = os.getcwd()  # Should be this package.
@@ -40,6 +44,45 @@ class RecommendationsServiceIT(unittest.TestCase):
         except KeyboardInterrupt as keyboard_interrupt:
             assert False
 
+    def testPreRecsAnalysis(self):
+        inputs = self.formatRandomizedData(False)
+        target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
+        try:
+            recs_service = RecommendationsService(inputs)
+            recs_service.preRecsAnalysis(target_dir)
+
+            file_name = target_dir + "/" + RecommendationsService.PRE_REC_ANALYSIS_FILE
+            num_lines = 0
+            drug_names = SafeCastUtil.safeCast(recs_service.inputs.keys(), list)
+            cell_line = "cell_line"
+            with open(file_name) as csv_file:
+                try:
+                    for line_index, line in enumerate(csv_file):
+                        num_lines += 1
+                        line_split = line.split(",")
+                        for i in range(0, len(line_split)):
+                            value_in_csv = line_split[i].strip()
+                            if line_index == 0:
+                                if i == 0:
+                                    assert value_in_csv == cell_line
+                                else:
+                                    assert value_in_csv == drug_names[i - 1]
+                            else:
+                                if i == 0:
+                                    assert cell_line or RecommendationsService.STD_DEVIATION or \
+                                           RecommendationsService.MEAN or RecommendationsService.MEDIAN in value_in_csv
+                                else:
+                                    assert SafeCastUtil.safeCast(value_in_csv, float) > \
+                                           AbstractModelTrainer.DEFAULT_MIN_SCORE
+
+                except AssertionError as error:
+                    self.log.error(error)
+                finally:
+                    self.log.debug("Closing file %s", file_name)
+                    csv_file.close()
+                    assert num_lines == 1004
+        except KeyboardInterrupt as keyboard_interrupt:
+            assert False
 
     def formatRandomizedData(self, is_classifier):
         randomized_data_path = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER

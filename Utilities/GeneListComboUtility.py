@@ -99,11 +99,11 @@ class GeneListComboUtility(object):
         return dedupded_genes
 
     @staticmethod
-    def trimMatrixByFeatureSet(matrix_type, gene_lists, formatted_inputs, analysisType):
+    def trimMatrixByFeatureSet(matrix_type, gene_lists, formatted_inputs, analysis_type):
         full_matrix = formatted_inputs.get(matrix_type)
         feature_names = formatted_inputs.get(ArgumentProcessingService.FEATURE_NAMES)
 
-        if analysisType is AnalysisType.SPEARMAN_NO_GENE_LISTS:
+        if analysis_type is AnalysisType.SPEARMAN_NO_GENE_LISTS:
             # Skips an expensive process since we'll always be analyzing all features anyways in this mode.
             full_matrix[ArgumentProcessingService.FEATURE_NAMES] = feature_names
             return full_matrix

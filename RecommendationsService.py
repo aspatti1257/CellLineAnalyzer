@@ -5,6 +5,7 @@ from ArgumentConfig.AnalysisType import AnalysisType
 from DataFormattingService import DataFormattingService
 from LoggerFactory import LoggerFactory
 from MachineLearningService import MachineLearningService
+from RecommendationsModelInfo import RecommendationsModelInfo
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
 from Utilities.DictionaryUtility import DictionaryUtility
 from Utilities.GeneListComboUtility import GeneListComboUtility
@@ -21,12 +22,23 @@ class RecommendationsService(object):
 
     log = LoggerFactory.createLog(__name__)
 
+    PRE_REC_ANALYSIS_FILE = "PreRecAnalysis.csv"
+
+    HEADER = "header"
+
+    STD_DEVIATION = "std_deviation"
+    MEAN = "mean"
+    MEDIAN = "median"
+
     def __init__(self, inputs):
         self.inputs = inputs
 
+    def analyzeRecommendations(self, input_folder):
+        self.preRecsAnalysis(input_folder)
+        self.recommendByHoldout(input_folder)
+
     def recommendByHoldout(self, input_folder):
         # TODO: Support for inputs to be a dict of drug_name => input, not just one set of inputs for all drugs.
-
         drug_to_cell_line_to_prediction_map = {}
         for drug in self.inputs.keys():
             drug_to_cell_line_to_prediction_map[drug] = {}
@@ -49,47 +61,83 @@ class RecommendationsService(object):
                     # Continue skips over this, so if the key we're analyzing isn't a cell line (i.e. it's the feature
                     # names, skip it).
                     continue
-                trimmed_cell_lines, trimmed_results = self.removeCellLineFromFeaturesAndResults(cell_line, formatted_inputs,
-                                                                                                results)
+                trimmed_cell_lines, trimmed_results = self.removeNonNullCellLineFromFeaturesAndResults(cell_line,
+                                                                                                       formatted_inputs,
+                                                                                                       results)
                 # remove cell line from results
                 cellline_viabilities = []
-                best_model, best_combo, top_score = self.fetchBestModelComboAndScore(drug, input_folder, trimmed_cell_lines,
-                                                                                     trimmed_results, combos, processed_arguments)
-                if best_model is None or best_combo is None:
+                recs_model_info = self.fetchBestModelComboAndScore(drug, input_folder, trimmed_cell_lines,
+                                                                   trimmed_results, combos, processed_arguments)
+                if recs_model_info.model is None or recs_model_info.combo is None:
                     continue
-                else:
-                    prediction = self.generatePrediction(best_model, best_combo, cell_line, feature_names, formatted_inputs)
-                    cellline_viabilities.append([drug, prediction])
-                    write_action = "w"
-                    file_name = "Predictions.txt"
-                    if file_name in os.listdir(input_folder):
-                        write_action = "a"
-                    with open(input_folder + "/" + file_name, write_action, newline='') as predictions_file:
-                        try:
-                            if write_action == "w":
-                                predictions_file.write("Drug\tCell_Line\tPrediction\tR2^Score\n")
-                            predictions_file.write(drug + '\t' + str(cell_line) + '\t' + str(prediction) + '\t' +
-                                                   str(top_score) + '\n')
-                        except ValueError as error:
-                            self.log.error("Error writing to file %s. %s", file_name, error)
-                        finally:
-                            predictions_file.close()
+                prediction = self.generateSinglePrediction(recs_model_info.model, recs_model_info.combo,
+                                                           cell_line, feature_names, formatted_inputs)
+                cellline_viabilities.append([drug, prediction])
+                write_action = "w"
+                file_name = "Predictions.txt"
+                if file_name in os.listdir(input_folder):
+                    write_action = "a"
+                with open(input_folder + "/" + file_name, write_action, newline='') as predictions_file:
+                    try:
+                        if write_action == "w":
+                            predictions_file.write("Drug\tCell_Line\tPrediction\tR2^Score\n")
+                        predictions_file.write(drug + '\t' + str(cell_line) + '\t' + str(prediction) + '\t' +
+                                               str(recs_model_info.score) + '\n')
+                    except ValueError as error:
+                        self.log.error("Error writing to file %s. %s", file_name, error)
+                    finally:
+                        predictions_file.close()
                 recs = []
-                drug_to_cell_line_to_prediction_map[drug][cell_line] = prediction, top_score
-                #self.presciption_from_prediction(self, trainer, viability_acceptance, cellline_viabilities)
+                drug_to_cell_line_to_prediction_map[drug][cell_line] = prediction, recs_model_info.score
+                # self.presciption_from_prediction(self, trainer, viability_acceptance, cellline_viabilities)
                 # @AP: viability_acceptance is a user-defined value, which should come from the arguments file. How do I
                 # get it here?
                 # @MB: Added it via referencing self.inputs.recs_config.viability_acceptance. Defaults to None, set to 0.1
                 # for the sake of RecommendationsServiceIT testing.
-                with open('FinalResults.csv','a') as f:
-                    f.write(str(cell_line)+',')
+                with open('FinalResults.csv', 'a') as f:
+                    f.write(str(cell_line) + ',')
                     for drug in recs:
-                        f.write(drug+';')
+                        f.write(drug + ';')
                     f.write('\n')
-               # See which drug prediction comes closest to actual R^2 score.
-               # See self.inputs.results for this value.
-               # Record to FinalResults.csv
-            pass
+                    # See which drug prediction comes closest to actual R^2 score.
+                    # See self.inputs.results for this value.
+                    # Record to FinalResults.csv
+
+    def preRecsAnalysis(self, input_folder):
+        drugs = self.inputs.keys()
+        cell_line_predictions_by_drug = OrderedDict()
+        header = numpy.concatenate((["cell_line"], SafeCastUtil.safeCast(drugs, list)), axis=0)
+        cell_line_predictions_by_drug[self.HEADER] = header
+        cell_line_predictions_by_drug[self.STD_DEVIATION] = [self.STD_DEVIATION]
+        cell_line_predictions_by_drug[self.MEAN] = [self.MEAN]
+        cell_line_predictions_by_drug[self.MEDIAN] = [self.MEDIAN]
+        for drug in drugs:
+            processed_arguments = self.inputs.get(drug)
+            results = processed_arguments.results
+            combos = self.determineGeneListCombos(processed_arguments)
+
+            processed_arguments.data_split = 1.0
+            data_formatting_service = DataFormattingService(processed_arguments)
+            formatted_inputs = data_formatting_service.formatData(True, True)
+            recs_model_info = self.fetchBestModelComboAndScore(drug, input_folder, formatted_inputs,
+                                                               results, combos, processed_arguments)
+
+            if recs_model_info.model is None or recs_model_info.combo is None:
+                continue
+            self.generateMultiplePredictions(recs_model_info, formatted_inputs, results, cell_line_predictions_by_drug)
+
+        self.writePreRecAnalysisFile(cell_line_predictions_by_drug, input_folder)
+
+    def writePreRecAnalysisFile(self, cell_line_predictions_by_drug, input_folder):
+        with open(input_folder + "/" + self.PRE_REC_ANALYSIS_FILE, "w", newline='') as pre_rec_analysis_file:
+            try:
+                writer = csv.writer(pre_rec_analysis_file)
+                for key in cell_line_predictions_by_drug.keys():
+                    writer.writerow(cell_line_predictions_by_drug.get(key))
+            except ValueError as error:
+                self.log.error("Error writing to file %s. %s", pre_rec_analysis_file, error)
+            finally:
+                pre_rec_analysis_file.close()
 
     def determineGeneListCombos(self, processed_arguments):
         gene_lists = processed_arguments.gene_lists
@@ -241,11 +289,12 @@ class RecommendationsService(object):
         # hyperparams['SVM'][argmax.split('_')[2]] = argmax.split('_')[3]
         # return genelists, hyperparams
 
-    def removeCellLineFromFeaturesAndResults(self, cell_line, formatted_inputs, results):
+    def removeNonNullCellLineFromFeaturesAndResults(self, cell_line, formatted_inputs, results):
         cloned_formatted_data = copy.deepcopy(formatted_inputs)
-        del cloned_formatted_data.get(DataFormattingService.TRAINING_MATRIX)[cell_line]
+        if cell_line is not None:
+            del cloned_formatted_data.get(DataFormattingService.TRAINING_MATRIX)[cell_line]
 
-        cloned_results = [result for result in results if result[0] is not cell_line]
+        cloned_results = [result for result in results if result[0] is not cell_line and cell_line is not None]
         return cloned_formatted_data, cloned_results
 
     def getDrugFolders(self, input_folder):
@@ -302,10 +351,9 @@ class RecommendationsService(object):
             return None
 
         best_combo = self.determineBestComboFromString(best_combo_string, combos, processed_arguments)
-        best_model = self.trainBestModelWithCombo(best_scoring_algo, best_combo, optimal_hyperparams,
-                                                              trimmed_cell_lines, trimmed_results, processed_arguments)
-        return best_model, best_combo, top_score
-
+        best_model, trainer = self.trainBestModelWithCombo(best_scoring_algo, best_combo, optimal_hyperparams,
+                                                           trimmed_cell_lines, trimmed_results, processed_arguments)
+        return RecommendationsModelInfo(trainer, top_score, best_combo, best_model)
 
     def scorePhrase(self, processed_arguments):
         if processed_arguments.is_classifier:
@@ -365,7 +413,7 @@ class RecommendationsService(object):
         params = DictionaryUtility.toDict(optimal_hyperparams)
         feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
         model = trainer.buildModel(relevant_results, features, params, feature_names)
-        return model
+        return model, trainer
 
         # @AP: feature_names is an input parameter whenever the function is called in MachineLearningService. However,
         #  when I look into the code for the trainers, it is never used. Is it obsolete?
@@ -403,13 +451,43 @@ class RecommendationsService(object):
                 return combo
         return None
 
-    def generatePrediction(self, best_model, best_combo, cell_line, all_features, formatted_inputs):
+    def generateSinglePrediction(self, best_model, best_combo, cell_line, all_features, formatted_inputs):
         ommited_cell_line = formatted_inputs.get(DataFormattingService.TRAINING_MATRIX).get(cell_line)
         input_wrapper = OrderedDict()
         input_wrapper[DataFormattingService.TRAINING_MATRIX] = OrderedDict()
         input_wrapper[DataFormattingService.TRAINING_MATRIX][cell_line] = ommited_cell_line
         input_wrapper[ArgumentProcessingService.FEATURE_NAMES] = all_features
-        trimmed_cell_line = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
-                                                                        best_combo, input_wrapper, AnalysisType.RECOMMENDATIONS)
-        prediction = best_model.predict([trimmed_cell_line.get(cell_line)])[0]
-        return prediction
+        trimmed_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
+                                                                     best_combo, input_wrapper,
+                                                                     AnalysisType.RECOMMENDATIONS)
+        return best_model.predict([trimmed_matrix.get(cell_line)])[0]
+
+    def generateMultiplePredictions(self, recs_model_info, formatted_inputs, results, cell_line_predictions_by_drug):
+        input_wrapper = formatted_inputs
+        trimmed_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
+                                                                     recs_model_info.combo, input_wrapper,
+                                                                     AnalysisType.RECOMMENDATIONS)
+
+        features, relevant_results = recs_model_info.trainer.populateFeaturesAndResultsByCellLine(trimmed_matrix, results)
+        cell_lines_in_order = [key for key in trimmed_matrix.keys() if key is not ArgumentProcessingService.FEATURE_NAMES]
+        predictions = recs_model_info.model.predict(features)
+
+        for i in range(0, len(cell_lines_in_order)):
+            cell_line = cell_lines_in_order[i]
+            if cell_line_predictions_by_drug.get(cell_line) is not None:
+                cell_line_predictions_by_drug[cell_line].append(predictions[i])
+            else:
+                max_dict_length = 2
+                for key in cell_line_predictions_by_drug.keys():
+                    if key == self.HEADER:
+                        continue
+                    if len(cell_line_predictions_by_drug[key]) > max_dict_length:
+                        max_dict_length = len(cell_line_predictions_by_drug[key])
+                row = [cell_line]
+                for _ in range(2, max_dict_length):
+                    row.append(MachineLearningService.DELIMITER)
+                row.append(predictions[i])
+                cell_line_predictions_by_drug[cell_line] = row
+        cell_line_predictions_by_drug[self.STD_DEVIATION].append(numpy.std(predictions))
+        cell_line_predictions_by_drug[self.MEAN].append(numpy.mean(predictions))
+        cell_line_predictions_by_drug[self.MEDIAN].append(numpy.median(predictions))

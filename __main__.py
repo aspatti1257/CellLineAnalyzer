@@ -95,7 +95,7 @@ def fetchRecommendations(input_folder):
             processed_args_by_drug[drug_dir] = processed_args
     if len(processed_args_by_drug.keys()) > 0:
         recs_service = RecommendationsService(processed_args_by_drug)
-        recs_service.recommendByHoldout(input_folder)
+        recs_service.analyzeRecommendations(input_folder)
 
 
 if __name__ == "__main__":
