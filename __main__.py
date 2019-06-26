@@ -70,11 +70,11 @@ def recursivelyPromptUser(message, return_type):
 
 def handleInputFolderProcessing(input_folder):
     argument_processing_service = ArgumentProcessingService(input_folder)
-    full_inputs = argument_processing_service.handleInputFolder()
-    if not full_inputs:
+    processed_arguments = argument_processing_service.handleInputFolder()
+    if not processed_arguments:
         log.error("Exiting program, invalid data sent in target folder.")
         return None
-    return full_inputs
+    return processed_arguments
 
 
 def performMachineLearning(valid_inputs, input_folder):

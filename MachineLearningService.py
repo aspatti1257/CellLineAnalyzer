@@ -163,7 +163,7 @@ class MachineLearningService(object):
                         trainer.logTrainingMessage(self.monteCarloPermsByAlgorithm(algo, True),
                                                    self.monteCarloPermsByAlgorithm(algo, False),
                                                    len(gene_list_combos))
-                        self.handleParallellization(gene_list_combos, input_folder, algo)
+                        self.handleParallellization(gene_list_combos, input_folder, trainer)
 
 
     def monteCarloPermsByAlgorithm(self, algorithm, outer):
