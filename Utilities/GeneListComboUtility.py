@@ -128,3 +128,8 @@ class GeneListComboUtility(object):
                     new_cell_line_features.append(full_matrix[cell_line][j])
             trimmed_matrix[cell_line] = new_cell_line_features
         return trimmed_matrix
+
+
+    @staticmethod
+    def combosAreEquivalent(combo_one, combo_two):
+        return sorted(combo_one.split(" ")) == sorted(combo_two.split(" "))

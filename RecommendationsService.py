@@ -39,8 +39,10 @@ class RecommendationsService(object):
 
     def recommendByHoldout(self, input_folder):
         # TODO: Support for inputs to be a dict of drug_name => input, not just one set of inputs for all drugs.
+        self.log.info("Starting recommendation by holdout analysis on all drugs.")
         drug_to_cell_line_to_prediction_map = {}
         for drug in self.inputs.keys():
+            self.log.info("Starting recommendation by holdout analysis on specific drug %s.", drug)
             drug_to_cell_line_to_prediction_map[drug] = {}
             processed_arguments = self.inputs.get(drug)
             combos = self.determineGeneListCombos(processed_arguments)
@@ -57,6 +59,7 @@ class RecommendationsService(object):
             feature_names = formatted_inputs.get(ArgumentProcessingService.FEATURE_NAMES)
             # get results map
             for cell_line in cell_line_map.keys():
+                self.log.info("Holding out cell line %s for drug %s", cell_line, drug)
                 if cell_line == ArgumentProcessingService.FEATURE_NAMES:
                     # Continue skips over this, so if the key we're analyzing isn't a cell line (i.e. it's the feature
                     # names, skip it).
@@ -104,6 +107,7 @@ class RecommendationsService(object):
                     # Record to FinalResults.csv
 
     def preRecsAnalysis(self, input_folder):
+        self.log.info("Performing pre-recs analysis on all drugs.")
         drugs = self.inputs.keys()
         cell_line_predictions_by_drug = OrderedDict()
         header = numpy.concatenate((["cell_line"], SafeCastUtil.safeCast(drugs, list)), axis=0)
@@ -119,6 +123,7 @@ class RecommendationsService(object):
             processed_arguments.data_split = 1.0
             data_formatting_service = DataFormattingService(processed_arguments)
             formatted_inputs = data_formatting_service.formatData(True, True)
+            self.log.info("Determining best combo and score for drug %s.", drug)
             recs_model_info = self.fetchBestModelComboAndScore(drug, input_folder, formatted_inputs,
                                                                results, combos, processed_arguments)
 
@@ -447,8 +452,10 @@ class RecommendationsService(object):
         for combo in combos:
             feature_set_string = GeneListComboUtility.generateFeatureSetString(combo, gene_lists,
                                                                                combine_gene_lists, analysis_type)
-            if feature_set_string == best_combo_string:
+            if GeneListComboUtility.combosAreEquivalent(feature_set_string, best_combo_string):
                 return combo
+
+        self.log.error("Unable to determine gene list from given combo.")
         return None
 
     def generateSinglePrediction(self, best_model, best_combo, cell_line, all_features, formatted_inputs):

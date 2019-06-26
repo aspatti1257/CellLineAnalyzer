@@ -87,6 +87,7 @@ def writeHTMLSummaryFile(input_folder, is_classifier):
     html_writing_service.writeSummaryFile()
 
 
+# TODO: Support input_folder ending with "/" or without it.
 def fetchRecommendations(input_folder):
     processed_args_by_drug = {}
     for drug_dir in [file for file in os.listdir(input_folder) if os.path.isdir(input_folder + file) and "analysis" in file]:
@@ -96,6 +97,8 @@ def fetchRecommendations(input_folder):
     if len(processed_args_by_drug.keys()) > 0:
         recs_service = RecommendationsService(processed_args_by_drug)
         recs_service.analyzeRecommendations(input_folder)
+    else:
+        log.error("No drug folders detected. Drug folders must have \"analysis\" in name and be in parent directory.")
 
 
 if __name__ == "__main__":

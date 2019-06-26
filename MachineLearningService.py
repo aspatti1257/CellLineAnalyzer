@@ -138,9 +138,8 @@ class MachineLearningService(object):
                 if specific_combo == combo_string and selected_combos.get(combo_string) is None:
                     selected_combos[combo_string] = combo
                 else:
-                    this_sorted_combo = sorted(combo_string.split(" "))
-                    specific_sorted_combo = sorted(specific_combo.split(" "))
-                    if this_sorted_combo == specific_sorted_combo and selected_combos.get(combo_string) is None:
+                    equivalent_combos = GeneListComboUtility.combosAreEquivalent(combo_string, specific_combo)
+                    if equivalent_combos and selected_combos.get(combo_string) is None:
                         selected_combos[combo_string] = combo
         selected_combo_names = SafeCastUtil.safeCast(selected_combos.keys(), list)
         if len(selected_combo_names) < len(specific_combos):
