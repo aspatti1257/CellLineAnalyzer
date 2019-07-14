@@ -71,7 +71,8 @@ class RecommendationsService(object):
                 cellline_viabilities = []
                 recs_model_info = self.fetchBestModelComboAndScore(drug, input_folder, trimmed_cell_lines,
                                                                    trimmed_results, combos, processed_arguments)
-                if recs_model_info.model is None or recs_model_info.combo is None:
+
+                if recs_model_info is None or recs_model_info.model is None or recs_model_info.combo is None:
                     continue
                 prediction = self.generateSinglePrediction(recs_model_info.model, recs_model_info.combo,
                                                            cell_line, feature_names, formatted_inputs)
@@ -127,7 +128,7 @@ class RecommendationsService(object):
             recs_model_info = self.fetchBestModelComboAndScore(drug, input_folder, formatted_inputs,
                                                                results, combos, processed_arguments)
 
-            if recs_model_info.model is None or recs_model_info.combo is None:
+            if recs_model_info is None or recs_model_info.model is None or recs_model_info.combo is None:
                 continue
             self.generateMultiplePredictions(recs_model_info, formatted_inputs, results, cell_line_predictions_by_drug)
 
@@ -455,8 +456,9 @@ class RecommendationsService(object):
             if GeneListComboUtility.combosAreEquivalent(feature_set_string, best_combo_string):
                 return combo
 
-        self.log.error("Unable to determine gene list from given combo.")
-        return None
+        raise ValueError("Unable to determine feature set from given combo gene list and feature file combo: " +
+                         best_combo_string + ".\n Please make sure all gene lists and feature files in the combo " +
+                         "are present in the drug folder.")
 
     def generateSinglePrediction(self, best_model, best_combo, cell_line, all_features, formatted_inputs):
         ommited_cell_line = formatted_inputs.get(DataFormattingService.TRAINING_MATRIX).get(cell_line)
