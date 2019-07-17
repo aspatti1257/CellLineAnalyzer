@@ -69,7 +69,6 @@ class MachineLearningService(object):
         config = self.inputs.individual_train_config
         target_combo = config.combo
         target_algorithm = config.algorithm
-
         rsen_config = self.inputs.rsen_config
 
         outer_monte_carlo_loops = self.inputs.outer_monte_carlo_permutations
