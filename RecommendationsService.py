@@ -1,4 +1,11 @@
 from collections import OrderedDict
+import os
+import copy
+import csv
+import numpy
+import multiprocessing
+import threading
+from joblib import Parallel, delayed
 
 from ArgumentProcessingService import ArgumentProcessingService
 from ArgumentConfig.AnalysisType import AnalysisType
@@ -9,11 +16,6 @@ from RecommendationsModelInfo import RecommendationsModelInfo
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
 from Utilities.DictionaryUtility import DictionaryUtility
 from Utilities.GeneListComboUtility import GeneListComboUtility
-import os
-import copy
-import csv
-import numpy
-
 from Utilities.ModelTrainerFactory import ModelTrainerFactory
 from Utilities.SafeCastUtil import SafeCastUtil
 
@@ -23,6 +25,7 @@ class RecommendationsService(object):
     log = LoggerFactory.createLog(__name__)
 
     PRE_REC_ANALYSIS_FILE = "PreRecAnalysis.csv"
+    PREDICTIONS_FILE = "Predictions.txt"
 
     HEADER = "header"
 
@@ -40,72 +43,74 @@ class RecommendationsService(object):
     def recommendByHoldout(self, input_folder):
         # TODO: Support for inputs to be a dict of drug_name => input, not just one set of inputs for all drugs.
         self.log.info("Starting recommendation by holdout analysis on all drugs.")
-        drug_to_cell_line_to_prediction_map = {}
+        max_nodes = multiprocessing.cpu_count()
+
         for drug in self.inputs.keys():
             self.log.info("Starting recommendation by holdout analysis on specific drug %s.", drug)
-            drug_to_cell_line_to_prediction_map[drug] = {}
-            processed_arguments = self.inputs.get(drug)
-            combos = self.determineGeneListCombos(processed_arguments)
+            self.handleDrug(drug, input_folder, max_nodes, self.inputs.get(drug))
 
-            # A dictionary of cell lines to their features, with the feature names also in there as one of the keys.
-            # Both the features and the feature names are presented as an ordered list, all of them have the same length.
-            cell_line_map = processed_arguments.features
-            results = processed_arguments.results
+    def handleDrug(self, drug, input_folder, max_nodes, processed_arguments):
+        combos = self.determineGeneListCombos(processed_arguments)
+        # A dictionary of cell lines to their features, with the feature names also in there as one of the keys.
+        # Both the features and the feature names are presented as an ordered list, all of them have the same length.
+        cell_line_map = processed_arguments.features
+        results = processed_arguments.results
+        cloned_inputs = copy.deepcopy(processed_arguments)
+        cloned_inputs.data_split = 1.0
+        data_formatting_service = DataFormattingService(cloned_inputs)
+        formatted_inputs = data_formatting_service.formatData(True, True)
+        feature_names = formatted_inputs.get(ArgumentProcessingService.FEATURE_NAMES)
 
-            cloned_inputs = copy.deepcopy(processed_arguments)
-            cloned_inputs.data_split = 1.0
-            data_formatting_service = DataFormattingService(cloned_inputs)
-            formatted_inputs = data_formatting_service.formatData(True, True)
-            feature_names = formatted_inputs.get(ArgumentProcessingService.FEATURE_NAMES)
-            # get results map
-            for cell_line in cell_line_map.keys():
-                self.log.info("Holding out cell line %s for drug %s", cell_line, drug)
-                if cell_line == ArgumentProcessingService.FEATURE_NAMES:
-                    # Continue skips over this, so if the key we're analyzing isn't a cell line (i.e. it's the feature
-                    # names, skip it).
-                    continue
-                trimmed_cell_lines, trimmed_results = self.removeNonNullCellLineFromFeaturesAndResults(cell_line,
-                                                                                                       formatted_inputs,
-                                                                                                       results)
-                # remove cell line from results
-                cellline_viabilities = []
-                recs_model_info = self.fetchBestModelComboAndScore(drug, input_folder, trimmed_cell_lines,
-                                                                   trimmed_results, combos, processed_arguments)
+        requested_threads = processed_arguments.num_threads
+        nodes_to_use = numpy.amin([requested_threads, max_nodes])
+        # TODO: Parallelize after we get prescriptions.
+        # Parallel(n_jobs=nodes_to_use)(delayed(self.handleCellLine)(cell_line, combos, drug, feature_names,
+        #                                                            formatted_inputs, input_folder,
+        #                                                            processed_arguments, results)
+        #                               for cell_line in cell_line_map.keys())
+        for cell_line in cell_line_map.keys():
+            self.handleCellLine(cell_line, combos, drug, feature_names, formatted_inputs, input_folder,
+                                processed_arguments, results)
 
-                if recs_model_info is None or recs_model_info.model is None or recs_model_info.combo is None:
-                    continue
-                prediction = self.generateSinglePrediction(recs_model_info.model, recs_model_info.combo,
-                                                           cell_line, feature_names, formatted_inputs)
-                cellline_viabilities.append([drug, prediction])
-                write_action = "w"
-                file_name = "Predictions.txt"
-                if file_name in os.listdir(input_folder):
-                    write_action = "a"
-                with open(input_folder + "/" + file_name, write_action, newline='') as predictions_file:
-                    try:
-                        if write_action == "w":
-                            predictions_file.write("Drug\tCell_Line\tPrediction\tR2^Score\n")
-                        predictions_file.write(drug + '\t' + str(cell_line) + '\t' + str(prediction) + '\t' +
-                                               str(recs_model_info.score) + '\n')
-                    except ValueError as error:
-                        self.log.error("Error writing to file %s. %s", file_name, error)
-                    finally:
-                        predictions_file.close()
-                recs = []
-                drug_to_cell_line_to_prediction_map[drug][cell_line] = prediction, recs_model_info.score
-                # self.presciption_from_prediction(self, trainer, viability_acceptance, cellline_viabilities)
-                # @AP: viability_acceptance is a user-defined value, which should come from the arguments file. How do I
-                # get it here?
-                # @MB: Added it via referencing self.inputs.recs_config.viability_acceptance. Defaults to None, set to 0.1
-                # for the sake of RecommendationsServiceIT testing.
-                with open('FinalResults.csv', 'a') as f:
-                    f.write(str(cell_line) + ',')
-                    for drug in recs:
-                        f.write(drug + ';')
-                    f.write('\n')
-                    # See which drug prediction comes closest to actual R^2 score.
-                    # See self.inputs.results for this value.
-                    # Record to FinalResults.csv
+    def handleCellLine(self, cell_line, combos, drug, feature_names, formatted_inputs, input_folder,
+                       processed_arguments, results):
+        self.log.info("Holding out cell line %s for drug %s", cell_line, drug)
+        if cell_line == ArgumentProcessingService.FEATURE_NAMES:\
+            return
+        trimmed_cell_lines, trimmed_results = self.removeNonNullCellLineFromFeaturesAndResults(cell_line,
+                                                                                               formatted_inputs,
+                                                                                               results)
+        recs_model_info = self.fetchBestModelComboAndScore(drug, input_folder, trimmed_cell_lines,
+                                                           trimmed_results, combos, processed_arguments)
+        if recs_model_info is None or recs_model_info.model is None or recs_model_info.combo is None:
+            self.log.warn("Unable to train best model or get best combo for cell line %s and drug %s.", cell_line, drug)
+            return
+
+        prediction = self.generateSinglePrediction(recs_model_info.model, recs_model_info.combo,
+                                                   cell_line, feature_names, formatted_inputs)
+
+        self.writeToPredictionsCsvInLock(cell_line, drug, input_folder, prediction, recs_model_info.score)
+
+    def writeToPredictionsCsvInLock(self, cell_line, drug, input_folder, prediction, score):
+        self.log.debug("Locking current thread %s.", threading.current_thread())
+        lock = threading.Lock()
+        lock.acquire(True)
+        write_action = "w"
+        if self.PREDICTIONS_FILE in os.listdir(input_folder):
+            write_action = "a"
+        with open(input_folder + "/" + self.PREDICTIONS_FILE, write_action, newline='') as predictions_file:
+            try:
+                if write_action == "w":
+                    predictions_file.write("Drug\tCell_Line\tPrediction\tR2^Score\n")
+                predictions_file.write(drug + '\t' + SafeCastUtil.safeCast(cell_line, str) + '\t' +
+                                       SafeCastUtil.safeCast(prediction, str) + '\t' +
+                                       SafeCastUtil.safeCast(score, str) + '\n')
+            except ValueError as error:
+                self.log.error("Error writing to file %s. %s", self.PREDICTIONS_FILE, error)
+            finally:
+                predictions_file.close()
+                self.log.debug("Releasing current thread %s.", threading.current_thread())
+                lock.release()
 
     def preRecsAnalysis(self, input_folder):
         self.log.info("Performing pre-recs analysis on all drugs.")

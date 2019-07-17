@@ -19,6 +19,7 @@ class RecommendationsServiceIT(unittest.TestCase):
     def setUp(self):
         self.current_working_dir = os.getcwd()  # Should be this package.
         self.DRUG_DIRECTORY = "DrugAnalysisResults"
+        self.NUM_DRUGS = 10
 
     def tearDown(self):
         if self.current_working_dir != "/":
@@ -36,16 +37,44 @@ class RecommendationsServiceIT(unittest.TestCase):
 
     # Run this IT and put a breakpoint in recs_service.recommendByHoldout() to see what variables you have to work with.
     def testRecommendations(self):
-        inputs = self.formatRandomizedData(False)
+        num_cell_lines = 30
+        inputs = self.formatRandomizedData(False, num_cell_lines)
+        target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
 
         try:
             recs_service = RecommendationsService(inputs)
-            recs_service.recommendByHoldout(self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER)
+            recs_service.recommendByHoldout(target_dir)
+
+            file_name = target_dir + "/" + RecommendationsService.PREDICTIONS_FILE
+            num_lines = 0
+            drug_names = SafeCastUtil.safeCast(recs_service.inputs.keys(), list)
+
+            with open(file_name) as txt_file:
+                try:
+                    for line_index, line in enumerate(txt_file):
+                        num_lines += 1
+                        line_split = line.split("\t")
+
+                        if line_index == 0:
+                            assert line_split[0] == "Drug"
+                        else:
+                            assert line_split[0] in drug_names
+                            assert "cell_line" in line_split[1]
+                            assert SafeCastUtil.safeCast(line_split[2], float) is not None
+                            assert SafeCastUtil.safeCast(line_split[3].strip(), float) is not None
+                except AssertionError as error:
+                    self.log.error(error)
+                finally:
+                    self.log.debug("Closing file %s", file_name)
+                    txt_file.close()
+                    assert num_lines == (num_cell_lines * self.NUM_DRUGS) + 1
+
         except KeyboardInterrupt as keyboard_interrupt:
             assert False
 
     def testPreRecsAnalysis(self):
-        inputs = self.formatRandomizedData(False)
+        num_cell_lines = 1000
+        inputs = self.formatRandomizedData(False, num_cell_lines)
         target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         try:
             recs_service = RecommendationsService(inputs)
@@ -80,20 +109,20 @@ class RecommendationsServiceIT(unittest.TestCase):
                 finally:
                     self.log.debug("Closing file %s", file_name)
                     csv_file.close()
-                    assert num_lines == 1004
+                    assert num_lines == num_cell_lines + 4
         except KeyboardInterrupt as keyboard_interrupt:
             assert False
 
-    def formatRandomizedData(self, is_classifier):
+    def formatRandomizedData(self, is_classifier, num_cell_lines):
         randomized_data_path = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         processed_arguments = {}
-        for i in range(1, 11):
-            drug_name = self.DRUG_DIRECTORY + SafeCastUtil.safeCast(i, str)
+        for i in range(self.NUM_DRUGS):
+            drug_name = self.DRUG_DIRECTORY + SafeCastUtil.safeCast(i + 1, str)
             drug_path = randomized_data_path + "/" + drug_name
             if drug_name not in os.listdir(randomized_data_path):
                 os.mkdir(drug_path)
             random_data_generator = RandomizedDataGenerator(drug_path)
-            random_data_generator.generateRandomizedFiles(3, 1000, 150, is_classifier, 2, .8)
+            random_data_generator.generateRandomizedFiles(3, num_cell_lines, 150, is_classifier, 2, .8)
             argument_processing_service = ArgumentProcessingService(drug_path)
             processed_args = argument_processing_service.handleInputFolder()
             processed_args.recs_config.viability_acceptance = 0.1
