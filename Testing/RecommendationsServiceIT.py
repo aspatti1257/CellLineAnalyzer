@@ -1,6 +1,8 @@
 import unittest
 import os
 import csv
+import string
+import random
 
 from LoggerFactory import LoggerFactory
 from RecommendationsService import RecommendationsService
@@ -35,7 +37,6 @@ class RecommendationsServiceIT(unittest.TestCase):
                 else:
                     os.remove(current_path)
 
-    # Run this IT and put a breakpoint in recs_service.recommendByHoldout() to see what variables you have to work with.
     def testRecommendations(self):
         num_cell_lines = 30
         inputs = self.formatRandomizedData(False, num_cell_lines)
@@ -76,6 +77,7 @@ class RecommendationsServiceIT(unittest.TestCase):
         num_cell_lines = 1000
         inputs = self.formatRandomizedData(False, num_cell_lines)
         target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
+
         try:
             recs_service = RecommendationsService(inputs)
             recs_service.preRecsAnalysis(target_dir)
@@ -83,7 +85,7 @@ class RecommendationsServiceIT(unittest.TestCase):
             file_name = target_dir + "/" + RecommendationsService.PRE_REC_ANALYSIS_FILE
             num_lines = 0
             drug_names = SafeCastUtil.safeCast(recs_service.inputs.keys(), list)
-            cell_line = "cell_line"
+            cell_line = RandomizedDataGenerator.CELL_LINE
             with open(file_name) as csv_file:
                 try:
                     for line_index, line in enumerate(csv_file):
@@ -112,6 +114,33 @@ class RecommendationsServiceIT(unittest.TestCase):
                     assert num_lines == num_cell_lines + 4
         except KeyboardInterrupt as keyboard_interrupt:
             assert False
+
+    def testTrimmingCellLines(self):
+        num_cell_lines = 30
+        inputs = self.formatRandomizedData(False, num_cell_lines)
+
+        try:
+            for processed_arguments in inputs.values():
+                sample_features = processed_arguments.features.get(RandomizedDataGenerator.CELL_LINE + "0")
+                processed_arguments.features[self.randomString(16)] = sample_features
+                processed_arguments.features[self.randomString(16)] = sample_features
+            recs_service = RecommendationsService(inputs)
+
+            for processed_arguments in recs_service.inputs.values():
+                cell_line_keys = SafeCastUtil.safeCast(processed_arguments.features.keys(), list)
+                assert len(cell_line_keys) == num_cell_lines + 1
+                for cell_line in cell_line_keys:
+                    assert RandomizedDataGenerator.CELL_LINE in cell_line \
+                           or ArgumentProcessingService.FEATURE_NAMES in cell_line
+
+
+
+        except KeyboardInterrupt as keyboard_interrupt:
+            return False
+
+    def randomString(self, string_length):
+        letters = string.hexdigits
+        return ''.join(random.choice(letters) for i in range(string_length))
 
     def formatRandomizedData(self, is_classifier, num_cell_lines):
         randomized_data_path = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER

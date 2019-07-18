@@ -34,11 +34,106 @@ class RecommendationsService(object):
     MEDIAN = "median"
 
     def __init__(self, inputs):
-        self.inputs = inputs
+        self.inputs = self.trimCellLinesNotUsedForAllDrugs(inputs)
+
+    def trimCellLinesNotUsedForAllDrugs(self, inputs):
+        self.log.info("Trimming processed arguments so that each drug has the same cell lines.")
+        cell_lines_by_drug = {}
+
+        for drug_name in inputs.keys():
+            cell_lines_by_drug[drug_name] = SafeCastUtil.safeCast(inputs.get(drug_name).features.keys(), list)
+
+        for drug_name in cell_lines_by_drug.keys():
+            missing_cell_lines = []
+            for other_drug_name in cell_lines_by_drug.keys():
+                if drug_name == other_drug_name:
+                    continue
+                [missing_cell_lines.append(cell_line) for cell_line in cell_lines_by_drug[drug_name]
+                 if cell_line not in cell_lines_by_drug[other_drug_name] and cell_line not in missing_cell_lines]
+
+            if len(missing_cell_lines) > 0:
+                self.log.info("Removing the following cell lines from analysis for drugs %s because they are not found "
+                              "in other drug analysis folders: %s",
+                              drug_name, SafeCastUtil.safeCast(missing_cell_lines, str))
+                for missing_cell_line in [cell_line for cell_line in missing_cell_lines if cell_line is not None]:
+                    if inputs.get(drug_name).features.get(missing_cell_line):
+                        del inputs.get(drug_name).features[missing_cell_line]
+                    else:
+                        self.log.warn("Unable to find cell line %s from processed arguments for drug %s",
+                                      missing_cell_line, drug_name)
+
+        return inputs
 
     def analyzeRecommendations(self, input_folder):
         self.preRecsAnalysis(input_folder)
         self.recommendByHoldout(input_folder)
+
+    def preRecsAnalysis(self, input_folder):
+        self.log.info("Performing pre-recs analysis on all drugs.")
+        drugs = self.inputs.keys()
+        cell_line_predictions_by_drug = OrderedDict()
+        header = numpy.concatenate((["cell_line"], SafeCastUtil.safeCast(drugs, list)), axis=0)
+        cell_line_predictions_by_drug[self.HEADER] = header
+        cell_line_predictions_by_drug[self.STD_DEVIATION] = [self.STD_DEVIATION]
+        cell_line_predictions_by_drug[self.MEAN] = [self.MEAN]
+        cell_line_predictions_by_drug[self.MEDIAN] = [self.MEDIAN]
+        for drug in drugs:
+            processed_arguments = self.inputs.get(drug)
+            results = processed_arguments.results
+            combos = self.determineGeneListCombos(processed_arguments)
+
+            processed_arguments.data_split = 1.0
+            data_formatting_service = DataFormattingService(processed_arguments)
+            formatted_inputs = data_formatting_service.formatData(True, True)
+            self.log.info("Determining best combo and score for drug %s.", drug)
+            recs_model_info = self.fetchBestModelComboAndScore(drug, input_folder, formatted_inputs,
+                                                               results, combos, processed_arguments)
+
+            if recs_model_info is None or recs_model_info.model is None or recs_model_info.combo is None:
+                continue
+            self.generateMultiplePredictions(recs_model_info, formatted_inputs, results, cell_line_predictions_by_drug)
+
+        self.writePreRecAnalysisFile(cell_line_predictions_by_drug, input_folder)
+
+    def generateMultiplePredictions(self, recs_model_info, formatted_inputs, results, cell_line_predictions_by_drug):
+        trimmed_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
+                                                                     recs_model_info.combo, formatted_inputs,
+                                                                     AnalysisType.RECOMMENDATIONS)
+
+        features, relevant_results = recs_model_info.trainer.populateFeaturesAndResultsByCellLine(trimmed_matrix, results)
+        cell_lines_in_order = [key for key in trimmed_matrix.keys() if key is not ArgumentProcessingService.FEATURE_NAMES]
+        predictions = recs_model_info.model.predict(features)
+
+        for i in range(0, len(cell_lines_in_order)):
+            cell_line = cell_lines_in_order[i]
+            if cell_line_predictions_by_drug.get(cell_line) is not None:
+                cell_line_predictions_by_drug[cell_line].append(predictions[i])
+            else:
+                max_dict_length = 2
+                for key in cell_line_predictions_by_drug.keys():
+                    if key == self.HEADER:
+                        continue
+                    if len(cell_line_predictions_by_drug[key]) > max_dict_length:
+                        max_dict_length = len(cell_line_predictions_by_drug[key])
+                row = [cell_line]
+                for _ in range(2, max_dict_length):
+                    row.append(MachineLearningService.DELIMITER)
+                row.append(predictions[i])
+                cell_line_predictions_by_drug[cell_line] = row
+        cell_line_predictions_by_drug[self.STD_DEVIATION].append(numpy.std(predictions))
+        cell_line_predictions_by_drug[self.MEAN].append(numpy.mean(predictions))
+        cell_line_predictions_by_drug[self.MEDIAN].append(numpy.median(predictions))
+
+    def writePreRecAnalysisFile(self, cell_line_predictions_by_drug, input_folder):
+        with open(input_folder + "/" + self.PRE_REC_ANALYSIS_FILE, "w", newline='') as pre_rec_analysis_file:
+            try:
+                writer = csv.writer(pre_rec_analysis_file)
+                for key in cell_line_predictions_by_drug.keys():
+                    writer.writerow(cell_line_predictions_by_drug.get(key))
+            except ValueError as error:
+                self.log.error("Error writing to file %s. %s", pre_rec_analysis_file, error)
+            finally:
+                pre_rec_analysis_file.close()
 
     def recommendByHoldout(self, input_folder):
         # TODO: Support for inputs to be a dict of drug_name => input, not just one set of inputs for all drugs.
@@ -112,44 +207,6 @@ class RecommendationsService(object):
                 self.log.debug("Releasing current thread %s.", threading.current_thread())
                 lock.release()
 
-    def preRecsAnalysis(self, input_folder):
-        self.log.info("Performing pre-recs analysis on all drugs.")
-        drugs = self.inputs.keys()
-        cell_line_predictions_by_drug = OrderedDict()
-        header = numpy.concatenate((["cell_line"], SafeCastUtil.safeCast(drugs, list)), axis=0)
-        cell_line_predictions_by_drug[self.HEADER] = header
-        cell_line_predictions_by_drug[self.STD_DEVIATION] = [self.STD_DEVIATION]
-        cell_line_predictions_by_drug[self.MEAN] = [self.MEAN]
-        cell_line_predictions_by_drug[self.MEDIAN] = [self.MEDIAN]
-        for drug in drugs:
-            processed_arguments = self.inputs.get(drug)
-            results = processed_arguments.results
-            combos = self.determineGeneListCombos(processed_arguments)
-
-            processed_arguments.data_split = 1.0
-            data_formatting_service = DataFormattingService(processed_arguments)
-            formatted_inputs = data_formatting_service.formatData(True, True)
-            self.log.info("Determining best combo and score for drug %s.", drug)
-            recs_model_info = self.fetchBestModelComboAndScore(drug, input_folder, formatted_inputs,
-                                                               results, combos, processed_arguments)
-
-            if recs_model_info is None or recs_model_info.model is None or recs_model_info.combo is None:
-                continue
-            self.generateMultiplePredictions(recs_model_info, formatted_inputs, results, cell_line_predictions_by_drug)
-
-        self.writePreRecAnalysisFile(cell_line_predictions_by_drug, input_folder)
-
-    def writePreRecAnalysisFile(self, cell_line_predictions_by_drug, input_folder):
-        with open(input_folder + "/" + self.PRE_REC_ANALYSIS_FILE, "w", newline='') as pre_rec_analysis_file:
-            try:
-                writer = csv.writer(pre_rec_analysis_file)
-                for key in cell_line_predictions_by_drug.keys():
-                    writer.writerow(cell_line_predictions_by_drug.get(key))
-            except ValueError as error:
-                self.log.error("Error writing to file %s. %s", pre_rec_analysis_file, error)
-            finally:
-                pre_rec_analysis_file.close()
-
     def determineGeneListCombos(self, processed_arguments):
         gene_lists = processed_arguments.gene_lists
         feature_names = processed_arguments.features.get(ArgumentProcessingService.FEATURE_NAMES)
@@ -161,145 +218,6 @@ class RecommendationsService(object):
                              expected_length, len(combos), combos)
         return combos
 
-
-        # Create a dict for gene list combos and a dict for hyperparameters, where the keys are EN, RF and SVM.
-        # In George's repository the analysis_files_folder is Repository/Runs/Analysis_files/
-        # Find the best scoring gene list combos
-        # genelists = collections.defaultdict(dict)
-        # models = ['ElasticNetAnalysis', 'RandomForestAnalysis', 'RadialBasisFunctionSVMAnalysis']
-        # for model in models:
-        #     analysis = np.genfromtxt(analysis_files_folder + '/' + drug + '_analysis/' + model + '.csv', delimiter=',',
-        #                              dtype='str')
-        #     analysis = analysis[1:, :]
-        #     R2 = analysis[:, 1]
-        #     best = analysis[np.argmax(R2)]
-        #     for gl in best[0].split(' '):
-        #         gene_list = gl.split(':')[1].replace('gene_list_', '')
-        #         typestr = gl.split(':')[0]
-        #         if 'gex' in typestr:
-        #             if model == 'ElasticNetAnalysis':
-        #                 genelists['EN']['gex'] = gene_list
-        #             elif model == 'RandomForestAnalysis':
-        #                 genelists['RF']['gex'] = gene_list
-        #             elif model == 'RadialBasisFunctionSVMAnalysis':
-        #                 genelists['SVM']['gex'] = gene_list
-        #         if 'mut' in typestr:
-        #             if model == 'ElasticNetAnalysis':
-        #                 genelists['EN']['mut'] = gene_list
-        #             elif model == 'RandomForestAnalysis':
-        #                 genelists['RF']['mut'] = gene_list
-        #             elif model == 'RadialBasisFunctionSVMAnalysis':
-        #                 genelists['SVM']['mut'] = gene_list
-        #         if 'cnum' in typestr:
-        #             continue
-        # for model in {'EN', 'RF', 'SVM'}:
-        #     for type in {'gex', 'mut'}:
-        #         if type not in genelists[model].keys():
-        #             genelists[model][type] = 'nan'
-        # Find best hyperparameters for the given gene list combos
-        # First make for each algo a list with the hyperparameters that were optimal for a MC run with this algorithm
-        # hyperparams = collections.defaultdict(dict)
-        # hyperparam_MClist_EN = {}
-        # hyperparam_MClist_RF = {}
-        # hyperparam_MClist_SVM = {}
-        # with open(analysis_files_folder + '/' + drug + '_analysis/' + drug + '_diagnostics.txt', 'r') as fr:
-        #     EN = 0
-        #     RF = 0
-        #     SVM = 0
-        #     hyperpars = ''
-        #     for line in fr:
-        #         if EN == 1:
-        #             hyperpars = line.rstrip().split(' = ')[0] + '_' + line.rstrip().split(' = ')[0]
-        #             EN = 2
-        #         elif EN == 2:
-        #             hyperpars += line.rstrip().split(' = ')[0] + '_' + line.rstrip().split(' = ')[0]
-        #             if hyperpars in hyperparam_MClist_EN.keys():
-        #                 hyperparam_MClist_EN[hyperpars] += 1
-        #             else:
-        #                 hyperparam_MClist_EN[hyperpars] = 1
-        #             hyperpars = ''
-        #             EN = 0
-        #         if RF == 1:
-        #             hyperpars = line.rstrip().split(' = ')[0] + '_' + line.rstrip().split(' = ')[0]
-        #             RF = 2
-        #         elif RF == 2:
-        #             hyperpars += line.rstrip().split(' = ')[0] + '_' + line.rstrip().split(' = ')[0]
-        #             if hyperpars in hyperparam_MClist_RF.keys():
-        #                 hyperparam_MClist_RF[hyperpars] += 1
-        #             else:
-        #                 hyperparam_MClist_RF[hyperpars] = 1
-        #             hyperpars = ''
-        #             RF = 0
-        #         if SVM == 1:
-        #             hyperpars = line.rstrip().split(' = ')[0] + '_' + line.rstrip().split(' = ')[0]
-        #             SVM = 2
-        #         elif SVM == 2:
-        #             hyperpars += line.rstrip().split(' = ')[0] + '_' + line.rstrip().split(' = ')[0]
-        #             if hyperpars in hyperparam_MClist_SVM.keys():
-        #                 hyperparam_MClist_SVM[hyperpars] += 1
-        #             else:
-        #                 hyperparam_MClist_SVM[hyperpars] = 1
-        #             hyperpars = ''
-        #             SVM = 0
-        #         if line.rstrip()[:13] != 'INFO:Trainers':
-        #             continue
-        #         if 'ElasticNetAnalysis' in line:
-        #             ln = line.rstrip().split(' ')
-        #             genelist_gex = genelists[drug]['EN_gex']
-        #             genelist_mut = genelists[drug]['EN_mut']
-        #             if 'gex_hgnc:gene_list_' + genelist_gex in line and genelist_mut == 'nan' and 'mut' not in line and 'cnum' not in line:
-        #                 EN = 1
-        #             elif 'mut_hgnc:gene_list_' + genelist_mut in line and genelist_gex == 'nan' and 'gex' not in line and 'cnum' not in line:
-        #                 EN = 1
-        #             elif 'gex_hgnc:gene_list_' + genelist_gex in line and 'mut_hgnc:gene_list_' + genelist_mut in line and 'cnum' not in line:
-        #                 EN = 1
-        #         elif 'RandomForestAnalysis' in line:
-        #             ln = line.rstrip().split(' ')
-        #             genelist_gex = genelists[drug]['RF_gex']
-        #             genelist_mut = genelists[drug]['RF_mut']
-        #             if 'gex_hgnc:gene_list_' + genelist_gex in line and genelist_mut == 'nan' and 'mut' not in line and 'cnum' not in line:
-        #                 RF = 1
-        #             elif 'mut_hgnc:gene_list_' + genelist_mut in line and genelist_gex == 'nan' and 'gex' not in line and 'cnum' not in line:
-        #                 RF = 1
-        #             elif 'gex_hgnc:gene_list_' + genelist_gex in line and 'mut_hgnc:gene_list_' + genelist_mut in line and 'cnum' not in line:
-        #                 RF = 1
-        #         elif 'RadialBasisFunctionSVMAnalysis' in line:
-        #             ln = line.rstrip().split(' ')
-        #             genelist_gex = genelists[drug]['SVM_gex']
-        #             genelist_mut = genelists[drug]['SVM_mut']
-        #             if 'gex_hgnc:gene_list_' + genelist_gex in line and genelist_mut == 'nan' and 'mut' not in line and 'cnum' not in line:
-        #                 SVM = 1
-        #             elif 'mut_hgnc:gene_list_' + genelist_mut in line and genelist_gex == 'nan' and 'gex' not in line and 'cnum' not in line:
-        #                 SVM = 1
-        #             elif 'gex_hgnc:gene_list_' + genelist_gex in line and 'mut_hgnc:gene_list_' + genelist_mut in line and 'cnum' not in line:
-        #                 SVM = 1
-        # Given the lists of hyperparameters selected in the MC runs, find the mode.
-        # max = 0
-        # argmax = ''
-        # for k, v in hyperparam_MClist_EN.items():
-        #     if v > max:
-        #         max = v
-        #         argmax = k
-        # hyperparams['EN'][argmax.split('_')[0]] = argmax.split('_')[1]
-        # hyperparams['EN'][argmax.split('_')[2]] = argmax.split('_')[3]
-        # max = 0
-        # argmax = ''
-        # for k, v in hyperparam_MClist_RF.items():
-        #     if v > max:
-        #         max = v
-        #         argmax = k
-        # hyperparams['RF'][argmax.split('_')[0]] = argmax.split('_')[1]
-        # hyperparams['RF'][argmax.split('_')[2]] = argmax.split('_')[3]
-        # max = 0
-        # argmax = ''
-        # for k, v in hyperparam_MClist_SVM.items():
-        #     if v > max:
-        #         max = v
-        #         argmax = k
-        # hyperparams['SVM'][argmax.split('_')[0]] = argmax.split('_')[1]
-        # hyperparams['SVM'][argmax.split('_')[2]] = argmax.split('_')[3]
-        # return genelists, hyperparams
-
     def removeNonNullCellLineFromFeaturesAndResults(self, cell_line, formatted_inputs, results):
         cloned_formatted_data = copy.deepcopy(formatted_inputs)
         if cell_line is not None:
@@ -309,7 +227,6 @@ class RecommendationsService(object):
         return cloned_formatted_data, cloned_results
 
     def getDrugFolders(self, input_folder):
-        # search for and return all drug folders in the input_folder.
         folders = os.listdir(input_folder)
         # TODO: Figure out required phrase to mark it as a drug folder
         drug_folders = [f for f in folders if 'Analysis' in f]
@@ -347,10 +264,6 @@ class RecommendationsService(object):
                             top_score = score
                             optimal_hyperparams = self.fetchBestHyperparams(row, indices_of_outer_loops)
                 except ValueError as valueError:
-                    #@AP what does this do?
-                    #@MB: This is a try/catch block. Any errors that we encounter will be caught and handled here. In
-                    # this case, we're just logging it, but we may want to do something else in the future if we
-                    # discover something really bad. This helps us quickly detect when something goes wrong.
                     self.log.error(valueError)
                 finally:
                     self.log.debug("Closing file %s", analysis_file)
@@ -407,7 +320,6 @@ class RecommendationsService(object):
         return hyperparams_to_scores
 
     def fetchAnalysisFiles(self, drug, input_folder):
-        # return all "...Analysis.csv" files in path of input_folder/drug.
         files = os.listdir(input_folder + "/" + drug)
         return [file for file in files if "Analysis.csv" in file]
 
@@ -425,31 +337,6 @@ class RecommendationsService(object):
         feature_names = training_matrix.get(ArgumentProcessingService.FEATURE_NAMES)
         model = trainer.buildModel(relevant_results, features, params, feature_names)
         return model, trainer
-
-        # @AP: feature_names is an input parameter whenever the function is called in MachineLearningService. However,
-        #  when I look into the code for the trainers, it is never used. Is it obsolete?
-        # @MB: No, it's not obselete. It's actually pretty important here. What we need to do is split the data into two
-        # via DataFormattingService.
-        # @AP Now we still need predictions. In MachineLearningService.py I see "trainer.fetchPredictionsAndScore", but
-        #  I don't see this in for example the random forest trainer. Where can I find it? Am I overlooking something?
-        # @MB: No, this isn't implemented for RandomForestTrainer because it's on the parent class AbstractModelTrainer.
-        # This is an example of inheritance/polymorphism. So each RandomForestTrainer can also use that method because
-        # every RandomForestTrainer is also an AbstractModelTrainer.
-
-    def presciption_from_prediction(self, trainer, viability_acceptance, druglist, cellline_viabilities):
-        # celline_viabilities has two columns: column 1 is a drugname, column 2 its (predicted) viability
-        # viability_acceptance is a user-defined threshold: include all drugs whose performance
-        # is >= viability_acceptance*best_viability
-        # druglist is a lists the drugs for which viability of this cell line was predicted
-        best = numpy.argmax(cellline_viabilities[:, 1])
-        bestdrug = cellline_viabilities[best, 0]
-        bestviab = cellline_viabilities[best, 1]
-        viab_threshold = viability_acceptance * bestviab
-        prescription = [bestdrug]
-        for d in range(len(cellline_viabilities[:, 1])):
-            if cellline_viabilities[d, 1] >= viab_threshold and cellline_viabilities[d, 0] not in prescription:
-                prescription.append(cellline_viabilities[d, 0])
-        return prescription
 
     def determineBestComboFromString(self, best_combo_string, combos, processed_arguments):
         gene_lists = processed_arguments.gene_lists
@@ -475,33 +362,3 @@ class RecommendationsService(object):
                                                                      best_combo, input_wrapper,
                                                                      AnalysisType.RECOMMENDATIONS)
         return best_model.predict([trimmed_matrix.get(cell_line)])[0]
-
-    def generateMultiplePredictions(self, recs_model_info, formatted_inputs, results, cell_line_predictions_by_drug):
-        input_wrapper = formatted_inputs
-        trimmed_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX,
-                                                                     recs_model_info.combo, input_wrapper,
-                                                                     AnalysisType.RECOMMENDATIONS)
-
-        features, relevant_results = recs_model_info.trainer.populateFeaturesAndResultsByCellLine(trimmed_matrix, results)
-        cell_lines_in_order = [key for key in trimmed_matrix.keys() if key is not ArgumentProcessingService.FEATURE_NAMES]
-        predictions = recs_model_info.model.predict(features)
-
-        for i in range(0, len(cell_lines_in_order)):
-            cell_line = cell_lines_in_order[i]
-            if cell_line_predictions_by_drug.get(cell_line) is not None:
-                cell_line_predictions_by_drug[cell_line].append(predictions[i])
-            else:
-                max_dict_length = 2
-                for key in cell_line_predictions_by_drug.keys():
-                    if key == self.HEADER:
-                        continue
-                    if len(cell_line_predictions_by_drug[key]) > max_dict_length:
-                        max_dict_length = len(cell_line_predictions_by_drug[key])
-                row = [cell_line]
-                for _ in range(2, max_dict_length):
-                    row.append(MachineLearningService.DELIMITER)
-                row.append(predictions[i])
-                cell_line_predictions_by_drug[cell_line] = row
-        cell_line_predictions_by_drug[self.STD_DEVIATION].append(numpy.std(predictions))
-        cell_line_predictions_by_drug[self.MEAN].append(numpy.mean(predictions))
-        cell_line_predictions_by_drug[self.MEDIAN].append(numpy.median(predictions))
