@@ -109,7 +109,7 @@ class DataFormattingService(object):
         for feature_name in feature_names:
             try:
                 spearman_corr = spearmanr(filtered_train_df.get(feature_name), results)
-                p_val = SafeCastUtil.safeCast(spearman_corr[1], float, len(feature_names))
+                p_val = SafeCastUtil.safeCast(spearman_corr[1], float)
 
                 if math.isnan(p_val) or p_val > cutoff_by_feature_length:
                     filtered_train_df = filtered_train_df.drop(feature_name, axis=1)
