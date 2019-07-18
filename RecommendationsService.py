@@ -25,7 +25,7 @@ class RecommendationsService(object):
     log = LoggerFactory.createLog(__name__)
 
     PRE_REC_ANALYSIS_FILE = "PreRecAnalysis.csv"
-    PREDICTIONS_FILE = "Predictions.txt"
+    PREDICTIONS_FILE = "Predictions.csv"
 
     HEADER = "header"
 
@@ -158,14 +158,11 @@ class RecommendationsService(object):
 
         requested_threads = processed_arguments.num_threads
         nodes_to_use = numpy.amin([requested_threads, max_nodes])
-        # TODO: Parallelize after we get prescriptions.
-        # Parallel(n_jobs=nodes_to_use)(delayed(self.handleCellLine)(cell_line, combos, drug, feature_names,
-        #                                                            formatted_inputs, input_folder,
-        #                                                            processed_arguments, results)
-        #                               for cell_line in cell_line_map.keys())
-        for cell_line in cell_line_map.keys():
-            self.handleCellLine(cell_line, combos, drug, feature_names, formatted_inputs, input_folder,
-                                processed_arguments, results)
+
+        Parallel(n_jobs=nodes_to_use)(delayed(self.handleCellLine)(cell_line, combos, drug, feature_names,
+                                                                   formatted_inputs, input_folder,
+                                                                   processed_arguments, results)
+                                      for cell_line in cell_line_map.keys())
 
     def handleCellLine(self, cell_line, combos, drug, feature_names, formatted_inputs, input_folder,
                        processed_arguments, results):
@@ -195,11 +192,11 @@ class RecommendationsService(object):
             write_action = "a"
         with open(input_folder + "/" + self.PREDICTIONS_FILE, write_action, newline='') as predictions_file:
             try:
+                writer = csv.writer(predictions_file)
                 if write_action == "w":
-                    predictions_file.write("Drug\tCell_Line\tPrediction\tR2^Score\n")
-                predictions_file.write(drug + '\t' + SafeCastUtil.safeCast(cell_line, str) + '\t' +
-                                       SafeCastUtil.safeCast(prediction, str) + '\t' +
-                                       SafeCastUtil.safeCast(score, str) + '\n')
+                    writer.writerow(["Drug", "Cell_Line", "Prediction", "R2^Score"])
+                line = [drug, cell_line, SafeCastUtil.safeCast(prediction, str), SafeCastUtil.safeCast(score, str)]
+                writer.writerow(line)
             except ValueError as error:
                 self.log.error("Error writing to file %s. %s", self.PREDICTIONS_FILE, error)
             finally:

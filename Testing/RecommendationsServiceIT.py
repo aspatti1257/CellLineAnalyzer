@@ -54,7 +54,7 @@ class RecommendationsServiceIT(unittest.TestCase):
                 try:
                     for line_index, line in enumerate(txt_file):
                         num_lines += 1
-                        line_split = line.split("\t")
+                        line_split = line.split(",")
 
                         if line_index == 0:
                             assert line_split[0] == "Drug"
