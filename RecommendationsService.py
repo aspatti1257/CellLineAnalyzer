@@ -34,35 +34,7 @@ class RecommendationsService(object):
     MEDIAN = "median"
 
     def __init__(self, inputs):
-        self.inputs = self.trimCellLinesNotUsedForAllDrugs(inputs)
-
-    def trimCellLinesNotUsedForAllDrugs(self, inputs):
-        self.log.info("Trimming processed arguments so that each drug has the same cell lines.")
-        cell_lines_by_drug = {}
-
-        for drug_name in inputs.keys():
-            cell_lines_by_drug[drug_name] = SafeCastUtil.safeCast(inputs.get(drug_name).features.keys(), list)
-
-        for drug_name in cell_lines_by_drug.keys():
-            missing_cell_lines = []
-            for other_drug_name in cell_lines_by_drug.keys():
-                if drug_name == other_drug_name:
-                    continue
-                [missing_cell_lines.append(cell_line) for cell_line in cell_lines_by_drug[drug_name]
-                 if cell_line not in cell_lines_by_drug[other_drug_name] and cell_line not in missing_cell_lines]
-
-            if len(missing_cell_lines) > 0:
-                self.log.info("Removing the following cell lines from analysis for drugs %s because they are not found "
-                              "in other drug analysis folders: %s",
-                              drug_name, SafeCastUtil.safeCast(missing_cell_lines, str))
-                for missing_cell_line in [cell_line for cell_line in missing_cell_lines if cell_line is not None]:
-                    if inputs.get(drug_name).features.get(missing_cell_line):
-                        del inputs.get(drug_name).features[missing_cell_line]
-                    else:
-                        self.log.warn("Unable to find cell line %s from processed arguments for drug %s",
-                                      missing_cell_line, drug_name)
-
-        return inputs
+        self.inputs = inputs
 
     def analyzeRecommendations(self, input_folder):
         self.preRecsAnalysis(input_folder)

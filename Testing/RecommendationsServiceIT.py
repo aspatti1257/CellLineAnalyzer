@@ -115,33 +115,6 @@ class RecommendationsServiceIT(unittest.TestCase):
         except KeyboardInterrupt as keyboard_interrupt:
             assert False
 
-    def testTrimmingCellLines(self):
-        num_cell_lines = 30
-        inputs = self.formatRandomizedData(False, num_cell_lines)
-
-        try:
-            for processed_arguments in inputs.values():
-                sample_features = processed_arguments.features.get(RandomizedDataGenerator.CELL_LINE + "0")
-                processed_arguments.features[self.randomString(16)] = sample_features
-                processed_arguments.features[self.randomString(16)] = sample_features
-            recs_service = RecommendationsService(inputs)
-
-            for processed_arguments in recs_service.inputs.values():
-                cell_line_keys = SafeCastUtil.safeCast(processed_arguments.features.keys(), list)
-                assert len(cell_line_keys) == num_cell_lines + 1
-                for cell_line in cell_line_keys:
-                    assert RandomizedDataGenerator.CELL_LINE in cell_line \
-                           or ArgumentProcessingService.FEATURE_NAMES in cell_line
-
-
-
-        except KeyboardInterrupt as keyboard_interrupt:
-            return False
-
-    def randomString(self, string_length):
-        letters = string.hexdigits
-        return ''.join(random.choice(letters) for i in range(string_length))
-
     def formatRandomizedData(self, is_classifier, num_cell_lines):
         randomized_data_path = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         processed_arguments = {}
