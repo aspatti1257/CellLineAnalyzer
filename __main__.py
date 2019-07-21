@@ -11,6 +11,7 @@ from Utilities.FileConverter import FileConverter
 
 log = LoggerFactory.createLog(__name__)
 
+
 def main():
     arguments = sys.argv[1:]
     if len(arguments) == 0:

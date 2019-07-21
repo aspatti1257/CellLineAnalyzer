@@ -85,6 +85,7 @@ class DataFormattingServiceIT(unittest.TestCase):
 
         assert len(orig_features) > len(trimmed_features)
         assert len(orig_sig_features) == len(trimmed_sig_features)
+        assert len(trimmed_features) == 735
 
     @staticmethod
     def validateOutput(output):

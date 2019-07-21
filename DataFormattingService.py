@@ -67,34 +67,35 @@ class DataFormattingService(object):
                 if is_categorical:
                     if ranksum_p_vals.get(file) is None:
                         ranksum_p_vals[file] = {}
-                    value_counts = {}
-                    for val in feature_column:
-                        if value_counts.get(val) is None:
-                            value_counts[val] = 1
-                        else:
-                            value_counts[val] += 1
-                    dominant_value = max(value_counts.items(), key=operator.itemgetter(1))[0]
-                    dominant_results = []
-                    other_results = []
-
-                    for i in range(0, len(feature_column)):
-                        if feature_column[i] == dominant_value:
-                            dominant_results.append(results[i])
-                        else:
-                            other_results.append(results[i])
-                    ranksum = ranksums(dominant_results, other_results)
-                    ranksum_p_vals[file][feature_name] = ranksum[1]
+                    ranksum = self.fetchRanksum(feature_column, results)
+                    ranksum_p_vals[file][feature_name] = SafeCastUtil.safeCast(ranksum[1], float, 1)
                 else:
                     if spearman_p_vals.get(file) is None:
                         spearman_p_vals[file] = {}
                     spearman_corr = spearmanr(feature_column, results)
-                    p_val = SafeCastUtil.safeCast(spearman_corr[1], float)
-                    spearman_p_vals[file][feature_name] = p_val
+                    spearman_p_vals[file][feature_name] = SafeCastUtil.safeCast(spearman_corr[1], float, 1)
 
             except ValueError as error:
                 self.log.error("Exception while trying to trim features: %s", error)
 
         return self.trimFeatures(features_df, [ranksum_p_vals, spearman_p_vals])
+
+    def fetchRanksum(self, feature_column, results):
+        value_counts = {}
+        for val in feature_column:
+            if value_counts.get(val) is None:
+                value_counts[val] = 1
+            else:
+                value_counts[val] += 1
+        dominant_value = max(value_counts.items(), key=operator.itemgetter(1))[0]
+        dominant_results = []
+        other_results = []
+        for i in range(0, len(feature_column)):
+            if feature_column[i] == dominant_value:
+                dominant_results.append(results[i])
+            else:
+                other_results.append(results[i])
+        return ranksums(dominant_results, other_results)
 
     def trimFeatures(self, features_df, p_val_sets):
         filtered_df = features_df
