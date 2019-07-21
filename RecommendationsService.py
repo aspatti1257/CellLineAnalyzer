@@ -118,8 +118,6 @@ class RecommendationsService(object):
 
     def handleDrug(self, drug, input_folder, max_nodes, processed_arguments):
         combos = self.determineGeneListCombos(processed_arguments)
-        # A dictionary of cell lines to their features, with the feature names also in there as one of the keys.
-        # Both the features and the feature names are presented as an ordered list, all of them have the same length.
         cell_line_map = processed_arguments.features
         results = processed_arguments.results
         cloned_inputs = copy.deepcopy(processed_arguments)

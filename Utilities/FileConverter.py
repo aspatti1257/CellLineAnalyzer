@@ -1,5 +1,4 @@
 import scipy.io
-import logging
 import csv
 import glob
 import os
@@ -27,7 +26,6 @@ class FileConverter(object):
         "genesExpHugo": float,
         "genesMutHugo": str
     }
-
 
     ID_FIELD = "gmcCellLineCosmicIDs"
     RESULTS_FIELD = "gmcAUC"
