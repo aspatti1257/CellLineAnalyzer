@@ -87,7 +87,7 @@ class GeneListComboUtility(object):
                                 same_list = False
                         if same_list:
                             feature_set_string += (file_key + ":" + gene_list_key + " ")
-        if feature_set_string == "" and analysis_type is AnalysisType.SPEARMAN_NO_GENE_LISTS:
+        if feature_set_string == "" and analysis_type is AnalysisType.NO_GENE_LISTS:
             return "all_features"  # TODO: This is a bit lazy, do it smarter.
         return feature_set_string.strip()
 
@@ -103,7 +103,7 @@ class GeneListComboUtility(object):
         full_matrix = formatted_inputs.get(matrix_type)
         feature_names = formatted_inputs.get(ArgumentProcessingService.FEATURE_NAMES)
 
-        if analysis_type is AnalysisType.SPEARMAN_NO_GENE_LISTS:
+        if analysis_type is AnalysisType.NO_GENE_LISTS:
             # Skips an expensive process since we'll always be analyzing all features anyways in this mode.
             full_matrix[ArgumentProcessingService.FEATURE_NAMES] = feature_names
             return full_matrix

@@ -33,7 +33,7 @@ class RandomizedDataGenerator(object):
 
     def generateRandomizedFiles(self, num_feature_files, num_cells, num_features, is_classifier,
                                 monte_carlo_permutations, data_split, individual_algorithm=None,
-                                individual_hyperparams=None):
+                                individual_hyperparams=None, analyze_all=False):
         features_per_file = SafeCastUtil.safeCast(num_features / num_feature_files, int)
         results = self.generateResultsCSV(is_classifier, num_cells)
         important_features = random.sample(range(1, features_per_file + 1),
@@ -43,7 +43,7 @@ class RandomizedDataGenerator(object):
                                                                   results, important_features)
         self.generateGeneLists(features_per_file, important_features)
         self.generateArgsTxt(is_classifier, monte_carlo_permutations, data_split, individual_algorithm, file_names[0],
-                             individual_hyperparams)
+                             individual_hyperparams, analyze_all)
         return
 
     def generateResultsCSV(self, is_classifier, num_cells):
@@ -165,19 +165,23 @@ class RandomizedDataGenerator(object):
             writer.writerow(gene_list)
 
     def generateArgsTxt(self, is_classifier, monte_carlo_permutations=10, data_split=.8,
-                        individual_algorithm=None, important_features=None, individual_hyperparams=None):
+                        individual_algorithm=None, important_features=None, individual_hyperparams=None,
+                        analyze_all=False):
         file_name = self.path + "/" + ArgumentProcessingService.ARGUMENTS_FILE
         args_file = open(file_name, 'w')
         classifier = '0'
         if is_classifier:
             classifier = '1'
-        args_file.write('results=results.csv\n'
-                        'is_classifier=' + classifier + "\n"
-                        'inner_monte_carlo_permutations=' + SafeCastUtil.safeCast(monte_carlo_permutations, str) + '\n'
-                        'outer_monte_carlo_permutations=' + SafeCastUtil.safeCast(monte_carlo_permutations, str) + '\n'
-                        'data_split=' + SafeCastUtil.safeCast(data_split, str) + '\n'
-                        'record_diagnostics=True\n' +
-                        'binary_categorical_matrix=features_1' + self.BINARY_CATEGORICAL_SUFFIX + '.csv\n')
+
+        monte_carlo_perms = SafeCastUtil.safeCast(monte_carlo_permutations, str)
+        args_file.write('results=results.csv\n' +
+                        ArgumentProcessingService.IS_CLASSIFIER + '=' + classifier + "\n" +
+                        ArgumentProcessingService.INNER_MONTE_CARLO_PERMUTATIONS + '=' + monte_carlo_perms + '\n' +
+                        ArgumentProcessingService.OUTER_MONTE_CARLO_PERMUTATIONS + '=' + monte_carlo_perms + '\n' +
+                        ArgumentProcessingService.DATA_SPLIT + '=' + SafeCastUtil.safeCast(data_split, str) + '\n' +
+                        ArgumentProcessingService.RECORD_DIAGNOSTICS + '=True\n' +
+                        ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX + '=features_1' + self.BINARY_CATEGORICAL_SUFFIX + '.csv\n' +
+                        ArgumentProcessingService.IGNORE_GENE_LISTS + '=' + SafeCastUtil.safeCast(analyze_all, str) + '\n')
         if individual_algorithm is not None and important_features is not None:
             args_file.write('individual_train_algorithm=' + individual_algorithm + '\n'
                             'individual_train_combo=' + important_features + ":" +

@@ -236,6 +236,10 @@ class AbstractModelTrainer(ABC):
         for i in range(0, len(hyperparam_keys)):
             hyperparam_set = self.hyperparameters[hyperparam_keys[i]]
             optimal_value = best_hyperparams.get(hyperparam_keys[i])
+            if optimal_value is None:
+                self.log.warn("Unable to determine optimal value given hyperparams: %s",
+                              SafeCastUtil.safeCast(best_hyperparams, str, None))
+                continue
             if optimal_value >= hyperparam_set[len(hyperparam_set) - 1]:
                 message = "Best hyperparam for " + self.algorithm + " on upper threshold of provided hyperparam " \
                           "set: " + hyperparam_keys[i] + " = " + SafeCastUtil.safeCast(optimal_value, str) + "\n"

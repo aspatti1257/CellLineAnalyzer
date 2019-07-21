@@ -68,7 +68,7 @@ class MachineLearningServiceIT(unittest.TestCase):
         self.evaluateMachineLearningModel(LassoRegressionTrainer(False))
 
     def testRandomSubsetElasticNet(self):
-        ml_service = MachineLearningService(self.formatRandomizedData(False))
+        ml_service = MachineLearningService(self.formatRandomizedData(False, False))
         ml_service.log.setLevel(logging.DEBUG)
         binary_cat_matrix = ml_service.inputs.rsen_config.binary_cat_matrix
         rsen_trainer = RandomSubsetElasticNetTrainer(False, binary_cat_matrix, 0, 0.4)
@@ -93,7 +93,7 @@ class MachineLearningServiceIT(unittest.TestCase):
         return filtered_combos
 
     def testRandomSubsetElasticNetWithCombinedGeneLists(self):
-        inputs = self.formatRandomizedData(False)
+        inputs = self.formatRandomizedData(False, False)
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         inputs.rsen_config.combine_gene_lists = True
         ml_service = MachineLearningService(inputs)
@@ -109,7 +109,7 @@ class MachineLearningServiceIT(unittest.TestCase):
             assert "ALL_GENE_LISTS" in ml_service.generateFeatureSetString(combo)
 
     def evaluateMachineLearningModel(self, trainer):
-        ml_service = MachineLearningService(self.formatRandomizedData(trainer.is_classifier))
+        ml_service = MachineLearningService(self.formatRandomizedData(trainer.is_classifier, False))
         ml_service.log.setLevel(logging.DEBUG)
         num_gene_list_combos = 8
         self.analyzeAndAssertResults(ml_service, num_gene_list_combos, trainer)
@@ -124,9 +124,10 @@ class MachineLearningServiceIT(unittest.TestCase):
             self.log.error("Interrupted manually, failing and initiating cleanup.")
             assert False
 
-    def formatRandomizedData(self, is_classifier):
+    def formatRandomizedData(self, is_classifier, analyze_all):
         random_data_generator = RandomizedDataGenerator(RandomizedDataGenerator.GENERATED_DATA_FOLDER)
-        random_data_generator.generateRandomizedFiles(3, 1000, 150, is_classifier, self.MONTE_CARLO_PERMS, .8)
+        random_data_generator.generateRandomizedFiles(3, 1000, 150, is_classifier, self.MONTE_CARLO_PERMS, .8,
+                                                      analyze_all=analyze_all)
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         argument_processing_service = ArgumentProcessingService(input_folder)
         argument_processing_service.log.setLevel(logging.DEBUG)
@@ -332,7 +333,7 @@ class MachineLearningServiceIT(unittest.TestCase):
                           if imp is not ""]) > 1.0
 
     def testSpecifiedCombosAreSelectedProperly(self):
-        arguments = self.formatRandomizedData(False)
+        arguments = self.formatRandomizedData(False, False)
         file_names = []
         for feature in arguments.features.get(ArgumentProcessingService.FEATURE_NAMES):
             file_name = feature.split(".")[0]
@@ -395,7 +396,7 @@ class MachineLearningServiceIT(unittest.TestCase):
         self.evaluateModelFullAnalysisSansGeneList(LassoRegressionTrainer(False))
 
     def evaluateModelFullAnalysisSansGeneList(self, trainer):
-        processed_args = self.formatRandomizedData(trainer.is_classifier)
+        processed_args = self.formatRandomizedData(trainer.is_classifier, True)
         processed_args.analyze_all = True
         ml_service = MachineLearningService(processed_args)
 

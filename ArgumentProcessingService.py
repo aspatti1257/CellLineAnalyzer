@@ -42,8 +42,8 @@ class ArgumentProcessingService(object):
     # For AnalysisType.FULL_CLA_SPECIFIC_COMBO
     SPECIFIC_COMBOS = "specific_combos"
 
-    # For AnalysisType.SPEARMAN_NO_GENE_LISTS
-    SPEARMAN_CORR = "spearman_corr"
+    # For AnalysisType.NO_GENE_LISTS
+    IGNORE_GENE_LISTS = "ignore_gene_lists"
 
     # For AnalysisType.INDIVIDUAL_TRAIN
     INDIVIDUAL_TRAIN_ALGORITHM = "individual_train_algorithm"
@@ -65,7 +65,7 @@ class ArgumentProcessingService(object):
         arguments = self.fetchArguments(self.input_folder + "/" + self.ARGUMENTS_FILE)
         results_file = arguments.get(self.RESULTS)
         is_classifier = SafeCastUtil.safeCast(arguments.get(self.IS_CLASSIFIER), int) == 1
-        analyze_all = self.fetchOrReturnDefault(arguments.get(self.SPEARMAN_CORR), bool, False)
+        analyze_all = self.fetchOrReturnDefault(arguments.get(self.IGNORE_GENE_LISTS), bool, False)
 
         if is_classifier is None or results_file is None:
             return None

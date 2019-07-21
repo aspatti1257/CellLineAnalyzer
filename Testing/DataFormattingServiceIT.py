@@ -60,13 +60,13 @@ class DataFormattingServiceIT(unittest.TestCase):
         self.validateOutput(self.formatRandomizedData(False))
 
     def formatRandomizedData(self, is_classifier):
-        arguments = self.processArguments(is_classifier)
+        arguments = self.processArguments(is_classifier, False, 150)
         data_formatting_service = DataFormattingService(arguments)
         return data_formatting_service.formatData(True)
 
-    def processArguments(self, is_classifier):
+    def processArguments(self, is_classifier, analyze_all, num_features):
         random_data_generator = RandomizedDataGenerator(RandomizedDataGenerator.GENERATED_DATA_FOLDER)
-        random_data_generator.generateRandomizedFiles(5, 50, 150, is_classifier, 10, .8)
+        random_data_generator.generateRandomizedFiles(5, 50, num_features, is_classifier, 10, .8, analyze_all=analyze_all)
         input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         argument_processing_service = ArgumentProcessingService(input_folder)
         arguments = argument_processing_service.handleInputFolder()
@@ -74,7 +74,7 @@ class DataFormattingServiceIT(unittest.TestCase):
 
     def testSpearmanRTrimmingDoesNotTrimSignificantFeatures(self):
         significant_prefix = RandomizedDataGenerator.SIGNIFICANT_FEATURE_PREFIX
-        arguments = self.processArguments(True)
+        arguments = self.processArguments(True, True, 1000)
         arguments.analyze_all = True
         orig_features = arguments.features.get(ArgumentProcessingService.FEATURE_NAMES)
         orig_sig_features = [feature for feature in orig_features if significant_prefix in feature]

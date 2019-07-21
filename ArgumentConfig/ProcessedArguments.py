@@ -26,7 +26,7 @@ class ProcessedArguments(object):
         if self.recs_config is not None and self.recs_config.viability_acceptance is not None:
             return AnalysisType.RECOMMENDATIONS
         if self.analyze_all:
-            return AnalysisType.SPEARMAN_NO_GENE_LISTS
+            return AnalysisType.NO_GENE_LISTS
         elif len(self.specific_combos) > 0:
             return AnalysisType.FULL_CLA_SPECIFIC_COMBO
         elif self.individual_train_config.shouldTrainIndividualCombo():

@@ -1,8 +1,10 @@
 import numpy as np
 import pandas as pd
 import math
+import operator
 from sklearn import preprocessing
 from scipy.stats import spearmanr
+from scipy.stats import ranksums
 from sklearn.model_selection import train_test_split
 from collections import OrderedDict
 
@@ -20,6 +22,7 @@ class DataFormattingService(object):
     TESTING_MATRIX = "testingMatrix"  # Will either be outer testing or inner validation matrix
 
     P_VALUE_CUTOFF = 0.05
+    NUM_TOP_FEATURES_TO_USE = 147
 
     def __init__(self, inputs):
         self.inputs = inputs
@@ -30,23 +33,82 @@ class DataFormattingService(object):
         features_df.columns = columns
         features_df = features_df.drop(ArgumentProcessingService.FEATURE_NAMES)
 
+        correlated_df = self.maybeFilterCorrelatedFeatures(features_df, columns, self.inputs.results,
+                                                           self.inputs.analysisType())
         if should_one_hot_encode:
-            one_hot_df = self.oneHot(features_df)
+            one_hot_df = self.oneHot(correlated_df)
         else:
-            one_hot_df = features_df
+            one_hot_df = correlated_df
 
         x_train, x_test, y_train, y_test = self.testTrainSplit(one_hot_df, self.inputs.results, self.inputs.data_split)
 
-        if self.inputs.analysisType() is AnalysisType.SPEARMAN_NO_GENE_LISTS:
-            x_train_corr, x_test_corr = self.filterCorrelatedFeatures(x_train, x_test, columns, y_train)
-        else:
-            x_train_corr, x_test_corr = x_train, x_test
-
         outputs = OrderedDict()
-        outputs[self.TRAINING_MATRIX] = self.maybeScaleFeatures(x_train_corr, should_scale)
-        outputs[self.TESTING_MATRIX] = self.maybeScaleFeatures(x_test_corr, should_scale)
-        outputs[ArgumentProcessingService.FEATURE_NAMES] = SafeCastUtil.safeCast(x_train_corr.columns, list)
+        outputs[self.TRAINING_MATRIX] = self.maybeScaleFeatures(x_train, should_scale)
+        outputs[self.TESTING_MATRIX] = self.maybeScaleFeatures(x_test, should_scale)
+        outputs[ArgumentProcessingService.FEATURE_NAMES] = SafeCastUtil.safeCast(x_train.columns, list)
         return outputs
+
+    def maybeFilterCorrelatedFeatures(self, features_df, feature_names, labeled_results, analysis_type):
+        if analysis_type is not AnalysisType.NO_GENE_LISTS:
+            return features_df
+
+        results = [result[1] for result in labeled_results]
+
+        spearman_p_vals = {}
+        ranksum_p_vals = {}
+
+        for feature_name in feature_names:
+            try:
+                feature_column = features_df.get(feature_name)
+
+                is_categorical = all(isinstance(feature, str) for feature in feature_column)
+                file = feature_name.split(".")[0]
+
+                if is_categorical:
+                    if ranksum_p_vals.get(file) is None:
+                        ranksum_p_vals[file] = {}
+                    value_counts = {}
+                    for val in feature_column:
+                        if value_counts.get(val) is None:
+                            value_counts[val] = 1
+                        else:
+                            value_counts[val] += 1
+                    dominant_value = max(value_counts.items(), key=operator.itemgetter(1))[0]
+                    dominant_results = []
+                    other_results = []
+
+                    for i in range(0, len(feature_column)):
+                        if feature_column[i] == dominant_value:
+                            dominant_results.append(results[i])
+                        else:
+                            other_results.append(results[i])
+                    ranksum = ranksums(dominant_results, other_results)
+                    ranksum_p_vals[file][feature_name] = ranksum[1]
+                else:
+                    if spearman_p_vals.get(file) is None:
+                        spearman_p_vals[file] = {}
+                    spearman_corr = spearmanr(feature_column, results)
+                    p_val = SafeCastUtil.safeCast(spearman_corr[1], float)
+                    spearman_p_vals[file][feature_name] = p_val
+
+            except ValueError as error:
+                self.log.error("Exception while trying to trim features: %s", error)
+
+        return self.trimFeatures(features_df, [ranksum_p_vals, spearman_p_vals])
+
+    def trimFeatures(self, features_df, p_val_sets):
+        filtered_df = features_df
+        for p_val_set in p_val_sets:
+            for file in p_val_set:
+                sorted_features = sorted(p_val_set[file].items(), key=operator.itemgetter(1))
+                if len(sorted_features) > self.NUM_TOP_FEATURES_TO_USE:
+                    for i in range(self.NUM_TOP_FEATURES_TO_USE, len(sorted_features)):
+                        feature_to_drop = sorted_features[i][0]
+                        try:
+                            filtered_df = filtered_df.drop(feature_to_drop, axis=1)
+                        except ValueError as error:
+                            self.log.error("Unable to trim feature %s from dataframe: %s", feature_to_drop, error)
+        return filtered_df
 
     def maybeScaleFeatures(self, data_frame, should_scale):
         as_dict = data_frame.transpose().to_dict('list')
@@ -89,7 +151,6 @@ class DataFormattingService(object):
 
     def testTrainSplit(self, x_values, y_values, data_split):
         x_train, x_test, y_train, y_test = train_test_split(x_values, y_values, test_size=(1 - data_split))
-        # x_test, x_validate, y_test, y_validate = train_test_split(x_split, y_split, test_size=0.5)
         return x_train, x_test, y_train, y_test
 
     def testStratifySplit(self, x_values, y_values):
@@ -98,23 +159,3 @@ class DataFormattingService(object):
         x_test, x_validate, y_test, y_validate = train_test_split(x_split, y_split, test_size=0.5, random_state=42,
                                                                   stratify=x_split.iloc[:, -1])
         return x_train,  x_validate, x_test, y_train, y_validate, y_test
-
-    def filterCorrelatedFeatures(self, train_df, test_df, feature_names, train_results):
-        results = [result[1] for result in train_results]
-        filtered_train_df = train_df
-        filtered_test_df = test_df
-
-        cutoff_by_feature_length = self.P_VALUE_CUTOFF / len(feature_names)
-
-        for feature_name in feature_names:
-            try:
-                spearman_corr = spearmanr(filtered_train_df.get(feature_name), results)
-                p_val = SafeCastUtil.safeCast(spearman_corr[1], float)
-
-                if math.isnan(p_val) or p_val > cutoff_by_feature_length:
-                    filtered_train_df = filtered_train_df.drop(feature_name, axis=1)
-                    filtered_test_df = filtered_test_df.drop(feature_name, axis=1)
-            except ValueError as error:
-                self.log.error("Exception while trying to trim features: %s", error)
-
-        return filtered_train_df, filtered_test_df

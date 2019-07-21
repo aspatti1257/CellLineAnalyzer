@@ -55,7 +55,7 @@ class MachineLearningService(object):
 
     def determineGeneListCombos(self):
         feature_names = self.inputs.features.get(ArgumentProcessingService.FEATURE_NAMES)
-        if self.inputs.analysisType() is AnalysisType.SPEARMAN_NO_GENE_LISTS:
+        if self.inputs.analysisType() is AnalysisType.NO_GENE_LISTS:
             return [[feature_names]]
 
         gene_lists = self.inputs.gene_lists
@@ -176,7 +176,7 @@ class MachineLearningService(object):
 
         valid_combos = self.fetchValidGeneListCombos(input_folder, gene_list_combos, trainer)
 
-        if self.inputs.analysisType() is AnalysisType.SPEARMAN_NO_GENE_LISTS:
+        if self.inputs.analysisType() is AnalysisType.NO_GENE_LISTS:
             trainer.parallel_hyperparam_threads = nodes_to_use
             for feature_set in valid_combos:
                 self.runMonteCarloSelection(feature_set, trainer, input_folder, len(valid_combos))
