@@ -33,33 +33,36 @@ class DataFormattingService(object):
         features_df.columns = columns
         features_df = features_df.drop(ArgumentProcessingService.FEATURE_NAMES)
 
-        correlated_df = self.maybeFilterCorrelatedFeatures(features_df, columns, self.inputs.results,
-                                                           self.inputs.analysisType())
-        if should_one_hot_encode:
-            one_hot_df = self.oneHot(correlated_df)
-        else:
-            one_hot_df = correlated_df
+        x_train, x_test, y_train, y_test = self.testTrainSplit(features_df, self.inputs.results, self.inputs.data_split)
 
-        x_train, x_test, y_train, y_test = self.testTrainSplit(one_hot_df, self.inputs.results, self.inputs.data_split)
+        x_train_corr, x_test_corr = self.maybeFilterCorrelatedFeatures(x_train, x_test, y_train, columns,
+                                                                      self.inputs.analysisType())
+
+        if should_one_hot_encode:
+            x_train_one_hot = self.oneHot(x_train_corr)
+            x_test_one_hot = self.oneHot(x_test_corr)
+        else:
+            x_train_one_hot = x_train_corr
+            x_test_one_hot = x_test_corr
 
         outputs = OrderedDict()
-        outputs[self.TRAINING_MATRIX] = self.maybeScaleFeatures(x_train, should_scale)
-        outputs[self.TESTING_MATRIX] = self.maybeScaleFeatures(x_test, should_scale)
-        outputs[ArgumentProcessingService.FEATURE_NAMES] = SafeCastUtil.safeCast(x_train.columns, list)
+        outputs[self.TRAINING_MATRIX] = self.maybeScaleFeatures(x_train_one_hot, should_scale)
+        outputs[self.TESTING_MATRIX] = self.maybeScaleFeatures(x_test_one_hot, should_scale)
+        outputs[ArgumentProcessingService.FEATURE_NAMES] = SafeCastUtil.safeCast(x_train_one_hot.columns, list)
         return outputs
 
-    def maybeFilterCorrelatedFeatures(self, features_df, feature_names, labeled_results, analysis_type):
+    def maybeFilterCorrelatedFeatures(self, x_train, x_test, y_train, feature_names, analysis_type):
         if analysis_type is not AnalysisType.NO_GENE_LISTS:
-            return features_df
+            return x_train, x_test
 
-        results = [result[1] for result in labeled_results]
+        results = [result[1] for result in y_train]
 
         spearman_p_vals = {}
         ranksum_p_vals = {}
 
         for feature_name in feature_names:
             try:
-                feature_column = features_df.get(feature_name)
+                feature_column = x_train.get(feature_name)
 
                 is_categorical = all(isinstance(feature, str) for feature in feature_column)
                 file = feature_name.split(".")[0]
@@ -78,7 +81,7 @@ class DataFormattingService(object):
             except ValueError as error:
                 self.log.error("Exception while trying to trim features: %s", error)
 
-        return self.trimFeatures(features_df, [ranksum_p_vals, spearman_p_vals])
+        return self.trimFeatures(x_train, x_test, [ranksum_p_vals, spearman_p_vals])
 
     def fetchRanksum(self, feature_column, results):
         value_counts = {}
@@ -89,16 +92,17 @@ class DataFormattingService(object):
                 value_counts[val] += 1
         dominant_value = max(value_counts.items(), key=operator.itemgetter(1))[0]
         dominant_results = []
-        other_results = []
-        for i in range(0, len(feature_column)):
-            if feature_column[i] == dominant_value:
-                dominant_results.append(results[i])
+        non_dominant_results = []
+        for feature_val_and_result in zip(SafeCastUtil.safeCast(feature_column, list), results):
+            if feature_val_and_result[0] == dominant_value:
+                dominant_results.append(feature_val_and_result[1])
             else:
-                other_results.append(results[i])
-        return ranksums(dominant_results, other_results)
+                non_dominant_results.append(feature_val_and_result[1])
+        return ranksums(dominant_results, non_dominant_results)
 
-    def trimFeatures(self, features_df, p_val_sets):
-        filtered_df = features_df
+    def trimFeatures(self, x_train, x_test, p_val_sets):
+        filtered_df_train = x_train
+        filtered_df_test = x_test
         for p_val_set in p_val_sets:
             for file in p_val_set:
                 sorted_features = sorted(p_val_set[file].items(), key=operator.itemgetter(1))
@@ -114,10 +118,11 @@ class DataFormattingService(object):
                                           file, percent_done, percentage_bar)
                         feature_to_drop = sorted_features[i][0]
                         try:
-                            filtered_df = filtered_df.drop(feature_to_drop, axis=1)
+                            filtered_df_train = filtered_df_train.drop(feature_to_drop, axis=1)
+                            filtered_df_test = filtered_df_test.drop(feature_to_drop, axis=1)
                         except ValueError as error:
                             self.log.error("Unable to trim feature %s from dataframe: %s", feature_to_drop, error)
-        return filtered_df
+        return filtered_df_train, filtered_df_test
 
     def maybeScaleFeatures(self, data_frame, should_scale):
         as_dict = data_frame.transpose().to_dict('list')

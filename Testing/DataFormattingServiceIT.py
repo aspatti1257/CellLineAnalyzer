@@ -72,7 +72,7 @@ class DataFormattingServiceIT(unittest.TestCase):
         arguments = argument_processing_service.handleInputFolder()
         return arguments
 
-    def testSpearmanRTrimmingDoesNotTrimSignificantFeatures(self):
+    def testTrimmingDoesNotTrimSignificantFeatures(self):
         significant_prefix = RandomizedDataGenerator.SIGNIFICANT_FEATURE_PREFIX
         arguments = self.processArguments(True, True, 1000)
         arguments.analyze_all = True
@@ -83,9 +83,17 @@ class DataFormattingServiceIT(unittest.TestCase):
         trimmed_features = output.get(ArgumentProcessingService.FEATURE_NAMES)
         trimmed_sig_features = [feature for feature in trimmed_features if significant_prefix in feature]
 
+        training_matrix = output.get(DataFormattingService.TRAINING_MATRIX)
+        testing_matrix = output.get(DataFormattingService.TESTING_MATRIX)
+        expected_feature_count = 735
+
+        for matrix in [training_matrix, testing_matrix]:
+            for cell_line in matrix:
+                assert len(matrix[cell_line]) == expected_feature_count
+
         assert len(orig_features) > len(trimmed_features)
         assert len(orig_sig_features) == len(trimmed_sig_features)
-        assert len(trimmed_features) == 735
+        assert len(trimmed_features) == expected_feature_count
 
     @staticmethod
     def validateOutput(output):
