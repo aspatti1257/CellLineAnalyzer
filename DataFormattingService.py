@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import math
 import operator
 from sklearn import preprocessing
 from scipy.stats import spearmanr
@@ -11,6 +10,7 @@ from collections import OrderedDict
 from ArgumentConfig.AnalysisType import AnalysisType
 from ArgumentProcessingService import ArgumentProcessingService
 from LoggerFactory import LoggerFactory
+from Utilities.PercentageBarUtility import PercentageBarUtility
 from Utilities.SafeCastUtil import SafeCastUtil
 
 
@@ -103,7 +103,15 @@ class DataFormattingService(object):
             for file in p_val_set:
                 sorted_features = sorted(p_val_set[file].items(), key=operator.itemgetter(1))
                 if len(sorted_features) > self.NUM_TOP_FEATURES_TO_USE:
+                    num_features_to_trim = len(sorted_features) - self.NUM_TOP_FEATURES_TO_USE
+
                     for i in range(self.NUM_TOP_FEATURES_TO_USE, len(sorted_features)):
+                        if i % 100 == 0:
+                            num_trimmed = i - self.NUM_TOP_FEATURES_TO_USE
+                            percent_done, percentage_bar = \
+                                PercentageBarUtility.calculateAndCreatePercentageBar(num_trimmed, num_features_to_trim)
+                            self.log.info("Total progress trimming features for file %s: %s%% done:\n %s",
+                                          file, percent_done, percentage_bar)
                         feature_to_drop = sorted_features[i][0]
                         try:
                             filtered_df = filtered_df.drop(feature_to_drop, axis=1)

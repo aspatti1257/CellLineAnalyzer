@@ -35,9 +35,9 @@ class DataFormattingServiceIT(unittest.TestCase):
         s = self.data_formatting_service
         features = pd.read_csv('SampleClassifierDataFolder/features.csv', delimiter=',')
         results = pd.read_csv('SampleClassifierDataFolder/results.csv', delimiter=',')
-        X_train, X_test, y_train, y_test = s.testTrainSplit(features, results,
+        x_train, x_test, y_train, y_test = s.testTrainSplit(features, results,
                                                             self.data_formatting_service.inputs.data_split)
-        return X_test, X_train, y_test, y_train
+        return x_test, x_train, y_test, y_train
 
     def testFormattingDataRandomizesMatrices(self):
         original_outputs = self.data_formatting_service.formatData(True)

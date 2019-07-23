@@ -170,6 +170,8 @@ class MachineLearningServiceIT(unittest.TestCase):
 
     def assertDiagnosticResults(self, target_dir, trainer):
         if trainer.supportsHyperparams():
+            saved_features_logged_if_univariate = trainer.parallel_hyperparam_threads == -1
+
             diagnostics_file = "Diagnostics.txt"
             if diagnostics_file in os.listdir(target_dir):
                 with open(target_dir + "/" + diagnostics_file) as open_file:
@@ -178,11 +180,14 @@ class MachineLearningServiceIT(unittest.TestCase):
                             if "Best Hyperparam" in line:
                                 assert trainer.algorithm in line
                                 assert "upper" in line or "lower" in line
+                            if "Monte Carlo loop" in line:
+                                saved_features_logged_if_univariate = True
                     except ValueError as valueError:
                         self.log.error(valueError)
                     finally:
                         self.log.debug("Closing file %s", open_file)
                         open_file.close()
+            assert saved_features_logged_if_univariate
 
     def testIndividualRandomForestRegressor(self):
         self.evaluateMachineLearningModelForIndividualCombo(SupportedMachineLearningAlgorithms.RANDOM_FOREST,

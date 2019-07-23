@@ -244,15 +244,16 @@ class MachineLearningService(object):
         scores_and_hyperparams = []
 
         for i in range(1, outer_perms + 1):
+            self.log.info("Computing outer Monte Carlo Permutation %s for %s.", i, feature_set_as_string)
             formatted_data = self.formatData(self.inputs, True, True)
-            self.log.info("Creating train and test matrices by feature set: %s.", feature_set_as_string)
+            if self.inputs.analysisType() is AnalysisType.NO_GENE_LISTS:
+                self.logKeptFeatures(formatted_data, i, input_folder, trainer)
 
+            self.log.info("Creating train and test matrices by feature set: %s.", feature_set_as_string)
             training_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TRAINING_MATRIX, feature_set,
                                                                           formatted_data, self.inputs.analysisType())
             testing_matrix = GeneListComboUtility.trimMatrixByFeatureSet(DataFormattingService.TESTING_MATRIX, feature_set,
                                                                          formatted_data, self.inputs.analysisType())
-
-            self.log.debug("Computing outer Monte Carlo Permutation %s for %s.", i, feature_set_as_string)
 
             optimal_hyperparams = self.determineOptimalHyperparameters(feature_set, formatted_data, trainer)
             record_diagnostics = self.inputs.record_diagnostics
@@ -381,6 +382,26 @@ class MachineLearningService(object):
     def formatData(self, inputs, should_scale, should_one_hot_encode):
         data_formatting_service = DataFormattingService(inputs)
         return data_formatting_service.formatData(should_scale, should_one_hot_encode)
+
+    def logKeptFeatures(self, formatted_data, monte_carlo_perm, input_folder, trainer):
+        features_by_file = {}
+        for full_feature in formatted_data.get(ArgumentProcessingService.FEATURE_NAMES):
+            feature_split = full_feature.split(".")
+            file = feature_split[0]
+            feature = feature_split[1]
+            if features_by_file.get(file) is None:
+                features_by_file[file] = [feature]
+            else:
+                features_by_file[file].append(feature)
+
+        message = "Only using the following features for outer Monte Carlo loop " +\
+                  SafeCastUtil.safeCast(monte_carlo_perm, str) + ". All other features have been removed.\n"
+        for file in features_by_file.keys():
+            message += ("\t" + file + ":" + SafeCastUtil.safeCast(features_by_file[file], str) + "\n")
+
+        self.log.info(message + SafeCastUtil.safeCast(formatted_data.get(ArgumentProcessingService.FEATURE_NAMES), str))
+        if self.inputs.record_diagnostics:
+            trainer.writeToDiagnosticsFile(input_folder, message)
 
     def reformatInputsByTrainingMatrix(self, training_matrix, feature_names):
         real_inputs = self.inputs
