@@ -1,7 +1,6 @@
 import threading
 
 import numpy
-import os
 import copy
 
 from collections import OrderedDict
@@ -9,6 +8,7 @@ from abc import ABC, abstractmethod
 
 from ArgumentProcessingService import ArgumentProcessingService
 from LoggerFactory import LoggerFactory
+from Utilities.DiagnosticsFileWriter import DiagnosticsFileWriter
 from Utilities.DictionaryUtility import DictionaryUtility
 from Utilities.SafeCastUtil import SafeCastUtil
 from Utilities.GarbageCollectionUtility import GarbageCollectionUtility
@@ -245,13 +245,13 @@ class AbstractModelTrainer(ABC):
                           "set: " + hyperparam_keys[i] + " = " + SafeCastUtil.safeCast(optimal_value, str) + "\n"
                 self.log.debug(message)
                 if record_diagnostics:
-                    self.writeToDiagnosticsFile(input_folder, message)
+                    DiagnosticsFileWriter.writeToFile(input_folder, message, self.log)
             elif optimal_value <= hyperparam_set[0]:
                 message = "Best hyperparam for " + self.algorithm + " on lower threshold of provided hyperparam " \
                           "set: " + hyperparam_keys[i] + " = " + SafeCastUtil.safeCast(optimal_value, str) + "\n"
                 self.log.debug(message)
                 if record_diagnostics:
-                    self.writeToDiagnosticsFile(input_folder, message)
+                    DiagnosticsFileWriter.writeToFile(input_folder, message, self.log)
 
     def logOptimalHyperParams(self, hyperparams, feature_set_as_string, record_diagnostics, input_folder):
         message = "Optimal Hyperparameters for " + feature_set_as_string + " " + self.algorithm + " algorithm " \
@@ -261,24 +261,7 @@ class AbstractModelTrainer(ABC):
             message += "\t" + key + " = " + SafeCastUtil.safeCast(hyperparams[key], str) + "\n"
         self.log.info(message)
         if record_diagnostics:
-            self.writeToDiagnosticsFile(input_folder, message)
-
-    def writeToDiagnosticsFile(self, input_folder, message):
-        lock = threading.Lock()
-        lock.acquire(True)
-
-        write_action = "w"
-        file_name = "Diagnostics.txt"
-        if file_name in os.listdir(input_folder):
-            write_action = "a"
-        with open(input_folder + "/" + file_name, write_action) as diagnostics_file:
-            try:
-                diagnostics_file.write(message)
-            except ValueError as error:
-                self.log.error("Error writing to file %s. %s", diagnostics_file, error)
-            finally:
-                diagnostics_file.close()
-                lock.release()
+            DiagnosticsFileWriter.writeToFile(input_folder, message, self.log)
 
     def generateFeaturesInOrder(self, gene_list_combo):
         features_in_order = []

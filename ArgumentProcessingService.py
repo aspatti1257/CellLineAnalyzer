@@ -9,6 +9,7 @@ from ArgumentConfig.RSENConfig import RSENConfig
 from ArgumentConfig.RecommendationsConfig import RecommendationsConfig
 from LoggerFactory import LoggerFactory
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
+from Utilities.DiagnosticsFileWriter import DiagnosticsFileWriter
 from Utilities.PercentageBarUtility import PercentageBarUtility
 from Utilities.SafeCastUtil import SafeCastUtil
 
@@ -277,25 +278,19 @@ class ArgumentProcessingService(object):
         return unused_features
 
     def writeDiagnostics(self, features_removed):
-        with open(self.input_folder + "/Diagnostics.txt", "w") as diagnostics_file:
-            try:
-                diagnostics_file.write("### Diagnostics ###\n")
-                for feature_file in features_removed:
-                    diagnostics_file.write("\nFeatures from gene list(s) not available in " + feature_file[0] + ":\n")
-                    for gene_list in feature_file[1].keys():
-                        num_genes_missing = len(feature_file[1][gene_list])
-                        percent_genes_missing = round((num_genes_missing / feature_file[2]) * 100, 2)
-                        diagnostics_file.write("\t" + SafeCastUtil.safeCast(num_genes_missing, str) + " (" +
-                                                      SafeCastUtil.safeCast(percent_genes_missing, str) + " %" + ")"
-                                                    " features not present in " + gene_list + ".csv:\n")
-                        for gene in feature_file[1][gene_list]:
-                            diagnostics_file.write("\t\t" + gene[0] + " at index "
-                                                   + SafeCastUtil.safeCast(gene[1], str) + "\n")
-                diagnostics_file.write("\n\n######################\n\n")
-            except ValueError as error:
-                self.log.error("Error writing to file %s. %s", diagnostics_file, error)
-            finally:
-                diagnostics_file.close()
+        message = ""
+        for feature_file in features_removed:
+            message += "\nFeatures from gene list(s) not available in " + feature_file[0] + ":\n"
+            for gene_list in feature_file[1].keys():
+                num_genes_missing = len(feature_file[1][gene_list])
+                percent_genes_missing = round((num_genes_missing / feature_file[2]) * 100, 2)
+                message += ("\t" + SafeCastUtil.safeCast(num_genes_missing, str) + " (" +
+                                   SafeCastUtil.safeCast(percent_genes_missing, str) + " %" +
+                            ") features not present in " + gene_list + ".csv:\n")
+                for gene in feature_file[1][gene_list]:
+                    message += ("\t\t" + gene[0] + " at index " + SafeCastUtil.safeCast(gene[1], str) + "\n")
+        message += "\n\n######################\n\n"
+        DiagnosticsFileWriter.writeToFile(self.input_folder, message, self.log)
 
     def extractFeatureMatrix(self, feature_matrix, features_path, file, gene_lists, results_list):
         self.log.info("Extracting important features for %s.", file)

@@ -16,6 +16,7 @@ from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithm
 from ArgumentProcessingService import ArgumentProcessingService
 from DataFormattingService import DataFormattingService
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
+from Utilities.DiagnosticsFileWriter import DiagnosticsFileWriter
 from Utilities.DictionaryUtility import DictionaryUtility
 from Utilities.GeneListComboUtility import GeneListComboUtility
 from Utilities.ModelTrainerFactory import ModelTrainerFactory
@@ -401,7 +402,7 @@ class MachineLearningService(object):
 
         self.log.info(message + SafeCastUtil.safeCast(formatted_data.get(ArgumentProcessingService.FEATURE_NAMES), str))
         if self.inputs.record_diagnostics:
-            trainer.writeToDiagnosticsFile(input_folder, message)
+            DiagnosticsFileWriter.writeToFile(input_folder, message, self.log)
 
     def reformatInputsByTrainingMatrix(self, training_matrix, feature_names):
         real_inputs = self.inputs

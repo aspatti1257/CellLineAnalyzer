@@ -17,6 +17,7 @@ from Trainers.RandomSubsetElasticNetTrainer import RandomSubsetElasticNetTrainer
 from ArgumentProcessingService import ArgumentProcessingService
 from MachineLearningService import MachineLearningService
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
+from Utilities.DiagnosticsFileWriter import DiagnosticsFileWriter
 from Utilities.RandomizedDataGenerator import RandomizedDataGenerator
 from Utilities.SafeCastUtil import SafeCastUtil
 
@@ -172,7 +173,7 @@ class MachineLearningServiceIT(unittest.TestCase):
         if trainer.supportsHyperparams():
             saved_features_logged_if_univariate = trainer.parallel_hyperparam_threads == -1
 
-            diagnostics_file = "Diagnostics.txt"
+            diagnostics_file = DiagnosticsFileWriter.FILE_NAME
             if diagnostics_file in os.listdir(target_dir):
                 with open(target_dir + "/" + diagnostics_file) as open_file:
                     try:
