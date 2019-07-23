@@ -398,9 +398,11 @@ class MachineLearningService(object):
         message = "Only using the following features for outer Monte Carlo loop " +\
                   SafeCastUtil.safeCast(monte_carlo_perm, str) + ". All other features have been removed.\n"
         for file in features_by_file.keys():
-            message += ("\t" + file + ":" + SafeCastUtil.safeCast(features_by_file[file], str) + "\n")
+            message += ("\t" + file + ":\n")
+            for feature in features_by_file[file]:
+                message += ("\t\t" + feature + "\n")
 
-        self.log.info(message + SafeCastUtil.safeCast(formatted_data.get(ArgumentProcessingService.FEATURE_NAMES), str))
+        self.log.info(message)
         if self.inputs.record_diagnostics:
             DiagnosticsFileWriter.writeToFile(input_folder, message, self.log)
 
