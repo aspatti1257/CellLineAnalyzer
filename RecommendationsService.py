@@ -136,9 +136,9 @@ class RecommendationsService(object):
 
     def handleCellLine(self, cell_line, combos, drug, feature_names, formatted_inputs, input_folder,
                        processed_arguments, results):
-        self.log.info("Holding out cell line %s for drug %s", cell_line, drug)
-        if cell_line == ArgumentProcessingService.FEATURE_NAMES:\
+        if cell_line == ArgumentProcessingService.FEATURE_NAMES:
             return
+        self.log.info("Holding out cell line %s for drug %s", cell_line, drug)
         trimmed_cell_lines, trimmed_results = self.removeNonNullCellLineFromFeaturesAndResults(cell_line,
                                                                                                formatted_inputs,
                                                                                                results)
