@@ -183,15 +183,16 @@ ones that aren't are marked with a star (*).
                     lists, the order of the which pair of feature file:gene list does not matter. See the example below
                     or reference a completed "Analysis.csv" file to get a sense of how these combos are expressed.
 
-`ignore_gene_litss`*: Optionally filter out any features that are determined to be insignificant in influencing the
+`ignore_gene_lists`*: Optionally filter out any features that are determined to be insignificant in influencing the
                       results as determined by the Spearman's Rank Order Correlation or, for categorical variables,
-                      using rank sum. Running the program in this mode will not  combine all the files into gene lists,
-                      but instead look at all features collectively. Defaults to false.
+                      using rank sum. Running the program in this mode will not combine all the files into gene lists,
+                      but instead look at all features collectively. This is known as "univariate mode". Defaults to
+                      false.
 
 Any .csv file in this path that is not the a gene list file, or the results.csv file, will be interpreted as a features
 file.
 
-### Example of completed argument.txt with proper syntax: 
+### Example of completed arguments.txt with proper syntax:
 
 ```
 results=results.csv
@@ -201,10 +202,10 @@ outer_monte_carlo_permutations=20
 data_split=0.8
 RandomForestAnalysis=True,10,5
 specific_combos="features:gene_list2 categorical:gene_list1", "features:gene_list1"
-spearman_corr=False
+ignore_gene_lists=False
 ```
 
-### Example of a completed argument.txt with proper syntax for individual ML algorithm training:
+### Example of a completed arguments.txt with proper syntax for individual ML algorithm training:
 ```
 results=results.csv
 is_classifier=0
@@ -219,6 +220,16 @@ not one line representing an average number of permutations. Therefore in the ex
 be an ElasticNetAnalysis.csv file with 20 lines, each with a different R^2 score for each outer_monte_carlo_permutation
 all for the same gene list/feature file combo.
 
+
+### Example of a completed arguments.txt with proper syntax for univariate training:
+```
+results=results.csv
+is_classifier=0
+outer_monte_carlo_permutations=20
+data_split=0.8
+record_diagnostics=True
+ignore_gene_lists=True
+```
 
 ### Example of all files in the directory:
 
