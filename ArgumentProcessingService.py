@@ -71,10 +71,15 @@ class ArgumentProcessingService(object):
         algorithm_configs = self.handleAlgorithmConfigs(arguments)
 
         if is_classifier is None or results_file is None:
+            self.log.error("Unable to perform CLA analysis. Must explicitly state is_classifier and declare the results"
+                           "file in the %s file.", self.ARGUMENTS_FILE)
             return None
         results_list = self.validateAndExtractResults(results_file, is_classifier)
 
         gene_lists = self.extractGeneLists()
+        if len(gene_lists) <= 1 and not analyze_all:
+            self.log.error("Unable to perform standard CLA analysis. No gene lists found in the target folder.")
+            return None
 
         write_diagnostics = self.fetchOrReturnDefault(arguments.get(self.RECORD_DIAGNOSTICS), bool, False)
         feature_files = [file for file in os.listdir(self.input_folder) if self.fileIsFeatureFile(file, results_file)]
