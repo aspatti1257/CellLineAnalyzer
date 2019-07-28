@@ -2,6 +2,7 @@ import threading
 
 import numpy
 import copy
+import os
 
 from collections import OrderedDict
 from abc import ABC, abstractmethod
@@ -70,7 +71,7 @@ class AbstractModelTrainer(ABC):
         num_models = outer_monte_carlo_perms * inner_monte_carlo_perms * num_gene_list_combos
         for hyperparam_set in self.hyperparameters.values():
             num_models *= len(hyperparam_set)
-        return num_models
+        return num_models + (outer_monte_carlo_perms * num_gene_list_combos)
 
     def loopThroughHyperparams(self, hyperparams, training_matrix, testing_matrix, results):
         self.hyperparameters = hyperparams
@@ -147,6 +148,12 @@ class AbstractModelTrainer(ABC):
 
     def buildModelAndRecordScore(self, feature_names, features, hyperparam_set, model_data, relevant_results, results,
                                  testing_matrix):
+        if not isinstance(model_data, dict) and model_data._address_to_local is not None:
+            shared_file = SafeCastUtil.safeCast(model_data._address_to_local.keys(), list)[0]
+            if not os.path.exists(shared_file):
+                self.log.warn("Unable to find shared file %s, process likely ended prematurely.", shared_file)
+                return
+
         self.log.debug("Building %s model with hyperparams %s.", self.algorithm, hyperparam_set)
         model = self.buildModel(relevant_results, features, hyperparam_set, feature_names)
         self.preserveNonHyperparamData(model_data, model)

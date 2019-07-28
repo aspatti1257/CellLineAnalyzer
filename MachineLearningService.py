@@ -245,7 +245,7 @@ class MachineLearningService(object):
         scores_and_hyperparams = []
 
         for i in range(1, outer_perms + 1):
-            self.log.info("Computing outer Monte Carlo Permutation %s for %s.", i, feature_set_as_string)
+            self.log.info("Computing outer Monte Carlo Permutation %s for %s.\n", i, feature_set_as_string)
             formatted_data = self.formatData(self.inputs, True, True)
             if self.inputs.analysisType() is AnalysisType.NO_GENE_LISTS:
                 self.logKeptFeatures(formatted_data, i, input_folder, trainer)
@@ -359,7 +359,7 @@ class MachineLearningService(object):
         inner_model_hyperparams = {}
         inner_perms = self.monteCarloPermsByAlgorithm(trainer.algorithm, False)
         for j in range(1, inner_perms + 1):
-            self.log.info("Computing inner Monte Carlo Permutation %s for %s.", j,
+            self.log.info("Computing inner Monte Carlo Permutation %s for %s.\n", j,
                            self.generateFeatureSetString(feature_set))
             GarbageCollectionUtility.logMemoryUsageAndGarbageCollect(self.log)
             formatted_inputs = self.reformatInputsByTrainingMatrix(

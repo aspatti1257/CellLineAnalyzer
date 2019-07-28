@@ -68,6 +68,8 @@ class ArgumentProcessingService(object):
         is_classifier = SafeCastUtil.safeCast(arguments.get(self.IS_CLASSIFIER), int) == 1
         analyze_all = self.fetchOrReturnDefault(arguments.get(self.IGNORE_GENE_LISTS), bool, False)
 
+        algorithm_configs = self.handleAlgorithmConfigs(arguments)
+
         if is_classifier is None or results_file is None:
             return None
         results_list = self.validateAndExtractResults(results_file, is_classifier)
@@ -82,7 +84,6 @@ class ArgumentProcessingService(object):
             feature_map = self.createAndValidateFeatureMatrix(results_list, gene_lists, write_diagnostics, feature_files)
         binary_cat_matrix = self.fetchBinaryCatMatrixIfApplicable(arguments, gene_lists, results_list, analyze_all)
 
-        algorithm_configs = self.handleAlgorithmConfigs(arguments)
         if not feature_map or not results_list:
             return None
         inner_monte_carlo_perms = self.fetchOrReturnDefault(arguments.get(self.INNER_MONTE_CARLO_PERMUTATIONS), int, 10)
