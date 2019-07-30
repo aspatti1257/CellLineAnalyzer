@@ -76,6 +76,12 @@ class RecommendationsServiceIT(unittest.TestCase):
     def testPreRecsAnalysis(self):
         num_cell_lines = 1000
         inputs = self.formatRandomizedData(False, num_cell_lines)
+        for processed_arguments in inputs.values():
+            sample_features = processed_arguments.features.get(RandomizedDataGenerator.CELL_LINE + "0")
+            for _ in range(10):
+                num_cell_lines += 1
+                self.addRandomCellLine(processed_arguments, sample_features)
+
         target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
 
         try:
@@ -103,8 +109,8 @@ class RecommendationsServiceIT(unittest.TestCase):
                                     assert cell_line or RecommendationsService.STD_DEVIATION or \
                                            RecommendationsService.MEAN or RecommendationsService.MEDIAN in value_in_csv
                                 else:
-                                    assert SafeCastUtil.safeCast(value_in_csv, float) > \
-                                           AbstractModelTrainer.DEFAULT_MIN_SCORE
+                                    assert value_in_csv == MachineLearningService.DELIMITER.strip() or \
+                                           SafeCastUtil.safeCast(value_in_csv, float) > AbstractModelTrainer.DEFAULT_MIN_SCORE
 
                 except AssertionError as error:
                     self.log.error(error)
@@ -114,6 +120,15 @@ class RecommendationsServiceIT(unittest.TestCase):
                     assert num_lines == num_cell_lines + 4
         except KeyboardInterrupt as keyboard_interrupt:
             assert False
+
+    def addRandomCellLine(self, processed_arguments, sample_features):
+        random_string = self.randomString(16)
+        processed_arguments.features[random_string] = sample_features
+        processed_arguments.results.append([random_string, random.random()])
+
+    def randomString(self, string_length):
+        letters = string.hexdigits
+        return ''.join(random.choice(letters) for i in range(string_length))
 
     def formatRandomizedData(self, is_classifier, num_cell_lines):
         randomized_data_path = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER

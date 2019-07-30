@@ -65,6 +65,10 @@ class RecommendationsService(object):
                 continue
             self.generateMultiplePredictions(recs_model_info, formatted_inputs, results, cell_line_predictions_by_drug)
 
+        for cell_line in cell_line_predictions_by_drug:
+            while len(cell_line_predictions_by_drug[cell_line]) < \
+                    len(cell_line_predictions_by_drug[RecommendationsService.HEADER]):
+                cell_line_predictions_by_drug[cell_line].append(MachineLearningService.DELIMITER)
         self.writePreRecAnalysisFile(cell_line_predictions_by_drug, input_folder)
 
     def generateMultiplePredictions(self, recs_model_info, formatted_inputs, results, cell_line_predictions_by_drug):
@@ -100,8 +104,13 @@ class RecommendationsService(object):
         with open(input_folder + "/" + self.PRE_REC_ANALYSIS_FILE, "w", newline='') as pre_rec_analysis_file:
             try:
                 writer = csv.writer(pre_rec_analysis_file)
-                for key in cell_line_predictions_by_drug.keys():
+                for key in [key for key in cell_line_predictions_by_drug.keys() if
+                            key is not RecommendationsService.STD_DEVIATION and
+                            key is not RecommendationsService.MEDIAN and key is not RecommendationsService.MEAN]:
                     writer.writerow(cell_line_predictions_by_drug.get(key))
+                writer.writerow(cell_line_predictions_by_drug[RecommendationsService.MEAN])
+                writer.writerow(cell_line_predictions_by_drug[RecommendationsService.MEDIAN])
+                writer.writerow(cell_line_predictions_by_drug[RecommendationsService.STD_DEVIATION])
             except ValueError as error:
                 self.log.error("Error writing to file %s. %s", pre_rec_analysis_file, error)
             finally:
