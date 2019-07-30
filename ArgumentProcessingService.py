@@ -1,7 +1,7 @@
 import multiprocessing
 import os
 import re
-import mmap
+import pandas
 
 from ArgumentConfig.IndividualTrainConfig import IndividualTrainConfig
 from ArgumentConfig.ProcessedArguments import ProcessedArguments
@@ -172,54 +172,47 @@ class ArgumentProcessingService(object):
         return gene_lists
 
     def createAndValidateFullFeatureMatrix(self, results_list, feature_files):
-        feature_matrix = {self.FEATURE_NAMES: []}
-        for cell_line in results_list:
-            feature_matrix[cell_line[0]] = []
+        frames = []
+        cell_lines = [result[0] for result in results_list]
+
         for file in feature_files:
             self.log.info("Fetching all features for file %s", file)
             file_name = file.split(".")[0]
             features_path = self.input_folder + "/" + file
-            num_lines = self.countLines(features_path)
-            with open(features_path) as feature_file:
-                num_features = 0
-                valid_indices = []
-                try:
-                    for line_index, line in enumerate(feature_file):
-                        line_split = line.split(",")
-                        percent_done, percentage_bar = PercentageBarUtility.calculateAndCreatePercentageBar(line_index,
-                                                                                                            num_lines)
-                        self.log.info("Total progress extracting rows for %s: %s%% done:\n %s",
-                                      file, percent_done, percentage_bar)
-                        if line_index == 0:
-                            valid_indices, feature_names = self.fetchUniqueFeatureNamesAndIndices(line_split, file_name)
-                            feature_matrix[self.FEATURE_NAMES] += feature_names
-                            num_features = len(line_split)
-                            continue
-                        for i in range(0, num_features):
-                            if i not in valid_indices:
-                                continue
-                            feature = line_split[i] if line_split[i] is not None else self.UNFILLED_VALUE_PLACEHOLDER
-                            feature_as_float = SafeCastUtil.safeCast(feature, float)
-                            if feature_as_float is not None:
-                                feature_matrix[results_list[line_index - 1][0]].append(feature_as_float)
-                            else:
-                                feature_matrix[results_list[line_index - 1][0]].append(feature.strip())
 
-                except ValueError as valueError:
-                    self.log.error(valueError)
-                finally:
-                    self.log.debug("Closing file %s", feature_file)
-                    feature_file.close()
+            frame = pandas.read_csv(features_path)
+            frame = frame.loc[:, ~frame.columns.str.contains('^Unnamed')]
+            frame.columns = [file_name + "." + feature for feature in frame.columns]
+            frame.index = cell_lines
+            columns = SafeCastUtil.safeCast(frame.columns, list)
+            [frame.drop(feature) for feature in columns if columns.count(feature) > 1]
+            frames.append(frame)
+
+        combined_frame = pandas.concat(frames, axis=1, join='inner')
+        transposed_dict = combined_frame.T.to_dict()
+
+        return self.formatFullFeatureMatrix(combined_frame, transposed_dict)
+
+    def formatFullFeatureMatrix(self, combined_frame, transposed_dict):
+        feature_matrix = {self.FEATURE_NAMES: SafeCastUtil.safeCast(combined_frame.columns, list)}
+        self.log.info("Formatting all features across all files.")
+        all_cell_lines = SafeCastUtil.safeCast(transposed_dict.keys(), list)
+        num_cell_lines = len(all_cell_lines)
+        for i in range(num_cell_lines):
+            if i % 10 == 0:
+                percent_done, percentage_bar = PercentageBarUtility.calculateAndCreatePercentageBar(i, num_cell_lines)
+                self.log.info("Total progress formatting input data: %s%% done:\n %s", percent_done, percentage_bar)
+            values = SafeCastUtil.safeCast(transposed_dict[all_cell_lines[i]].values(), list)
+            formatted_values = [self.formatValue(value) for value in values]
+            feature_matrix[all_cell_lines[i]] = SafeCastUtil.safeCast(formatted_values, list)
         return feature_matrix
 
-    def countLines(self, file):
-        open_file = open(file, "r+")
-        buf = mmap.mmap(open_file.fileno(), 0)
-        lines = 0
-        readline = buf.readline
-        while readline():
-            lines += 1
-        return lines
+    def formatValue(self, value):
+        value_as_float = SafeCastUtil.safeCast(value, float)
+        if value_as_float is not None:
+            return value_as_float
+        else:
+            return value.strip()
 
     def fetchUniqueFeatureNamesAndIndices(self, line_split, file_name):
         unvalidated_features = [file_name + "." + name.strip() for name in line_split if len(name.strip()) > 0]
