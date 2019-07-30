@@ -101,27 +101,15 @@ class DataFormattingService(object):
         return ranksums(dominant_results, non_dominant_results)
 
     def trimFeatures(self, x_train, x_test, p_val_sets):
-        filtered_df_train = x_train
-        filtered_df_test = x_test
+        features_to_keep = []
         for p_val_set in p_val_sets:
             for file in p_val_set:
-                sorted_features = sorted(p_val_set[file].items(), key=operator.itemgetter(1))
-                if len(sorted_features) > self.NUM_TOP_FEATURES_TO_USE:
-                    num_features_to_trim = len(sorted_features) - self.NUM_TOP_FEATURES_TO_USE
+                features_and_p_vals = [item for item in p_val_set[file].items() if not np.isnan(item[1])]
+                sorted_features_and_p_vals = sorted(features_and_p_vals, key=operator.itemgetter(1))[:self.NUM_TOP_FEATURES_TO_USE]
+                [features_to_keep.append(feature_and_p_val[0]) for feature_and_p_val in sorted_features_and_p_vals]
 
-                    for i in range(self.NUM_TOP_FEATURES_TO_USE, len(sorted_features)):
-                        if i % 100 == 0:
-                            num_trimmed = i - self.NUM_TOP_FEATURES_TO_USE
-                            percent_done, percentage_bar = \
-                                PercentageBarUtility.calculateAndCreatePercentageBar(num_trimmed, num_features_to_trim)
-                            self.log.info("Total progress trimming features for file %s: %s%% done:\n %s",
-                                          file, percent_done, percentage_bar)
-                        feature_to_drop = sorted_features[i][0]
-                        try:
-                            filtered_df_train = filtered_df_train.drop(feature_to_drop, axis=1)
-                            filtered_df_test = filtered_df_test.drop(feature_to_drop, axis=1)
-                        except ValueError as error:
-                            self.log.error("Unable to trim feature %s from dataframe: %s", feature_to_drop, error)
+        filtered_df_train = x_train.filter(features_to_keep, axis=1)
+        filtered_df_test = x_test.filter(features_to_keep, axis=1)
         return filtered_df_train, filtered_df_test
 
     def maybeScaleFeatures(self, data_frame, should_scale):

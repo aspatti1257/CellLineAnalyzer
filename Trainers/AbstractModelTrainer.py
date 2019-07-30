@@ -151,7 +151,7 @@ class AbstractModelTrainer(ABC):
         if not isinstance(model_data, dict) and model_data._address_to_local is not None:
             shared_file = SafeCastUtil.safeCast(model_data._address_to_local.keys(), list)[0]
             if not os.path.exists(shared_file):
-                self.log.warn("Unable to find shared file %s, process likely ended prematurely.", shared_file)
+                self.log.warning("Unable to find shared file %s, process likely ended prematurely.", shared_file)
                 return
 
         self.log.debug("Building %s model with hyperparams %s.", self.algorithm, hyperparam_set)
