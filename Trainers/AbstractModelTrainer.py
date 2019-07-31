@@ -81,12 +81,13 @@ class AbstractModelTrainer(ABC):
 
         hyperparam_permutations = self.fetchAllHyperparamPermutations(hyperparams)
         GarbageCollectionUtility.logMemoryUsageAndGarbageCollect(self.log)
-        if SafeCastUtil.safeCast(self.parallel_hyperparam_threads, int, -1) < 0:
-            return self.hyperparameterizeInSerial(feature_names, features, hyperparam_permutations,
-                                                  relevant_results, results, testing_matrix)
-        else:
-            return self.hyperparameterizeInParallel(feature_names, features, hyperparam_permutations,
-                                                    relevant_results, results, testing_matrix)
+        #TODO: Re-enable univariate parallelization once it's stable.
+        # if SafeCastUtil.safeCast(self.parallel_hyperparam_threads, int, -1) < 0:
+        return self.hyperparameterizeInSerial(feature_names, features, hyperparam_permutations,
+                                              relevant_results, results, testing_matrix)
+        # else:
+        #     return self.hyperparameterizeInParallel(feature_names, features, hyperparam_permutations,
+        #                                             relevant_results, results, testing_matrix)
 
     def hyperparameterizeInSerial(self, feature_names, features, hyperparam_permutations, relevant_results,
                                   results, testing_matrix):
