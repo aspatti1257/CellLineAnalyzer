@@ -177,14 +177,9 @@ class MachineLearningService(object):
 
         valid_combos = self.fetchValidGeneListCombos(input_folder, gene_list_combos, trainer)
 
-        if self.inputs.analysisType() is AnalysisType.NO_GENE_LISTS:
-            trainer.parallel_hyperparam_threads = nodes_to_use
-            for feature_set in valid_combos:
-                self.runMonteCarloSelection(feature_set, trainer, input_folder, len(valid_combos))
-        else:
-            Parallel(n_jobs=nodes_to_use)(delayed(self.runMonteCarloSelection)(feature_set, trainer, input_folder,
-                                                                               len(valid_combos))
-                                          for feature_set in valid_combos)
+        Parallel(n_jobs=nodes_to_use)(delayed(self.runMonteCarloSelection)(feature_set, trainer, input_folder,
+                                                                           len(valid_combos))
+                                      for feature_set in valid_combos)
         GarbageCollectionUtility.logMemoryUsageAndGarbageCollect(self.log)
 
     def fetchValidGeneListCombos(self, input_folder, gene_list_combos, trainer):

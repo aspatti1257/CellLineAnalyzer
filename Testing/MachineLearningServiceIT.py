@@ -80,7 +80,7 @@ class MachineLearningServiceIT(unittest.TestCase):
         target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
         ml_service.handleParallellization(trimmed_combos, target_dir, rsen_trainer)
 
-        self.assertResults(target_dir, rsen_trainer, len(trimmed_combos) + 1, rsen_trainer.is_classifier)
+        self.assertResults(target_dir, rsen_trainer, len(trimmed_combos) + 1, rsen_trainer.is_classifier, False)
 
     def fetchFilteredRSENCombos(self, ml_service, rsen_trainer):
         filtered_combos = []
@@ -113,14 +113,14 @@ class MachineLearningServiceIT(unittest.TestCase):
         ml_service = MachineLearningService(self.formatRandomizedData(trainer.is_classifier, False))
         ml_service.log.setLevel(logging.DEBUG)
         num_gene_list_combos = 8
-        self.analyzeAndAssertResults(ml_service, num_gene_list_combos, trainer)
+        self.analyzeAndAssertResults(ml_service, num_gene_list_combos, trainer, False)
 
-    def analyzeAndAssertResults(self, ml_service, num_gene_list_combos, trainer):
+    def analyzeAndAssertResults(self, ml_service, num_gene_list_combos, trainer, univariate):
         try:
             gene_list_combos_shortened = ml_service.determineGeneListCombos()[0:num_gene_list_combos]
             target_dir = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
             ml_service.handleParallellization(gene_list_combos_shortened, target_dir, trainer)
-            self.assertResults(target_dir, trainer, num_gene_list_combos + 1, trainer.is_classifier)
+            self.assertResults(target_dir, trainer, num_gene_list_combos + 1, trainer.is_classifier, univariate)
         except KeyboardInterrupt as keyboardInterrupt:
             self.log.error("Interrupted manually, failing and initiating cleanup.")
             assert False
@@ -134,8 +134,8 @@ class MachineLearningServiceIT(unittest.TestCase):
         argument_processing_service.log.setLevel(logging.DEBUG)
         return argument_processing_service.handleInputFolder()
 
-    def assertResults(self, target_dir, trainer, expected_lines, is_classifier):
-        self.assertDiagnosticResults(target_dir, trainer)
+    def assertResults(self, target_dir, trainer, expected_lines, is_classifier, univariate):
+        self.assertDiagnosticResults(target_dir, trainer, univariate)
 
         file_name = trainer.algorithm + ".csv"
         assert file_name in os.listdir(target_dir)
@@ -169,9 +169,9 @@ class MachineLearningServiceIT(unittest.TestCase):
                 csv_file.close()
                 assert num_lines == expected_lines
 
-    def assertDiagnosticResults(self, target_dir, trainer):
+    def assertDiagnosticResults(self, target_dir, trainer, univariate):
         if trainer.supportsHyperparams():
-            saved_features_logged_if_univariate = trainer.parallel_hyperparam_threads == -1
+            saved_features_logged_if_univariate = not univariate
 
             diagnostics_file = DiagnosticsFileWriter.FILE_NAME
             if diagnostics_file in os.listdir(target_dir):
@@ -409,4 +409,4 @@ class MachineLearningServiceIT(unittest.TestCase):
         ml_service.log.setLevel(logging.DEBUG)
         trainer.log.setLevel(logging.DEBUG)
 
-        self.analyzeAndAssertResults(ml_service, 1, trainer)
+        self.analyzeAndAssertResults(ml_service, 1, trainer, True)

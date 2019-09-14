@@ -15,7 +15,6 @@ from Utilities.SafeCastUtil import SafeCastUtil
 from Utilities.GarbageCollectionUtility import GarbageCollectionUtility
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import accuracy_score
-import multiprocessing
 
 
 class AbstractModelTrainer(ABC):
@@ -27,8 +26,6 @@ class AbstractModelTrainer(ABC):
     ADDITIONAL_DATA = "additional_data"
 
     EMPTY_MODEL_RESPONSE = DEFAULT_MIN_SCORE, 0.0
-
-    parallel_hyperparam_threads = -1
 
     @abstractmethod
     def __init__(self, algorithm, hyperparameters, is_classifier):
@@ -81,13 +78,8 @@ class AbstractModelTrainer(ABC):
 
         hyperparam_permutations = self.fetchAllHyperparamPermutations(hyperparams)
         GarbageCollectionUtility.logMemoryUsageAndGarbageCollect(self.log)
-        #TODO: Re-enable univariate parallelization once it's stable.
-        # if SafeCastUtil.safeCast(self.parallel_hyperparam_threads, int, -1) < 0:
         return self.hyperparameterizeInSerial(feature_names, features, hyperparam_permutations,
                                               relevant_results, results, testing_matrix)
-        # else:
-        #     return self.hyperparameterizeInParallel(feature_names, features, hyperparam_permutations,
-        #                                             relevant_results, results, testing_matrix)
 
     def hyperparameterizeInSerial(self, feature_names, features, hyperparam_permutations, relevant_results,
                                   results, testing_matrix):
@@ -95,53 +87,6 @@ class AbstractModelTrainer(ABC):
         for hyperparam_set in hyperparam_permutations:
             self.buildModelAndRecordScore(feature_names, features, hyperparam_set, model_data, relevant_results,
                                           results, testing_matrix)
-        return model_data
-
-    def hyperparameterizeInParallel(self, feature_names, features, hyperparam_permutations,
-                                    relevant_results, results, testing_matrix):
-        #  TODO: Investigate "spawn" contexts to get this working with Ridge and RBF_SVC:
-        #  https://github.com/numpy/numpy/issues/5752
-        context = multiprocessing.get_context()
-        manager = context.Manager()
-        model_data = {}
-        chunked_hyperparams = self.chunkList(hyperparam_permutations, self.parallel_hyperparam_threads)
-        for chunk in chunked_hyperparams:
-            parallelized_dict = manager.dict()
-            multithreaded_jobs = []
-            for hyperparam_set in chunk:
-                process = multiprocessing.Process(target=self.buildModelAndRecordScore,
-                                                  args=(feature_names, features, hyperparam_set, parallelized_dict,
-                                                        relevant_results, results, testing_matrix))
-                multithreaded_jobs.append(process)
-
-                try:
-                    process.start()
-                except:
-                    self.log.error("Multithreaded job failed during individual hyperparam analysis for algorithm %s.",
-                                   self.algorithm)
-            for proc in multithreaded_jobs:
-                try:
-                    proc.join()
-                except:
-                    self.log.error("Multithreaded job failed during individual hyperparam analysis for algorithm %s "
-                                   "and PID %s.", self.algorithm, proc.pid)
-
-            for hyperparam_set in chunk:
-                hyperparams_as_string = DictionaryUtility.toString(hyperparam_set)
-                model_result = parallelized_dict.get(hyperparams_as_string)
-                if model_result is not None:
-                    model_data[hyperparams_as_string] = model_result
-                else:
-                    self.log.warning("Parallel hyperparameter optimization thread for %s did not execute successfully. "
-                                     "No training data available for hyperparams: %s.", self.algorithm, hyperparam_set)
-                    model_data[hyperparams_as_string] = self.EMPTY_MODEL_RESPONSE
-            additional_data = parallelized_dict.get(self.ADDITIONAL_DATA)
-            if additional_data is not None:
-                if model_data.get(self.ADDITIONAL_DATA) is None:
-                    model_data[self.ADDITIONAL_DATA] = additional_data
-                else:
-                    for add_data in additional_data:
-                        model_data[self.ADDITIONAL_DATA].append(add_data)
         return model_data
 
     def chunkList(self, original_list, size):
