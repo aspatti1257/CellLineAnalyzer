@@ -33,6 +33,7 @@ class ArgumentProcessingService(object):
     NUM_THREADS = "num_threads"
     ALGORITHM_CONFIGS = "algorithm_configs"
     RECORD_DIAGNOSTICS = "record_diagnostics"
+    STATIC_FEATURES = "static_features"
 
     # RSEN Specific Arguments
     RSEN_P_VAL = "rsen_p_val"
@@ -95,6 +96,9 @@ class ArgumentProcessingService(object):
         outer_monte_carlo_perms = self.fetchOrReturnDefault(arguments.get(self.OUTER_MONTE_CARLO_PERMUTATIONS), int, 10)
         data_split = self.fetchOrReturnDefault(arguments.get(self.DATA_SPLIT), float, 0.8)
         num_threads = self.fetchOrReturnDefault(arguments.get(self.NUM_THREADS), int, multiprocessing.cpu_count())
+        static_features = [feature_file for feature_file in
+                           self.fetchOrReturnDefault(arguments.get(self.STATIC_FEATURES), str, "").split(",")
+                           if len(feature_file.strip()) > 0]
 
         individual_train_config = self.createIndividualTrainConfig(arguments)
         rsen_config = self.createRSENConfig(arguments, binary_cat_matrix)
@@ -105,7 +109,7 @@ class ArgumentProcessingService(object):
         return ProcessedArguments(results_list, is_classifier, feature_map, gene_lists, inner_monte_carlo_perms,
                                   outer_monte_carlo_perms, data_split, algorithm_configs, num_threads,
                                   write_diagnostics, individual_train_config, rsen_config, recs_config, specific_combos,
-                                  analyze_all)
+                                  analyze_all, static_features)
 
     def validateDirectoryContents(self, directory_contents):
         return self.ARGUMENTS_FILE in directory_contents

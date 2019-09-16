@@ -33,17 +33,21 @@ class RandomizedDataGenerator(object):
 
     def generateRandomizedFiles(self, num_feature_files, num_cells, num_features, is_classifier,
                                 monte_carlo_permutations, data_split, individual_algorithm=None,
-                                individual_hyperparams=None, analyze_all=False):
+                                individual_hyperparams=None, analyze_all=False, use_static_features=False):
         features_per_file = SafeCastUtil.safeCast(num_features / num_feature_files, int)
         results = self.generateResultsCSV(is_classifier, num_cells)
         important_features = random.sample(range(1, features_per_file + 1),
                                            SafeCastUtil.safeCast((features_per_file / 3), int))
 
-        file_names = self.generateFeaturesCSVs(num_feature_files, num_cells, features_per_file,
-                                                                  results, important_features)
+        file_names = self.generateFeaturesCSVs(num_feature_files, num_cells, features_per_file, results,
+                                               important_features, use_static_features)
         self.generateGeneLists(features_per_file, important_features)
+
+        static_features = ""
+        if use_static_features:
+            static_features += file_names[len(file_names) - 1]
         self.generateArgsTxt(is_classifier, monte_carlo_permutations, data_split, individual_algorithm, file_names[0],
-                             individual_hyperparams, analyze_all)
+                             individual_hyperparams, analyze_all, static_features)
         return
 
     def generateResultsCSV(self, is_classifier, num_cells):
@@ -62,7 +66,8 @@ class RandomizedDataGenerator(object):
                 results.append(result)
         return results
 
-    def generateFeaturesCSVs(self, num_feature_files, num_cells, features_per_file, results, important_features):
+    def generateFeaturesCSVs(self, num_feature_files, num_cells, features_per_file, results, important_features,
+                             use_static_features):
         features = []
 
         for feature in range(1, features_per_file + 1):
@@ -72,9 +77,11 @@ class RandomizedDataGenerator(object):
                             SafeCastUtil.safeCast(significant_feature, str))
 
         file_names = []
+        if use_static_features:
+            num_feature_files += 1
         for file_num in range(1, num_feature_files + 1):
             file_name = self.determineFileName(file_num)
-            file_names.append(file_name.split("/")[1].split(".csv")[0])
+            file_names.append(file_name.split("/")[len(file_name.split("/")) - 1:][0].split(".csv")[0])
             with open(file_name, 'w', newline='') as feature_file:
                 writer = csv.writer(feature_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                 features_in_this_file = []
@@ -166,7 +173,7 @@ class RandomizedDataGenerator(object):
 
     def generateArgsTxt(self, is_classifier, monte_carlo_permutations=10, data_split=.8,
                         individual_algorithm=None, important_features=None, individual_hyperparams=None,
-                        analyze_all=False):
+                        analyze_all=False, static_features=""):
         file_name = self.path + "/" + ArgumentProcessingService.ARGUMENTS_FILE
         args_file = open(file_name, 'w')
         classifier = '0'
@@ -182,6 +189,8 @@ class RandomizedDataGenerator(object):
                         ArgumentProcessingService.RECORD_DIAGNOSTICS + '=True\n' +
                         ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX + '=features_1' + self.BINARY_CATEGORICAL_SUFFIX + '.csv\n' +
                         ArgumentProcessingService.IGNORE_GENE_LISTS + '=' + SafeCastUtil.safeCast(analyze_all, str) + '\n')
+        if len(static_features.strip()) > 0:
+            args_file.write(ArgumentProcessingService.STATIC_FEATURES + "=" + static_features + "\n")
         if individual_algorithm is not None and important_features is not None:
             args_file.write('individual_train_algorithm=' + individual_algorithm + '\n'
                             'individual_train_combo=' + important_features + ":" +

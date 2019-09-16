@@ -9,11 +9,16 @@ from Utilities.SafeCastUtil import SafeCastUtil
 
 class GeneListComboUtility(object):
 
+    ONLY_STATIC_FEATURES = "only static features"
+    ALL_FEATURES = "all features"
+
     @staticmethod
-    def determineGeneListCombos(gene_lists, feature_names):
+    def determineCombos(gene_lists, feature_names, static_features):
         gene_sets_across_files = {}
         for feature in feature_names:
             split = feature.split(".")
+            if split[0] in static_features:
+                continue
             if gene_sets_across_files.get(split[0]) is not None:
                 gene_sets_across_files[split[0]].append(feature)
             else:
@@ -25,6 +30,8 @@ class GeneListComboUtility(object):
         gene_list_combos = []
         for perm in numerical_permutations:
             feature_strings = []
+            for static_feature_file in static_features:
+                feature_strings.append([feature for feature in feature_names if static_feature_file in feature])
             for i in range(0, len(perm)):
                 file_name = file_keys[i]
                 gene_list = gene_lists[gene_list_keys[SafeCastUtil.safeCast(perm[i], int)]]
@@ -36,6 +43,8 @@ class GeneListComboUtility(object):
         file_keys = SafeCastUtil.safeCast(gene_sets_across_files.keys(), list)
         gene_list_keys = SafeCastUtil.safeCast(gene_lists.keys(), list)
         expected_combo_length = (len(gene_list_keys) ** len(file_keys)) - 1
+        if len(static_features) > 0:
+            expected_combo_length += 1
         return gene_list_combos, expected_combo_length
 
     @staticmethod
@@ -60,7 +69,7 @@ class GeneListComboUtility(object):
         return all_arrays
 
     @staticmethod
-    def generateFeatureSetString(feature_set, gene_lists, combine_gene_lists, analysis_type):
+    def generateFeatureSetString(feature_set, gene_lists, combine_gene_lists, analysis_type, static_features):
         feature_map = {}
         for feature_list in feature_set:
             for feature in feature_list:
@@ -88,7 +97,9 @@ class GeneListComboUtility(object):
                         if same_list:
                             feature_set_string += (file_key + ":" + gene_list_key + " ")
         if feature_set_string == "" and analysis_type is AnalysisType.NO_GENE_LISTS:
-            return "all_features"  # TODO: This is a bit lazy, do it smarter.
+            return GeneListComboUtility.ALL_FEATURES
+        elif len(static_features) > 0 and sorted(feature_map.keys()) == sorted(static_features):
+            return GeneListComboUtility.ONLY_STATIC_FEATURES
         return feature_set_string.strip()
 
     @staticmethod

@@ -139,7 +139,8 @@ class RecommendationsServiceIT(unittest.TestCase):
             if drug_name not in os.listdir(randomized_data_path):
                 os.mkdir(drug_path)
             random_data_generator = RandomizedDataGenerator(drug_path)
-            random_data_generator.generateRandomizedFiles(3, num_cell_lines, 150, is_classifier, 2, .8)
+            random_data_generator.generateRandomizedFiles(3, num_cell_lines, 150, is_classifier, 2, .8,
+                                                          use_static_features=True)
             argument_processing_service = ArgumentProcessingService(drug_path)
             processed_args = argument_processing_service.handleInputFolder()
             processed_args.recs_config.viability_acceptance = 0.1

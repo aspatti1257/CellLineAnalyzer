@@ -60,7 +60,8 @@ class MachineLearningService(object):
             return [[feature_names]]
 
         gene_lists = self.inputs.gene_lists
-        combos, expected_length = GeneListComboUtility.determineGeneListCombos(gene_lists, feature_names)
+        static_features = self.inputs.static_features
+        combos, expected_length = GeneListComboUtility.determineCombos(gene_lists, feature_names, static_features)
         if len(combos) != expected_length:
             self.log.warning("Unexpected number of combos detected, should be %s but instead created %s.\n%s",
                              expected_length, len(combos), combos)
@@ -294,7 +295,8 @@ class MachineLearningService(object):
     def generateFeatureSetString(self, feature_set):
         return GeneListComboUtility.generateFeatureSetString(feature_set, self.inputs.gene_lists,
                                                              self.inputs.rsen_config.combine_gene_lists,
-                                                             self.inputs.analysisType())
+                                                             self.inputs.analysisType(),
+                                                             self.inputs.static_features)
 
     def fetchOuterPermutationModelScore(self, feature_set, trainer, optimal_hyperparams, testing_matrix,
                                         training_matrix):
@@ -422,7 +424,7 @@ class MachineLearningService(object):
                                   real_inputs.algorithm_configs, real_inputs.num_threads,
                                   real_inputs.record_diagnostics,
                                   real_inputs.individual_train_config, real_inputs.rsen_config, real_inputs.recs_config,
-                                  real_inputs.specific_combos, False)
+                                  real_inputs.specific_combos, False, real_inputs.static_features)
 
     def determineOptimalHyperparameters(self, feature_set, formatted_data, trainer):
         inner_model_hyperparams = self.determineInnerHyperparameters(feature_set, formatted_data, trainer)

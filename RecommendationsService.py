@@ -186,8 +186,8 @@ class RecommendationsService(object):
     def determineGeneListCombos(self, processed_arguments):
         gene_lists = processed_arguments.gene_lists
         feature_names = processed_arguments.features.get(ArgumentProcessingService.FEATURE_NAMES)
-
-        combos, expected_length = GeneListComboUtility.determineGeneListCombos(gene_lists, feature_names)
+        static_features = processed_arguments.static_features
+        combos, expected_length = GeneListComboUtility.determineCombos(gene_lists, feature_names, static_features)
 
         if len(combos) != expected_length:
             self.log.warning("Unexpected number of combos detected, should be %s but instead created %s.\n%s",
@@ -318,9 +318,11 @@ class RecommendationsService(object):
         gene_lists = processed_arguments.gene_lists
         combine_gene_lists = processed_arguments.rsen_config.combine_gene_lists
         analysis_type = processed_arguments.analysisType()
+        static_features = processed_arguments.static_features
         for combo in combos:
             feature_set_string = GeneListComboUtility.generateFeatureSetString(combo, gene_lists,
-                                                                               combine_gene_lists, analysis_type)
+                                                                               combine_gene_lists, analysis_type,
+                                                                               static_features)
             if GeneListComboUtility.combosAreEquivalent(feature_set_string, best_combo_string):
                 return combo
 
