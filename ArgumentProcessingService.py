@@ -84,11 +84,18 @@ class ArgumentProcessingService(object):
 
         write_diagnostics = self.fetchOrReturnDefault(arguments.get(self.RECORD_DIAGNOSTICS), bool, False)
         feature_files = [file for file in os.listdir(self.input_folder) if self.fileIsFeatureFile(file, results_file)]
+
+        static_feature_files = [feature_file for feature_file in
+                                self.fetchOrReturnDefault(arguments.get(self.STATIC_FEATURES), str, "").split(",")
+                                if len(feature_file.strip()) > 0]
+
         if analyze_all:
             feature_map = self.createAndValidateFullFeatureMatrix(results_list, feature_files)
         else:
-            feature_map = self.createAndValidateFeatureMatrix(results_list, gene_lists, write_diagnostics, feature_files)
-        binary_cat_matrix = self.fetchBinaryCatMatrixIfApplicable(arguments, gene_lists, results_list, analyze_all)
+            feature_map = self.createAndValidateFeatureMatrix(results_list, gene_lists, write_diagnostics, feature_files,
+                                                              static_feature_files)
+        binary_cat_matrix = self.fetchBinaryCatMatrixIfApplicable(arguments, gene_lists, results_list, analyze_all,
+                                                                  static_feature_files)
 
         if not feature_map or not results_list:
             return None
@@ -96,9 +103,6 @@ class ArgumentProcessingService(object):
         outer_monte_carlo_perms = self.fetchOrReturnDefault(arguments.get(self.OUTER_MONTE_CARLO_PERMUTATIONS), int, 10)
         data_split = self.fetchOrReturnDefault(arguments.get(self.DATA_SPLIT), float, 0.8)
         num_threads = self.fetchOrReturnDefault(arguments.get(self.NUM_THREADS), int, multiprocessing.cpu_count())
-        static_features = [feature_file for feature_file in
-                           self.fetchOrReturnDefault(arguments.get(self.STATIC_FEATURES), str, "").split(",")
-                           if len(feature_file.strip()) > 0]
 
         individual_train_config = self.createIndividualTrainConfig(arguments)
         rsen_config = self.createRSENConfig(arguments, binary_cat_matrix)
@@ -109,7 +113,7 @@ class ArgumentProcessingService(object):
         return ProcessedArguments(results_list, is_classifier, feature_map, gene_lists, inner_monte_carlo_perms,
                                   outer_monte_carlo_perms, data_split, algorithm_configs, num_threads,
                                   write_diagnostics, individual_train_config, rsen_config, recs_config, specific_combos,
-                                  analyze_all, static_features)
+                                  analyze_all, static_feature_files)
 
     def validateDirectoryContents(self, directory_contents):
         return self.ARGUMENTS_FILE in directory_contents
@@ -122,8 +126,8 @@ class ArgumentProcessingService(object):
                     line_trimmed_split = line.strip().split("=")
                     if len(line_trimmed_split) > 1:
                         arguments[line_trimmed_split[0]] = line_trimmed_split[1]
-            except ValueError as valueError:
-                self.log.error(valueError)
+            except ValueError as value_error:
+                self.log.error(value_error)
             finally:
                 self.log.debug("Closing file %s", arguments_file)
                 data_file.close()
@@ -152,8 +156,8 @@ class ArgumentProcessingService(object):
                         raise ValueError("Repeated cell line name.")
                     else:
                         sample_list.append([cell_line, cell_result])
-            except ValueError as valueError:
-                self.log.error(valueError)
+            except ValueError as value_error:
+                self.log.error(value_error)
             finally:
                 self.log.debug("Closing file %s", results_file)
                 data_file.close()
@@ -181,31 +185,34 @@ class ArgumentProcessingService(object):
 
         for file in feature_files:
             self.log.info("Fetching all features for file %s", file)
-            file_name = file.split(".")[0]
-            features_path = self.input_folder + "/" + file
-
-            frame = pandas.read_csv(features_path)
-            frame = frame.loc[:, ~frame.columns.str.contains('^Unnamed')]
-            frame.columns = [file_name + "." + feature for feature in frame.columns]
-            frame.index = cell_lines
-            columns = SafeCastUtil.safeCast(frame.columns, list)
-            [frame.drop(feature) for feature in columns if columns.count(feature) > 1]
-            frames.append(frame)
+            frames.append(self.fetchFullDataframe(cell_lines, file))
 
         combined_frame = pandas.concat(frames, axis=1, join='inner')
         transposed_dict = combined_frame.T.to_dict()
 
-        return self.formatFullFeatureMatrix(combined_frame, transposed_dict)
-
-    def formatFullFeatureMatrix(self, combined_frame, transposed_dict):
-        feature_matrix = {self.FEATURE_NAMES: SafeCastUtil.safeCast(combined_frame.columns, list)}
         self.log.info("Formatting all features across all files.")
+        return self.formatFullFeatureMatrix(SafeCastUtil.safeCast(combined_frame.columns, list), transposed_dict)
+
+    def fetchFullDataframe(self, cell_lines, file):
+        file_name = file.split(".")[0]
+        features_path = self.input_folder + "/" + file
+        try:
+            frame = pandas.read_csv(features_path)
+        except ValueError as value_error:
+            self.log.error("Make sure feature file %s is well formed with no superfluous commas.", file)
+            raise value_error
+        frame = frame.loc[:, ~frame.columns.str.contains('^Unnamed')]
+        frame.columns = [file_name + "." + feature for feature in frame.columns]
+        frame.index = cell_lines
+        columns = SafeCastUtil.safeCast(frame.columns, list)
+        [frame.drop(feature) for feature in columns if columns.count(feature) > 1]
+        return frame
+
+    def formatFullFeatureMatrix(self, feature_names, transposed_dict):
+        feature_matrix = {self.FEATURE_NAMES: feature_names}
         all_cell_lines = SafeCastUtil.safeCast(transposed_dict.keys(), list)
         num_cell_lines = len(all_cell_lines)
         for i in range(num_cell_lines):
-            if i % 10 == 0:
-                percent_done, percentage_bar = PercentageBarUtility.calculateAndCreatePercentageBar(i, num_cell_lines)
-                self.log.info("Total progress formatting input data: %s%% done:\n %s", percent_done, percentage_bar)
             values = SafeCastUtil.safeCast(transposed_dict[all_cell_lines[i]].values(), list)
             formatted_values = [self.formatValue(value) for value in values]
             feature_matrix[all_cell_lines[i]] = SafeCastUtil.safeCast(formatted_values, list)
@@ -231,9 +238,10 @@ class ArgumentProcessingService(object):
                 valid_features.append(unvalidated_features[i])
         return valid_indices, valid_features
 
-    def createAndValidateFeatureMatrix(self, results_list, gene_lists, write_diagnostics, feature_files):
+    def createAndValidateFeatureMatrix(self, results_list, gene_lists, write_diagnostics, feature_files,
+                                       static_feature_files):
         incomplete_features = []
-        for file in feature_files:
+        for file in [feature_file for feature_file in feature_files if feature_file not in static_feature_files]:
             features_path = self.input_folder + "/" + file
             validated_features, num_features = self.validateGeneLists(features_path, file, gene_lists)
             incomplete_features.append([file, validated_features, num_features])
@@ -244,7 +252,19 @@ class ArgumentProcessingService(object):
         feature_matrix = {self.FEATURE_NAMES: []}
         for file in feature_files:
             features_path = self.input_folder + "/" + file
-            self.extractFeatureMatrix(feature_matrix, features_path, file, gene_lists, results_list)
+            if file not in static_feature_files:
+                self.extractFeatureMatrix(feature_matrix, features_path, file, gene_lists, results_list)
+            else:
+                data_frame = self.fetchFullDataframe([result[0] for result in results_list], file)
+                feature_names = SafeCastUtil.safeCast(data_frame.columns, list)
+                transposed_dict = data_frame.T.to_dict()
+                formatted_matrix = self.formatFullFeatureMatrix(feature_names, transposed_dict)
+
+                for key in formatted_matrix.keys():
+                    if key in feature_matrix:
+                        [feature_matrix[key].append(value) for value in formatted_matrix[key]]
+                    else:
+                        feature_matrix[key] = formatted_matrix[key]
         return feature_matrix
 
     def validateGeneLists(self, features_path, file, gene_lists):
@@ -258,8 +278,8 @@ class ArgumentProcessingService(object):
                         num_features = len(feature_names)
                         features_missing_from_files = self.validateAndTrimGeneList(feature_names, gene_lists, file)
                     break
-            except ValueError as valueError:
-                self.log.error(valueError)
+            except ValueError as value_error:
+                self.log.error(value_error)
                 return features_missing_from_files
             finally:
                 self.log.debug("Closing file %s", feature_file)
@@ -408,12 +428,13 @@ class ArgumentProcessingService(object):
         recs_config = RecommendationsConfig(viability_acceptance)
         return recs_config
 
-    def fetchBinaryCatMatrixIfApplicable(self, arguments, gene_lists, results_list, analyze_all):
+    def fetchBinaryCatMatrixIfApplicable(self, arguments, gene_lists, results_list, analyze_all, static_feature_files):
         binary_matrix_file = arguments.get(ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX)
         if binary_matrix_file is not None:
             if analyze_all:
                 return self.createAndValidateFullFeatureMatrix(results_list, [binary_matrix_file])
-            return self.createAndValidateFeatureMatrix(results_list, gene_lists, False, [binary_matrix_file])
+            return self.createAndValidateFeatureMatrix(results_list, gene_lists, False, [binary_matrix_file],
+                                                       static_feature_files)
         else:
             return None
 

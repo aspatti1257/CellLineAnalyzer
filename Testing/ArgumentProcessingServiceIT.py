@@ -107,6 +107,35 @@ class ArgumentProcessingServiceIT(unittest.TestCase):
         for combo in combos:
             assert "\"" not in combo
 
+    def testAllFeaturesInStaticListFilesProcessed(self):
+        random_data_generator = RandomizedDataGenerator(RandomizedDataGenerator.GENERATED_DATA_FOLDER)
+        random_data_generator.generateRandomizedFiles(5, 50, self.total_features_in_files, True, 10, .8,
+                                                      use_static_features=True)
+
+        input_folder = self.current_working_dir + "/" + RandomizedDataGenerator.GENERATED_DATA_FOLDER
+        argument_processing_service = ArgumentProcessingService(input_folder)
+        arguments = argument_processing_service.handleInputFolder()
+
+        assert arguments is not None
+        assert len(arguments.static_features) == 1
+        static_feature_file = arguments.static_features[0]
+        assert static_feature_file in os.listdir(input_folder)
+
+        all_features = []
+        with open(input_folder + "/" + static_feature_file, 'r') as csv_file:
+            try:
+                for line_index, line in enumerate(csv_file):
+                    if line_index == 0:
+                        [all_features.append(feature.strip()) for feature in line.split(",") if len(feature.strip()) > 0]
+            except ValueError as error:
+                self.log.error("Error reading from file %s. %s", csv_file, error)
+            finally:
+                csv_file.close()
+
+        feature_names = arguments.features.get(ArgumentProcessingService.FEATURE_NAMES)
+        for feature in all_features:
+            assert static_feature_file.replace(".csv", "." + feature) in feature_names
+
     def processAndValidateArguments(self, input_folder, is_classifier):
         argument_processing_service = ArgumentProcessingService(input_folder)
         arguments = argument_processing_service.handleInputFolder()

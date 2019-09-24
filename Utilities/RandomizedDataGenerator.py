@@ -190,7 +190,7 @@ class RandomizedDataGenerator(object):
                         ArgumentProcessingService.BINARY_CATEGORICAL_MATRIX + '=features_1' + self.BINARY_CATEGORICAL_SUFFIX + '.csv\n' +
                         ArgumentProcessingService.IGNORE_GENE_LISTS + '=' + SafeCastUtil.safeCast(analyze_all, str) + '\n')
         if len(static_features.strip()) > 0:
-            args_file.write(ArgumentProcessingService.STATIC_FEATURES + "=" + static_features + "\n")
+            args_file.write(ArgumentProcessingService.STATIC_FEATURES + "=" + static_features + ".csv\n")
         if individual_algorithm is not None and important_features is not None:
             args_file.write('individual_train_algorithm=' + individual_algorithm + '\n'
                             'individual_train_combo=' + important_features + ":" +

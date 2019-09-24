@@ -189,6 +189,10 @@ ones that aren't are marked with a star (*).
                       but instead look at all features collectively. This is known as "univariate mode". Defaults to
                       false.
 
+`static_features`*: Optionally include a set of CSV files that will be included in all feature file/gene list combos.
+                    Should be a comma separated list of strings, NOT quoted. Will also calculate a combo using only
+                    these features.
+
 Any .csv file in this path that is not the a gene list file, or the results.csv file, will be interpreted as a features
 file.
 
@@ -203,6 +207,7 @@ data_split=0.8
 RandomForestAnalysis=True,10,5
 specific_combos="features:gene_list2 categorical:gene_list1", "features:gene_list1"
 ignore_gene_lists=False
+static_features=static.csv
 ```
 
 ### Example of a completed arguments.txt with proper syntax for individual ML algorithm training:
