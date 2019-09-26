@@ -273,14 +273,73 @@ Alternatively, you can input the path of your target folder as an argument to th
 python __main__.py 0 /PATH/TO/DATA_FOLDER
 ```
 
-# 4.) File Conversion
+# 4.) Drug Recommendation System (DrS)
+This program also features a recommendation system which operates off of the analysis from the CLA. Instead of taking
+one folder as an input, it takes a folder of drug folders, each with a completed set of "Analysis.csv" files from a
+previous CLA run. The original inputs should also be included in each of these sub-folders with no required changes.
+Therefore the inputs to DrS would look something like this:
+/DrS_Folder...
+    /Drug1...
+        arguments.txt
+        features_1.csv
+        features_2.csv
+        features_3.csv
+        features_4.csv
+        features_5.csv
+        gene_list1.csv
+        gene_list2.csv
+        gene_list3.csv
+        results.csv
+        Diagnostics.txt
+        ElasticNetAnalysis.csv
+        LassoRegressionAnalysis.csv
+        LinearSVMAnalysis.csv
+        RadialBasisFunctionSVMAnalysis.csv
+        RandomForestAnalysis.csv
+        RandomSubsetElasticNetAnalysis.csv
+        RidgeRegressionAnalysis.csv
+        SummaryReport.html
+    /Drug2... (Same files as Drug1 folder but for analysis of this particular drug)
+    /Drug3... (Same files as Drug1 folder but for analysis of this particular drug)
+    /Drug4... (Same files as Drug1 folder but for analysis of this particular drug)
+    ...
+
+DrS works by parsing through all "Analysis.csv" files for a particular drug and reconstructing the optimal model with
+the optimal hyperparameters and feature file combo. The only exception is it trains on all but one of the cell lines
+used in that drug, then uses the holdout cell line to test. It will perform this task for every cell line in every drug
+folder.
+
+The outputs are two separate CSV files:
+`PreRecAnalysis.csv` - With columns for each drug and each cell line. The numbers included are the predictions for the
+                       pre-recs analysis. Which is done by simply taking the best model/combo/hyperparmeters for each
+                       drug, and testing on 100% of the training data. This is not a standard ML technique at all, but
+                       it gives a sense of how well these models are being built and you can compare it to the final
+                       recommendation results.
+`Predictions.csv` - Consisting of the following columns: Drug, Cell_Line, Prediction, R2^Score. Raw scores and each
+                    prediction are in this file for the opportunity to analyze results.
+
+
+
+To run DrS, type the following from the command line:
+```
+python __main__.py
+```
+Enter `2` to and then type the path of the parent folder.
+
+Alternatively, you can input the path of the parent folder as an argument to the program:
+
+```
+python __main__.py 2 /PATH/TO/PARENT_FOLDER
+```
+
+# 5.) File Conversion
 This program also comes with a MATLAB to CSV file conversion tool. Since a lot of genomic data is often stored as
 MATLAB files, this option allows you to take the contents of those MATLAB files and create a series of CSVs, one for
 each declared variable. They will be created in the directory from which the program is called and all of the names will
 be prepended with "convertedFile_". From there, there should be minimal tweaking of these files to get it in a format
 which will be accepted by this data analysis.
 
-To convert files, from the command line type:
+To convert files, type the following from the command line:
 ```
 python __main__.py
 ```
