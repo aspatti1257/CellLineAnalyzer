@@ -313,11 +313,13 @@ used in that drug, then uses the holdout cell line to test. It will perform this
 folder.
 
 The outputs are two separate CSV files:
+
 `PreRecAnalysis.csv` - With columns for each drug and each cell line. The numbers included are the predictions for the
                        pre-recs analysis. Which is done by simply taking the best model/combo/hyperparmeters for each
                        drug, and testing on 100% of the training data. This is not a standard ML technique at all, but
                        it gives a sense of how well these models are being built and you can compare it to the final
                        recommendation results.
+
 `Predictions.csv` - Consisting of the following columns: `Drug`, `Cell_Line`, `Prediction`, `R2^Score`. Raw scores and
                     each prediction are in this file for the opportunity to analyze results.
 
