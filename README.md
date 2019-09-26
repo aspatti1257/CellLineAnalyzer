@@ -278,6 +278,8 @@ This program also features a recommendation system which operates off of the ana
 one folder as an input, it takes a folder of drug folders, each with a completed set of "Analysis.csv" files from a
 previous CLA run. The original inputs should also be included in each of these sub-folders with no required changes.
 Therefore the inputs to DrS would look something like this:
+
+```
 /DrS_Folder...
     /Drug1...
         arguments.txt
@@ -303,6 +305,7 @@ Therefore the inputs to DrS would look something like this:
     /Drug3... (Same files as Drug1 folder but for analysis of this particular drug)
     /Drug4... (Same files as Drug1 folder but for analysis of this particular drug)
     ...
+```
 
 DrS works by parsing through all "Analysis.csv" files for a particular drug and reconstructing the optimal model with
 the optimal hyperparameters and feature file combo. The only exception is it trains on all but one of the cell lines
@@ -315,8 +318,8 @@ The outputs are two separate CSV files:
                        drug, and testing on 100% of the training data. This is not a standard ML technique at all, but
                        it gives a sense of how well these models are being built and you can compare it to the final
                        recommendation results.
-`Predictions.csv` - Consisting of the following columns: Drug, Cell_Line, Prediction, R2^Score. Raw scores and each
-                    prediction are in this file for the opportunity to analyze results.
+`Predictions.csv` - Consisting of the following columns: `Drug`, `Cell_Line`, `Prediction`, `R2^Score`. Raw scores and
+                    each prediction are in this file for the opportunity to analyze results.
 
 
 
