@@ -26,6 +26,7 @@ class RecommendationsService(object):
 
     PRE_REC_ANALYSIS_FILE = "PreRecAnalysis.csv"
     PREDICTIONS_FILE = "Predictions.csv"
+    PREDICTIONS_BY_CELL_LINE_FILE = "PredictionsByCellLine.csv"
 
     HEADER = "header"
 
@@ -39,6 +40,7 @@ class RecommendationsService(object):
     def analyzeRecommendations(self, input_folder):
         self.preRecsAnalysis(input_folder)
         self.recommendByHoldout(input_folder)
+        self.writeFinalRecsResults(input_folder)
 
     def preRecsAnalysis(self, input_folder):
         self.log.info("Performing pre-recs analysis on all drugs.")
@@ -340,3 +342,54 @@ class RecommendationsService(object):
                                                                      best_combo, input_wrapper,
                                                                      AnalysisType.RECOMMENDATIONS)
         return best_model.predict([trimmed_matrix.get(cell_line)])[0]
+
+    def writeFinalRecsResults(self, input_folder):
+        drug_scores_by_cell_line = self.fetchDrugScoresByCellLine(input_folder)
+        self.writePredictionsByCellLine(drug_scores_by_cell_line, input_folder)
+
+    def fetchDrugScoresByCellLine(self, input_folder):
+        predictions_file = input_folder + "/" + RecommendationsService.PREDICTIONS_FILE
+        drug_scores_by_cell_line = {}
+        with open(predictions_file) as input_file:
+            try:
+                for line_index, line in enumerate(input_file):
+                    if line_index == 0:
+                        continue
+                    line_split = line.split(",")
+                    drug = line_split[0]
+                    cell_line = line_split[1]
+                    score = line_split[2]
+                    if not drug or not cell_line or not score:
+                        self.log.warning("Invalid line detected for %s at line %s.", predictions_file, line_index + 1)
+                        continue
+                    if not drug_scores_by_cell_line.get(cell_line):
+                        drug_scores_by_cell_line[cell_line] = [(drug, score)]
+                    else:
+                        drug_scores_by_cell_line[cell_line].append((drug, score))
+            except ValueError as error:
+                self.log.error("Error parsing predictions file %s. %s", predictions_file, error)
+        return drug_scores_by_cell_line
+
+    def writePredictionsByCellLine(self, drug_scores_by_cell_line, input_folder):
+        total_drugs = numpy.max([len(drugs) for drugs in drug_scores_by_cell_line.values()])
+        header = ["Cell Line"]
+        best_drug = " best drug"
+        best_drug_score = " best drug score"
+        for i in range(1, total_drugs + 1):
+            suffix = MachineLearningService.generateNumericalSuffix(i)
+            header.append(SafeCastUtil.safeCast(i, str) + suffix + best_drug)
+            header.append(SafeCastUtil.safeCast(i, str) + suffix + best_drug_score)
+        predictions_by_cell_line_path = input_folder + "/" + RecommendationsService.PREDICTIONS_BY_CELL_LINE_FILE
+        with open(predictions_by_cell_line_path, "w", newline='') as predictions_by_cell_line_file:
+            try:
+                writer = csv.writer(predictions_by_cell_line_file)
+                writer.writerow(header)
+                for cell_line in drug_scores_by_cell_line.keys():
+                    drug_scores = sorted(drug_scores_by_cell_line.get(cell_line), reverse=True, key=lambda x: x[1])
+                    row = [cell_line]
+                    for drug_and_score in drug_scores:
+                        row.append(drug_and_score[0])
+                        row.append(drug_and_score[1])
+                    writer.writerow(row)
+            except ValueError as error:
+                self.log.error("Error writing to %s. %s", predictions_by_cell_line_file, error)

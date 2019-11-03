@@ -10,7 +10,6 @@ from ArgumentConfig.RecommendationsConfig import RecommendationsConfig
 from LoggerFactory import LoggerFactory
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Utilities.DiagnosticsFileWriter import DiagnosticsFileWriter
-from Utilities.PercentageBarUtility import PercentageBarUtility
 from Utilities.SafeCastUtil import SafeCastUtil
 
 

@@ -46,32 +46,64 @@ class RecommendationsServiceIT(unittest.TestCase):
             recs_service = RecommendationsService(inputs)
             recs_service.recommendByHoldout(target_dir)
 
-            file_name = target_dir + "/" + RecommendationsService.PREDICTIONS_FILE
-            num_lines = 0
             drug_names = SafeCastUtil.safeCast(recs_service.inputs.keys(), list)
 
-            with open(file_name) as txt_file:
-                try:
-                    for line_index, line in enumerate(txt_file):
-                        num_lines += 1
-                        line_split = line.split(",")
+            self.assertRecsByDrug(num_cell_lines, drug_names, target_dir)
 
-                        if line_index == 0:
-                            assert line_split[0] == "Drug"
-                        else:
-                            assert line_split[0] in drug_names
-                            assert "cell_line" in line_split[1]
-                            assert SafeCastUtil.safeCast(line_split[2], float) is not None
-                            assert SafeCastUtil.safeCast(line_split[3].strip(), float) is not None
-                except AssertionError as error:
-                    self.log.error(error)
-                finally:
-                    self.log.debug("Closing file %s", file_name)
-                    txt_file.close()
-                    assert num_lines == (num_cell_lines * self.NUM_DRUGS) + 1
+            recs_service.writeFinalRecsResults(target_dir)
+            self.assertRecsByCellLine(num_cell_lines, drug_names, target_dir)
 
         except KeyboardInterrupt as keyboard_interrupt:
             assert False
+
+    def assertRecsByDrug(self, num_cell_lines, drug_names, target_dir):
+        file_name = target_dir + "/" + RecommendationsService.PREDICTIONS_FILE
+        num_lines = 0
+        with open(file_name) as csv_file:
+            try:
+                for line_index, line in enumerate(csv_file):
+                    num_lines += 1
+                    line_split = line.split(",")
+
+                    if line_index == 0:
+                        assert line_split[0] == "Drug"
+                    else:
+                        assert line_split[0] in drug_names
+                        assert "cell_line" in line_split[1]
+                        assert SafeCastUtil.safeCast(line_split[2], float) is not None
+                        assert SafeCastUtil.safeCast(line_split[3].strip(), float) is not None
+            except AssertionError as error:
+                self.log.error(error)
+            finally:
+                self.log.debug("Closing file %s", file_name)
+                csv_file.close()
+                assert num_lines == (num_cell_lines * self.NUM_DRUGS) + 1
+
+    def assertRecsByCellLine(self, num_cell_lines, drug_names, target_dir):
+        file_name = target_dir + "/" + RecommendationsService.PREDICTIONS_BY_CELL_LINE_FILE
+        num_lines = 0
+        with open(file_name) as csv_file:
+            try:
+                for line_index, line in enumerate(csv_file):
+                    num_lines += 1
+                    line_split = line.split(",")
+
+                    if line_index == 0:
+                        assert line_split[0] == "Cell Line"
+                    else:
+                        for i in range(0, len(line_split)):
+                            if i == 0:
+                                assert "cell_line" in line_split[i]
+                            elif i % 2 == 0:
+                                assert SafeCastUtil.safeCast(line_split[i], float) > AbstractModelTrainer.DEFAULT_MIN_SCORE
+                            elif i % 2 == 1:
+                                assert line_split[i] in drug_names
+            except AssertionError as error:
+                self.log.error(error)
+            finally:
+                self.log.debug("Closing file %s", file_name)
+                csv_file.close()
+                assert num_lines == num_cell_lines + 1
 
     def testPreRecsAnalysis(self):
         num_cell_lines = 1000
