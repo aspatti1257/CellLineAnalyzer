@@ -358,7 +358,7 @@ class RecommendationsService(object):
                     line_split = line.split(",")
                     drug = line_split[0]
                     cell_line = line_split[1]
-                    score = line_split[2]
+                    score = SafeCastUtil.safeCast(line_split[2], float)
                     if not drug or not cell_line or not score:
                         self.log.warning("Invalid line detected for %s at line %s.", predictions_file, line_index + 1)
                         continue
