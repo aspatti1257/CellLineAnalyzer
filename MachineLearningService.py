@@ -1,6 +1,7 @@
 import csv
 import multiprocessing
 from collections import OrderedDict
+from copy import deepcopy
 
 import numpy
 import os
@@ -418,13 +419,15 @@ class MachineLearningService(object):
                             results.append(result)
                             break
                     break
+        cloned_univariate_config = deepcopy(real_inputs.univariate_config)
+        cloned_univariate_config.analyze_all = False
         return ProcessedArguments(results, real_inputs.is_classifier, features, real_inputs.gene_lists,
                                   real_inputs.inner_monte_carlo_permutations,
                                   real_inputs.outer_monte_carlo_permutations, real_inputs.data_split,
                                   real_inputs.algorithm_configs, real_inputs.num_threads,
                                   real_inputs.record_diagnostics,
                                   real_inputs.individual_train_config, real_inputs.rsen_config, real_inputs.recs_config,
-                                  real_inputs.specific_combos, False, real_inputs.static_features)
+                                  cloned_univariate_config, real_inputs.specific_combos, real_inputs.static_features)
 
     def determineOptimalHyperparameters(self, feature_set, formatted_data, trainer):
         inner_model_hyperparams = self.determineInnerHyperparameters(feature_set, formatted_data, trainer)

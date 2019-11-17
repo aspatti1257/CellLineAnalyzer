@@ -189,6 +189,9 @@ ones that aren't are marked with a star (*).
                       but instead look at all features collectively. This is known as "univariate mode". Defaults to
                       false.
 
+`num_top_features`*: Number of faetures to use in univariate mode. Only applicable when `ignore_gene_lists` is set to
+                     True.
+
 `static_features`*: Optionally include a set of CSV files that will be included in all feature file/gene list combos.
                     Should be a comma separated list of strings, NOT quoted. Will also calculate a combo using only
                     these features.

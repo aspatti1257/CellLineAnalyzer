@@ -22,7 +22,6 @@ class DataFormattingService(object):
     TESTING_MATRIX = "testingMatrix"  # Will either be outer testing or inner validation matrix
 
     P_VALUE_CUTOFF = 0.05
-    NUM_TOP_FEATURES_TO_USE = 147
 
     def __init__(self, inputs):
         self.inputs = inputs
@@ -102,10 +101,11 @@ class DataFormattingService(object):
 
     def trimFeatures(self, x_train, x_test, p_val_sets):
         features_to_keep = []
+        num_top_features = self.inputs.univariate_config.num_top_features
         for p_val_set in p_val_sets:
             for file in p_val_set:
                 features_and_p_vals = [item for item in p_val_set[file].items() if not np.isnan(item[1])]
-                sorted_features_and_p_vals = sorted(features_and_p_vals, key=operator.itemgetter(1))[:self.NUM_TOP_FEATURES_TO_USE]
+                sorted_features_and_p_vals = sorted(features_and_p_vals, key=operator.itemgetter(1))[:num_top_features]
                 [features_to_keep.append(feature_and_p_val[0]) for feature_and_p_val in sorted_features_and_p_vals]
 
         filtered_df_train = x_train.filter(features_to_keep, axis=1)

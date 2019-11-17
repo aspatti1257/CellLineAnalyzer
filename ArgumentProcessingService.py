@@ -7,6 +7,7 @@ from ArgumentConfig.IndividualTrainConfig import IndividualTrainConfig
 from ArgumentConfig.ProcessedArguments import ProcessedArguments
 from ArgumentConfig.RSENConfig import RSENConfig
 from ArgumentConfig.RecommendationsConfig import RecommendationsConfig
+from ArgumentConfig.UnivariateConfig import UnivariateConfig
 from LoggerFactory import LoggerFactory
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Utilities.DiagnosticsFileWriter import DiagnosticsFileWriter
@@ -45,6 +46,7 @@ class ArgumentProcessingService(object):
 
     # For AnalysisType.NO_GENE_LISTS
     IGNORE_GENE_LISTS = "ignore_gene_lists"
+    NUM_TOP_FEATURES = "num_top_features"
 
     # For AnalysisType.INDIVIDUAL_TRAIN
     INDIVIDUAL_TRAIN_ALGORITHM = "individual_train_algorithm"
@@ -105,14 +107,15 @@ class ArgumentProcessingService(object):
 
         individual_train_config = self.createIndividualTrainConfig(arguments)
         rsen_config = self.createRSENConfig(arguments, binary_cat_matrix)
+        univariate_config = self.createUnivariateConfig(arguments, analyze_all)
         specific_combos = self.determineSpecificCombos(arguments.get(self.SPECIFIC_COMBOS))
 
         recs_config = self.createRecommendationsConfig(arguments)
 
         return ProcessedArguments(results_list, is_classifier, feature_map, gene_lists, inner_monte_carlo_perms,
                                   outer_monte_carlo_perms, data_split, algorithm_configs, num_threads,
-                                  write_diagnostics, individual_train_config, rsen_config, recs_config, specific_combos,
-                                  analyze_all, static_feature_files)
+                                  write_diagnostics, individual_train_config, rsen_config, recs_config, univariate_config,
+                                  specific_combos, static_feature_files)
 
     def validateDirectoryContents(self, directory_contents):
         return self.ARGUMENTS_FILE in directory_contents
@@ -409,6 +412,10 @@ class ArgumentProcessingService(object):
         rsen_combine_gene_lists = self.fetchOrReturnDefault(arguments.get(self.RSEN_COMBINE_GENE_LISTS), bool, False)
         rsen_config = RSENConfig(binary_cat_matrix, rsen_p_val, rsen_k_val, rsen_combine_gene_lists)
         return rsen_config
+
+    def createUnivariateConfig(self, arguments, analyze_all):
+        num_top_features = self.fetchOrReturnDefault(arguments.get(self.NUM_TOP_FEATURES), int, 147)
+        return UnivariateConfig(analyze_all, num_top_features)
 
     def createIndividualTrainConfig(self, arguments):
         individual_train_algorithm = self.fetchOrReturnDefault(arguments.get(self.INDIVIDUAL_TRAIN_ALGORITHM), str,

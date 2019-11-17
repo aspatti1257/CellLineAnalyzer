@@ -75,7 +75,8 @@ class DataFormattingServiceIT(unittest.TestCase):
     def testTrimmingDoesNotTrimSignificantFeatures(self):
         significant_prefix = RandomizedDataGenerator.SIGNIFICANT_FEATURE_PREFIX
         arguments = self.processArguments(True, True, 1000)
-        arguments.analyze_all = True
+        arguments.univariate_config.analyze_all = True
+        assert arguments.univariate_config.num_top_features == 147
         orig_features = arguments.features.get(ArgumentProcessingService.FEATURE_NAMES)
         orig_sig_features = [feature for feature in orig_features if significant_prefix in feature]
         data_formatting_service = DataFormattingService(arguments)
@@ -94,6 +95,21 @@ class DataFormattingServiceIT(unittest.TestCase):
         assert len(orig_features) > len(trimmed_features)
         assert len(orig_sig_features) == len(trimmed_sig_features)
         assert len(trimmed_features) == expected_feature_count
+
+    def testNumFeaturesInUnivariateModeCanBeTuned(self):
+        arguments = self.processArguments(True, True, 1000)
+        arguments.univariate_config.analyze_all = True
+        arguments.univariate_config.num_top_features = 10
+        data_formatting_service = DataFormattingService(arguments)
+        output = data_formatting_service.formatData(True)
+
+        training_matrix = output.get(DataFormattingService.TRAINING_MATRIX)
+        testing_matrix = output.get(DataFormattingService.TESTING_MATRIX)
+        expected_feature_count = 50
+
+        for matrix in [training_matrix, testing_matrix]:
+            for cell_line in matrix:
+                assert len(matrix[cell_line]) == expected_feature_count
 
     @staticmethod
     def validateOutput(output):

@@ -5,7 +5,7 @@ class ProcessedArguments(object):
 
     def __init__(self, results, is_classifier, features, gene_lists, inner_monte_carlo_permutations,
                  outer_monte_carlo_permutations, data_split, algorithm_configs, num_threads, record_diagnostics,
-                 individual_train_config, rsen_config, recs_config, specific_combos, analyze_all, static_features):
+                 individual_train_config, rsen_config, recs_config, univariate_config, specific_combos, static_features):
         self.results = results
         self.is_classifier = is_classifier
         self.features = features
@@ -19,14 +19,14 @@ class ProcessedArguments(object):
         self.individual_train_config = individual_train_config
         self.rsen_config = rsen_config
         self.recs_config = recs_config
+        self.univariate_config = univariate_config
         self.specific_combos = specific_combos
-        self.analyze_all = analyze_all
         self.static_features = static_features
 
     def analysisType(self):
         if self.recs_config is not None and self.recs_config.viability_acceptance is not None:
             return AnalysisType.RECOMMENDATIONS
-        if self.analyze_all:
+        if self.univariate_config.analyze_all:
             return AnalysisType.NO_GENE_LISTS
         elif len(self.specific_combos) > 0:
             return AnalysisType.FULL_CLA_SPECIFIC_COMBO
