@@ -1,4 +1,3 @@
-
 class RecommendationsConfig(object):
 
     def __init__(self, viability_acceptance):

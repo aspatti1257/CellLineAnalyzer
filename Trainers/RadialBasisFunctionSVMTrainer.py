@@ -1,9 +1,9 @@
-from sklearn import svm
 from collections import OrderedDict
+
+from sklearn import svm
 
 from SupportedMachineLearningAlgorithms import SupportedMachineLearningAlgorithms
 from Trainers.AbstractModelTrainer import AbstractModelTrainer
-from Utilities.SafeCastUtil import SafeCastUtil
 
 
 class RadialBasisFunctionSVMTrainer(AbstractModelTrainer):

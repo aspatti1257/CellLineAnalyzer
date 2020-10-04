@@ -4,9 +4,9 @@ import copy
 
 
 from CustomModels.RandomSubsetElasticNet import RandomSubsetElasticNet
+from CustomModels.RecursiveBooleanPhrase import RecursiveBooleanPhrase
 from LoggerFactory import LoggerFactory
 from Utilities.SafeCastUtil import SafeCastUtil
-from CustomModels.RecursiveBooleanPhrase import RecursiveBooleanPhrase
 
 
 class RandomSubsetElasticNetModelTest(unittest.TestCase):

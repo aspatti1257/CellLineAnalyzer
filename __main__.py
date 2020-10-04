@@ -54,17 +54,20 @@ def promptUserForInput():
 def runMainCellLineAnalysis(input_folder):
     valid_inputs = handleInputFolderProcessing(input_folder)
     if valid_inputs is not None:
+        log.info("Valid inputs received. Starting Machine Learning.")
         performMachineLearning(valid_inputs, input_folder)
+        log.info("Machine Learning phase complete, starting creation of summary file.")
         is_classifier = valid_inputs.is_classifier
         writeHTMLSummaryFile(input_folder, is_classifier)
+        log.info("Summary file successfully written.")
 
 
 def recursivelyPromptUser(message, return_type):
     response = input(message)
     cast_response = SafeCastUtil.safeCast(response, return_type)
     if cast_response is None:
-        print("Invalid command, looking for an input of type %.\n", return_type)
-        recursivelyPromptUser(message, return_type)
+        log.info("Invalid command, looking for an input of type %.\n", return_type)
+        return recursivelyPromptUser(message, return_type)
     else:
         return response
 
@@ -90,6 +93,7 @@ def writeHTMLSummaryFile(input_folder, is_classifier):
 
 # TODO: Support input_folder ending with "/" or without it.
 def fetchRecommendations(input_folder):
+    log.info("Starting Dr.S analysis.")
     processed_args_by_drug = {}
     for drug_dir in [file for file in os.listdir(input_folder) if os.path.isdir(input_folder + file) and "analysis" in file]:
         processed_args = handleInputFolderProcessing(input_folder + drug_dir)
@@ -98,6 +102,7 @@ def fetchRecommendations(input_folder):
     if len(processed_args_by_drug.keys()) > 0:
         recs_service = RecommendationsService(processed_args_by_drug)
         recs_service.analyzeRecommendations(input_folder)
+        log.info("Dr.S Analysis completed.")
     else:
         log.error("No drug folders detected. Drug folders must have \"analysis\" in name and be in parent directory.")
 

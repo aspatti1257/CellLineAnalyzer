@@ -1,16 +1,16 @@
+import operator
+from collections import OrderedDict
+
 import numpy as np
 import pandas as pd
-import operator
-from sklearn import preprocessing
-from scipy.stats import spearmanr
 from scipy.stats import ranksums
+from scipy.stats import spearmanr
+from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
-from collections import OrderedDict
 
 from ArgumentConfig.AnalysisType import AnalysisType
 from ArgumentProcessingService import ArgumentProcessingService
 from LoggerFactory import LoggerFactory
-from Utilities.PercentageBarUtility import PercentageBarUtility
 from Utilities.SafeCastUtil import SafeCastUtil
 
 

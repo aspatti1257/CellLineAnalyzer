@@ -1,4 +1,3 @@
-
 class RSENConfig(object):
 
     def __init__(self, binary_cat_matrix, p_val, k_val, combine_gene_lists):

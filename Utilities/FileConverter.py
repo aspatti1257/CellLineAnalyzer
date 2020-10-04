@@ -34,6 +34,7 @@ class FileConverter(object):
     def convertMatLabToCSV(matlab_files_directory):
 
         log = LoggerFactory.createLog(__name__)
+        log.info("Starting CSV conversion...")
 
         os.chdir(matlab_files_directory)
         matlab_files = glob.glob("*.mat")

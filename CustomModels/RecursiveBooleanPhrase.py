@@ -1,4 +1,4 @@
-class RecursiveBooleanPhrase:
+class RecursiveBooleanPhrase(object):
 
     def __init__(self, split, value, is_or, nested_phrase):
         self.split = split
