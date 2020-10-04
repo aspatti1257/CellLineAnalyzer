@@ -152,6 +152,8 @@ class DataFormattingService(object):
         return dataframe_binary_pd
 
     def testTrainSplit(self, x_values, y_values, data_split):
+        if data_split == 1.0:
+            return x_values, pd.DataFrame(columns=SafeCastUtil.safeCast(x_values.columns, list)), y_values, []
         x_train, x_test, y_train, y_test = train_test_split(x_values, y_values, test_size=(1 - data_split))
         return x_train, x_test, y_train, y_test
 

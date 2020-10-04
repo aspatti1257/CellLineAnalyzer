@@ -379,8 +379,8 @@ file combo.
 
 # 6.) Troubleshooting
 
-- This program requires python 3.6. You can check your version of python by running typing `python --version` in the
-  command line. If it's 3.6.x, please upgrade.
+- This program requires python 3.6 - 3.8. You can check your version of python by running typing `python --version` in the
+  command line. If it is not at least 3.6.x, please upgrade.
 
 - Make sure that your is_classifier variable matches what is in your results.csv file. If your results.csv file is
   filled with 0s and 1s for the values, but is_classifier=0, we'll try to interpret all that data as regression data. At
@@ -388,8 +388,8 @@ file combo.
   model.
 
 - This program also requires installation of the following packages: scipy, numpy, pandas, joblib, sklearn, psutil
-  Make sure all of these packages are installed for python 3.6. If you don't have them, you can install them with pip
-  from the command line:
+  Make sure all of these packages are installed for python 3.6 - 3.8. If you don't have them, you can install them with
+  pip from the command line:
   `pip install PACKAGE_NAME` where PACKAGE_NAME is scipy, sklearn, etc.
 
 - Please not for the accuracy score of classification: This measure is the accuracy score as provided by sklearn. This metric
