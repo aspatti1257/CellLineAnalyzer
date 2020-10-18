@@ -241,7 +241,7 @@ ignore_gene_lists=True
 
 ### Example of all files in the directory:
 
-/SampleClassifierDataFolder...
+/SampleDataFolder...
    arguments.txt
    features_1.csv
    features_2.csv
@@ -266,9 +266,9 @@ Enter `0` for Analysis of Cell Lines
 Type in the path of your desired folder, which contains `Arguments.txt`, Feature Data, and Output Data
 
 Your results will be printed in the terminal and saved to either a RandomForestAnalysis.csv, a
-LinearSVMAnalysis.csv, a RadialBasisFunctionSVMAnalysis.csv, a RidgeRegressionAnalysis.csv, a LassoRegressionAnalysis.csv
-or/and an ElasticNetAnalysis.csv file. These files will be written to the directory from
-which the program is called.
+LinearSVMAnalysis.csv, a RadialBasisFunctionSVMAnalysis.csv, a RidgeRegressionAnalysis.csv, a 
+LassoRegressionAnalysis.csv, RandomSubsetElasticNetAnalysis.csv, or/and an ElasticNetAnalysis.csv file. These files will
+be written to the directory from which the program is called.
 
 Alternatively, you can input the path of your target folder as an argument to the program:
 

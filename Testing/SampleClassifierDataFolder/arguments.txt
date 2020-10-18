@@ -10,6 +10,9 @@ skip_elastic_net=False
 #RF and enet won't run
 ElasticNetAnalysis=False,0,0
 RandomForestAnalysis=True,5,5
+LassoRegressionAnalysis=False,0,0
+RidgeRegressionAnalysis=False,0,0
+RandomSubsetElasticNetAnalysis=False,0,0
 binary_categorical_matrix=categorical.csv
 specific_combos="features:gene_list2 categorical:gene_list1",  "features:gene_list1"
 spearman_corr=False
